@@ -1,0 +1,22 @@
+.icon {
+  flex: none;
+  border-radius: 3px;
+  object-fit: contain;
+}
+
+.fallback {
+  flex: none;
+  color: var(--fg-muted);
+}
+
+.spinner {
+  flex: none;
+  color: var(--fg-muted);
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -1,0 +1,88 @@
+:root {
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', system-ui, sans-serif;
+  --space: #3d6be0;
+  --base: #ececee;
+  --fg: #1c1c1f;
+  --fg-muted: color-mix(in oklab, var(--fg) 58%, transparent);
+  --fg-faint: color-mix(in oklab, var(--fg) 36%, transparent);
+  --sidebar-bg: color-mix(in oklab, var(--space) 18%, var(--base));
+  --item-hover: color-mix(in oklab, var(--fg) 6%, transparent);
+  --item-press: color-mix(in oklab, var(--fg) 10%, transparent);
+  --item-active: rgb(255 255 255 / 0.84);
+  --item-active-shadow: 0 1px 2px rgb(0 0 0 / 0.06), 0 0 0 0.5px rgb(0 0 0 / 0.05);
+  --divider: color-mix(in oklab, var(--fg) 11%, transparent);
+  --panel: #ffffff;
+  --panel-border: rgb(0 0 0 / 0.08);
+  --panel-shadow: 0 24px 64px rgb(0 0 0 / 0.22), 0 2px 8px rgb(0 0 0 / 0.08);
+  --content-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.08), 0 1px 3px rgb(0 0 0 / 0.1);
+  --accent: color-mix(in oklab, var(--space) 88%, black);
+  --radius: 8px;
+  --row: 34px;
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --base: #1a1a1c;
+  --fg: #ececee;
+  --sidebar-bg: color-mix(in oklab, var(--space) 22%, var(--base));
+  --item-active: rgb(255 255 255 / 0.12);
+  --item-active-shadow: 0 0 0 0.5px rgb(255 255 255 / 0.06);
+  --panel: #232326;
+  --panel-border: rgb(255 255 255 / 0.08);
+  --panel-shadow: 0 24px 64px rgb(0 0 0 / 0.55), 0 2px 8px rgb(0 0 0 / 0.3);
+  --content-shadow: 0 0 0 0.5px rgb(255 255 255 / 0.06), 0 1px 3px rgb(0 0 0 / 0.4);
+  --accent: color-mix(in oklab, var(--space) 80%, white);
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--fg);
+  background: transparent;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  cursor: default;
+}
+
+:root[data-surface='chrome'] body {
+  background: var(--sidebar-bg);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: default;
+}
+
+input {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+img {
+  display: block;
+}

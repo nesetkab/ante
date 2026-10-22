@@ -1,0 +1,56 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 40px;
+  padding: 0 8px;
+  -webkit-app-region: drag;
+}
+
+.toolbar button {
+  -webkit-app-region: no-drag;
+}
+
+.mac {
+  padding-left: 76px;
+}
+
+.location {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  margin: 0 6px;
+  padding: 0 10px;
+  border-radius: 6px;
+  color: var(--fg-muted);
+}
+
+.location:hover {
+  background: var(--item-hover);
+}
+
+.url {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.openIn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg);
+  background: color-mix(in oklab, var(--fg) 8%, transparent);
+}
+
+.openIn:hover {
+  background: color-mix(in oklab, var(--fg) 13%, transparent);
+}

@@ -1,0 +1,117 @@
+import { ChevronRight, Folder as FolderIcon, FolderOpen } from 'lucide-react'
+import type { Data, Folder, Id, Runtime, Split } from '@shared/schema'
+import { getTab } from '@shared/state/tree'
+import { ante } from '../ante'
+import { Favicon } from '../components/Favicon'
+import styles from './Sidebar.module.css'
+import { TabRow } from './TabRow'
+
+interface ListContext {
+  data: Data
+  runtime: Runtime
+  activeId: Id | null
+  persistent: boolean
+}
+
+interface ItemListProps extends ListContext {
+  ids: readonly Id[]
+  depth?: number
+}
+
+function FolderRow({ folder, depth, ...context }: ListContext & { folder: Folder; depth: number }) {
+  return (
+    <div className={styles.folder}>
+      <div
+        role="button"
+        tabIndex={-1}
+        className={styles.row}
+        style={{ paddingLeft: 10 + depth * 14 }}
+        onMouseDown={(event) => {
+          if (event.button === 0) ante.dispatch({ type: 'folder/toggle', id: folder.id })
+        }}
+        onContextMenu={(event) => {
+          event.preventDefault()
+          ante.command({ type: 'tab/contextMenu', tabId: folder.id })
+        }}
+      >
+        <ChevronRight
+          size={12}
+          className={[styles.chevron, folder.open && styles.chevronOpen].filter(Boolean).join(' ')}
+        />
+        {folder.open ? (
+          <FolderOpen size={15} className={styles.folderIcon} />
+        ) : (
+          <FolderIcon size={15} className={styles.folderIcon} />
+        )}
+        <span className={styles.title}>{folder.name || 'Untitled'}</span>
+      </div>
+      {folder.open && <ItemList {...context} ids={folder.children} depth={depth + 1} />}
+    </div>
+  )
+}
+
+function SplitRow({
+  split,
+  depth,
+  data,
+  runtime,
+  activeId,
+}: ListContext & { split: Split; depth: number }) {
+  const tabs = split.children.map((id) => getTab(data, id)).filter((tab) => tab !== null)
+  const containsActive = activeId !== null && split.children.includes(activeId)
+  return (
+    <div
+      className={[styles.splitRow, containsActive && styles.active].filter(Boolean).join(' ')}
+      style={{ marginLeft: depth * 14 }}
+      onContextMenu={(event) => {
+        event.preventDefault()
+        ante.command({ type: 'tab/contextMenu', tabId: split.id })
+      }}
+    >
+      {tabs.map((tab) => (
+        <button
+          key={tab.id}
+          type="button"
+          className={[styles.splitPane, tab.id === activeId && styles.splitPaneActive]
+            .filter(Boolean)
+            .join(' ')}
+          onMouseDown={(event) => {
+            if (event.button === 0) ante.command({ type: 'tab/activate', tabId: tab.id })
+          }}
+          title={tab.title || tab.url}
+        >
+          <Favicon src={tab.favicon} loading={runtime.tabs[tab.id]?.loading} size={14} />
+          <span className={styles.title}>{tab.customTitle ?? (tab.title || tab.url)}</span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+export function ItemList({ ids, depth = 0, ...context }: ItemListProps) {
+  return (
+    <>
+      {ids.map((id) => {
+        const item = context.data.items[id]
+        if (!item) return null
+        switch (item.kind) {
+          case 'tab':
+            return (
+              <TabRow
+                key={id}
+                tab={item}
+                runtime={context.runtime.tabs[id]}
+                active={id === context.activeId}
+                depth={depth}
+                persistent={context.persistent}
+              />
+            )
+          case 'folder':
+            return <FolderRow key={id} folder={item} depth={depth} {...context} />
+          case 'split':
+            return <SplitRow key={id} split={item} depth={depth} {...context} />
+        }
+      })}
+    </>
+  )
+}

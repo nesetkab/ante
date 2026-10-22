@@ -1,0 +1,103 @@
+.surface {
+  position: relative;
+  height: 100%;
+}
+
+.sidebarSlot {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.resizer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  z-index: 2;
+}
+
+.edgeHover {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  z-index: 2;
+}
+
+.dragRegion {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 8px;
+  -webkit-app-region: drag;
+}
+
+.frame {
+  position: absolute;
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--content-shadow);
+}
+
+.empty {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--panel) 55%, transparent);
+  box-shadow: var(--content-shadow);
+}
+
+.emptyAction {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: var(--fg-muted);
+}
+
+.emptyAction:hover {
+  background: var(--item-hover);
+  color: var(--fg);
+}
+
+.emptyAction kbd {
+  font: inherit;
+  font-size: 12px;
+  color: var(--fg-faint);
+}
+
+.splitHandle {
+  position: absolute;
+  z-index: 1;
+}
+
+.splitHandleH {
+  cursor: col-resize;
+}
+
+.splitHandleV {
+  cursor: row-resize;
+}
+
+.splitHandle::after {
+  content: '';
+  position: absolute;
+  border-radius: 2px;
+  background: transparent;
+  transition: background-color 120ms ease;
+}
+
+.splitHandleH::after {
+  inset: 40% 3px;
+}
+
+.splitHandleV::after {
+  inset: 3px 40%;
+}
+
+.splitHandle:hover::after {
+  background: color-mix(in oklab, var(--fg) 25%, transparent);
+}

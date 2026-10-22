@@ -1,0 +1,34 @@
+.button {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border-radius: 6px;
+  color: var(--fg-muted);
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--item-hover);
+  color: var(--fg);
+}
+
+.button:active:not(:disabled) {
+  background: var(--item-press);
+}
+
+.button:disabled {
+  opacity: 0.35;
+}
+
+.md {
+  width: 28px;
+  height: 28px;
+}
+
+.sm {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+}
