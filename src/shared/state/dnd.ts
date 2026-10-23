@@ -65,6 +65,18 @@ export function spacePlacement(data: Data, id: Id, spaceId: Id): Placement | nul
   return canDrop(data, id, placement) ? placement : null
 }
 
+export function containerDepth(data: Data, container: Container): number {
+  let depth = 0
+  let current = container
+  while (current.type === 'folder' && depth < 32) {
+    const location = locate(data, current.id)
+    if (!location) break
+    depth += 1
+    current = location.container
+  }
+  return depth
+}
+
 export function spaceMoveIndex(order: readonly Id[], id: Id, beforeIndex: number): number | null {
   const from = order.indexOf(id)
   if (from < 0) return null

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { canDrop, rowPlacement, spaceMoveIndex, spacePlacement } from '@shared/state/dnd'
+import {
+  canDrop,
+  containerDepth,
+  rowPlacement,
+  spaceMoveIndex,
+  spacePlacement,
+} from '@shared/state/dnd'
 import { addTab, apply, folder, makeState, OTHER_SPACE, pinned, SPACE, today } from './helpers'
 
 function sample() {
@@ -71,6 +77,15 @@ describe('spacePlacement', () => {
     const { data } = sample()
     expect(spacePlacement(data, 'c', SPACE)).toBeNull()
     expect(spacePlacement(data, 'c', 'missing')).toBeNull()
+  })
+})
+
+describe('containerDepth', () => {
+  it('counts folder nesting', () => {
+    const { data } = sample()
+    expect(containerDepth(data, pinned())).toBe(0)
+    expect(containerDepth(data, folder('f'))).toBe(1)
+    expect(containerDepth(data, folder('g'))).toBe(2)
   })
 })
 
