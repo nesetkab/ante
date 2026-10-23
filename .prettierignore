@@ -3,3 +3,4 @@ dist
 release
 coverage
 package-lock.json
+.claude
