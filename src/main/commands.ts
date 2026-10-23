@@ -14,6 +14,7 @@ import { hostOf, resolveInput } from '@shared/url'
 import { IPC, type UiEvent } from '@shared/ipc'
 import { copyText } from './clipboard'
 import { showSidebarMenu } from './sidebarMenu'
+import { deleteSpaceWithConfirm } from './spaceDelete'
 import type { OpenDisposition, TabManager } from './tabs'
 import type { Store } from './store'
 import type { AppWindow, WindowManager } from './windows'
@@ -587,6 +588,12 @@ export class CommandRunner {
       }
       case 'settings/open':
         this.#openSettings()
+        return
+      case 'space/delete':
+        void deleteSpaceWithConfirm(
+          { store: this.#store, windows: this.#windows, window },
+          command.spaceId,
+        )
         return
     }
   }
