@@ -588,6 +588,22 @@ export class CommandRunner {
       case 'settings/open':
         this.#openSettings()
         return
+      case 'library/open': {
+        const overlay = this.#store.state.runtime.windows[window.id]?.overlay
+        const section = command.section ?? (overlay?.kind === 'library' ? null : 'history')
+        if (!section || (overlay?.kind === 'library' && overlay.section === section)) {
+          this.run(window.id, { type: 'overlay/close' })
+          return
+        }
+        this.#store.dispatch({
+          type: 'runtime/window',
+          id: window.id,
+          patch: { overlay: { kind: 'library', section } },
+        })
+        this.#windows.syncNow()
+        window.focusOverlay()
+        return
+      }
     }
   }
 }

@@ -165,6 +165,8 @@ export class AppWindow {
         width: sidebarWidth,
         height: height - FLOATING_SIDEBAR_INSET * 2,
       }
+    } else if (overlayState?.kind === 'library' && window.kind === 'main') {
+      overlayBounds = layout.content
     }
     if (overlayVisible) {
       this.overlay.setBounds(overlayBounds)

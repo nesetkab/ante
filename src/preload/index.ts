@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import { IPC, type AnteApi, type PatchBatch, type Snapshot, type UiEvent } from '@shared/ipc'
+import { libraryApi } from './library'
 
 const api: AnteApi = {
   platform: process.platform,
@@ -19,3 +20,4 @@ const api: AnteApi = {
 }
 
 contextBridge.exposeInMainWorld('ante', api)
+contextBridge.exposeInMainWorld('anteLibrary', libraryApi)

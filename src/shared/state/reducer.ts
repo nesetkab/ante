@@ -564,5 +564,16 @@ export function reduce(state: AppState, action: Action): void {
       else runtime.windows[action.id] = { ...defaultWindowRuntime, ...action.patch }
       return
     }
+    case 'download/add':
+      runtime.downloads[action.download.id] = { ...action.download }
+      return
+    case 'download/update': {
+      const download = runtime.downloads[action.id]
+      if (download) Object.assign(download, action.patch)
+      return
+    }
+    case 'download/remove':
+      for (const id of action.ids) Reflect.deleteProperty(runtime.downloads, id)
+      return
   }
 }
