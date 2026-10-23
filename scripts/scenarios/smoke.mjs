@@ -12,7 +12,7 @@ export default async function smoke({ store, run, waitFor, windows }) {
   const space = () => store.state.data.spaces[spaceId()]
 
   run({ type: 'open', input: page('First'), disposition: 'newTab' }, window.id)
-  await waitFor((state) => space() && space().today.length === 1)
+  await waitFor(() => space()?.today.length === 1)
   const first = space().today[0]
   await waitFor((state) => state.data.items[first]?.title === 'First')
 
