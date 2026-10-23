@@ -70,7 +70,10 @@ function canPlace(data: Data, item: Item, container: Container): boolean {
     case 'split': {
       if (item.kind !== 'tab') return false
       const split = data.items[container.id]
-      return split?.kind === 'split' && split.children.length < MAX_SPLIT
+      return (
+        split?.kind === 'split' &&
+        (split.children.length < MAX_SPLIT || split.children.includes(item.id))
+      )
     }
     case 'folder':
       return !isAncestor(data, item.id, container.id)
