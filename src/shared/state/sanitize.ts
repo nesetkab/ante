@@ -23,17 +23,21 @@ export function sanitize(input: Data, fallbackSpaceId: Id): Data {
       claimed.add(id)
       return true
     })
-  const claimChildren = (list: Id[]): void => {
-    for (const id of list) {
+  const claimChildren = (list: Id[]): Id[] =>
+    list.flatMap((id) => {
       const item = data.items[id]
-      if (!item || item.kind === 'tab') continue
-      item.children = keep(item.children)
-      if (item.kind === 'split' && item.sizes.length !== item.children.length) {
+      if (!item || item.kind === 'tab') return [id]
+      item.children = claimChildren(keep(item.children))
+      if (item.kind === 'folder') return [id]
+      if (item.children.length < 2) {
+        claimed.delete(id)
+        return item.children
+      }
+      if (item.sizes.length !== item.children.length) {
         item.sizes = item.children.map(() => 1 / item.children.length)
       }
-      claimChildren(item.children)
-    }
-  }
+      return [id]
+    })
   for (const space of Object.values(data.spaces)) {
     space.pinned = keep(space.pinned)
     space.today = keep(space.today)
@@ -42,10 +46,12 @@ export function sanitize(input: Data, fallbackSpaceId: Id): Data {
     data.favorites[profileId] = keep(data.favorites[profileId] ?? [])
   }
   for (const space of Object.values(data.spaces)) {
-    claimChildren(space.pinned)
-    claimChildren(space.today)
+    space.pinned = claimChildren(space.pinned)
+    space.today = claimChildren(space.today)
   }
-  for (const list of Object.values(data.favorites)) claimChildren(list)
+  for (const [profileId, list] of Object.entries(data.favorites)) {
+    data.favorites[profileId] = claimChildren(list)
+  }
 
   for (const id of Object.keys(data.items)) {
     if (!claimed.has(id)) Reflect.deleteProperty(data.items, id)
