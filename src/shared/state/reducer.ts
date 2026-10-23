@@ -62,15 +62,22 @@ function isAncestor(data: Data, ancestorId: Id, id: Id): boolean {
   return descendantIds(data, ancestorId).includes(id)
 }
 
-function canPlace(data: Data, item: Item, container: Container): boolean {
-  if (!getList(data, container)) return false
+function hasList(data: Data, container: Container): boolean {
+  return container.type === 'favorites'
+    ? data.profiles[container.profileId] !== undefined
+    : getList(data, container) !== null
+}
+
+export function canPlace(data: Data, item: Item, container: Container): boolean {
+  if (!hasList(data, container)) return false
   switch (container.type) {
     case 'favorites':
       return item.kind === 'tab'
     case 'split': {
       if (item.kind !== 'tab') return false
       const split = data.items[container.id]
-      return split?.kind === 'split' && split.children.length < MAX_SPLIT
+      if (split?.kind !== 'split') return false
+      return split.children.includes(item.id) || split.children.length < MAX_SPLIT
     }
     case 'folder':
       return !isAncestor(data, item.id, container.id)
@@ -82,6 +89,8 @@ function canPlace(data: Data, item: Item, container: Container): boolean {
 }
 
 function insert(data: Data, container: Container, index: number, id: Id): boolean {
+  if (container.type === 'favorites' && data.profiles[container.profileId])
+    data.favorites[container.profileId] ??= []
   const list = getList(data, container)
   if (!list) return false
   list.splice(clamp(index, 0, list.length), 0, id)
@@ -156,6 +165,33 @@ function move(state: AppState, id: Id, to: Container, index: number): boolean {
   if (!insert(data, to, index, id)) return false
   applySection(data, id, sectionOfContainer(data, to))
   return true
+}
+
+function unloadTabs(state: AppState, ids: readonly Id[]): void {
+  for (const tabId of flattenTabs(state.data, ids))
+    Reflect.deleteProperty(state.runtime.tabs, tabId)
+}
+
+function moveItem(state: AppState, id: Id, to: Container, index: number): void {
+  const { data } = state
+  const moved = new Set(descendantIds(data, id))
+  const profileBefore = rootOf(data, id)?.profileId ?? null
+  const fallbacks = Object.values(data.windows).flatMap((window) =>
+    Object.entries(window.activeBySpace)
+      .filter((entry): entry is [Id, Id] => entry[1] !== null && moved.has(entry[1]))
+      .map(([spaceId, activeId]) => ({
+        window,
+        spaceId,
+        activeId,
+        next: neighborAfterRemoval(data, spaceId, activeId, moved),
+      })),
+  )
+  if (!move(state, id, to, index)) return
+  for (const { window, spaceId, activeId, next } of fallbacks) {
+    if (!spaceTabOrder(data, spaceId).includes(activeId)) window.activeBySpace[spaceId] = next
+  }
+  const profileAfter = rootOf(data, id)?.profileId ?? null
+  if (profileBefore && profileAfter && profileBefore !== profileAfter) unloadTabs(state, [id])
 }
 
 function topLevelId(data: Data, id: Id): Id {
@@ -261,7 +297,10 @@ export function reduce(state: AppState, action: Action): void {
       const space = data.spaces[action.id]
       if (!space) return
       if (action.patch.profileId && !data.profiles[action.patch.profileId]) return
+      const profileChanged =
+        action.patch.profileId !== undefined && action.patch.profileId !== space.profileId
       Object.assign(space, action.patch)
+      if (profileChanged) unloadTabs(state, [...space.pinned, ...space.today])
       return
     }
     case 'space/delete': {
@@ -286,7 +325,7 @@ export function reduce(state: AppState, action: Action): void {
     }
 
     case 'item/move':
-      move(state, action.id, action.to, action.index)
+      moveItem(state, action.id, action.to, action.index)
       return
 
     case 'tab/create': {
@@ -562,6 +601,13 @@ export function reduce(state: AppState, action: Action): void {
       const existing = runtime.windows[action.id]
       if (existing) Object.assign(existing, action.patch)
       else runtime.windows[action.id] = { ...defaultWindowRuntime, ...action.patch }
+      return
+    }
+
+    case 'profile/create': {
+      if (data.profiles[action.id]) return
+      data.profiles[action.id] = { id: action.id, name: action.name.trim() || 'Profile' }
+      data.favorites[action.id] ??= []
       return
     }
   }
