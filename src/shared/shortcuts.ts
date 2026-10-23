@@ -260,5 +260,11 @@ export function shortcuts(platform: Platform): Shortcut[] {
       command: { type: 'space/nth' as const, index: n - 1 },
       hidden: true,
     })),
+    {
+      id: 'import-arc',
+      label: 'Import from Arc',
+      section: 'file',
+      command: { type: 'import/arc' },
+    },
   ]
 }

@@ -4,9 +4,11 @@ import { visibleTabIds } from '@shared/state/tree'
 import { ante, modKey } from '../ante'
 import { useViewportSize } from '../hooks'
 import { useAppState, useWindowData } from '../store'
+import { ArcImportPrompt } from './ArcImportPrompt'
 import styles from './ChromeSurface.module.css'
 import { LittleToolbar } from './LittleToolbar'
 import { Sidebar } from './Sidebar'
+import { Toasts } from './Toasts'
 
 function SidebarResizer({ side }: { side: 'left' | 'right' }) {
   const start = useRef<{ x: number; width: number } | null>(null)
@@ -130,6 +132,7 @@ function ContentFrames() {
         className={styles.empty}
         style={{ left: content.x, top: content.y, width: content.width, height: content.height }}
       >
+        <ArcImportPrompt />
         <button
           type="button"
           className={styles.emptyAction}
@@ -193,6 +196,7 @@ export function ChromeSurface() {
       <div className={styles.dragRegion} />
       <ContentFrames />
       <SplitHandles />
+      <Toasts />
     </div>
   )
 }

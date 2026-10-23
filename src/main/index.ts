@@ -9,6 +9,7 @@ import { rootOf } from '@shared/state/tree'
 import { startArchiveSweeper } from './archive'
 import { runAutomation } from './automation'
 import { CommandRunner } from './commands'
+import { detectArcImport } from './importers/arc'
 import { showContextMenu } from './contextMenu'
 import { broadcastPatches, registerIpc } from './ipc'
 import { buildAppMenu } from './menu'
@@ -33,6 +34,7 @@ async function start(): Promise<void> {
   const loaded = persistence.load()
   const data = loaded ? sanitize(loaded, fallbackSpaceId) : createInitialData(fallbackSpaceId)
   const store = new Store(createAppState(data))
+  detectArcImport(store)
   const sessions = new Sessions()
   const surfaces = new SurfaceRegistry()
   let quitting = false

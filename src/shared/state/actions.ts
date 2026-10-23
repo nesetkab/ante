@@ -13,6 +13,7 @@ import {
   type WindowData,
   type WindowRuntime,
 } from '../schema'
+import type { ImportBundle } from '../importers/bundle'
 
 const indexSchema = z.number().int().nonnegative()
 
@@ -86,5 +87,7 @@ export type InternalAction =
   | { type: 'runtime/tab'; id: Id; patch: Partial<TabRuntime> }
   | { type: 'runtime/unload'; id: Id }
   | { type: 'runtime/window'; id: Id; patch: Partial<WindowRuntime> }
+  | { type: 'data/import'; bundle: ImportBundle }
+  | { type: 'runtime/arcImport'; available: boolean }
 
 export type Action = UiAction | InternalAction

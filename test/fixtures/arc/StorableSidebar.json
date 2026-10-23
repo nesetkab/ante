@@ -1,0 +1,577 @@
+{
+  "sidebar": {
+    "containers": [
+      {
+        "global": {}
+      },
+      {
+        "spaces": [
+          "space-home",
+          {
+            "id": "space-home",
+            "title": "Home",
+            "profile": {
+              "default": true
+            },
+            "containerIDs": ["unpinned", "home-unpinned", "pinned", "home-pinned"],
+            "customInfo": {
+              "iconType": {
+                "emoji_v2": "🏠"
+              },
+              "windowTheme": {
+                "primaryColorPalette": {
+                  "midTone": {
+                    "red": 0.2,
+                    "green": 0.4,
+                    "blue": 0.8,
+                    "alpha": 1,
+                    "colorSpace": "extendedSRGB"
+                  },
+                  "shaded": {
+                    "red": 0,
+                    "green": 0,
+                    "blue": 0,
+                    "alpha": 1,
+                    "colorSpace": "extendedSRGB"
+                  }
+                }
+              }
+            }
+          },
+          "space-work",
+          {
+            "id": "space-work",
+            "title": "Work",
+            "profile": {
+              "custom": {
+                "_0": {
+                  "directoryBasename": "Profile 1",
+                  "machineID": "machine"
+                }
+              }
+            },
+            "containerIDs": [],
+            "newContainerIDs": [
+              {
+                "pinned": {}
+              },
+              "work-pinned",
+              {
+                "unpinned": {
+                  "_0": {
+                    "shared": {}
+                  }
+                }
+              },
+              "work-unpinned"
+            ],
+            "customInfo": {
+              "iconType": {
+                "icon": "briefcase"
+              }
+            }
+          },
+          "space-reading",
+          {
+            "id": "space-reading",
+            "title": "Reading",
+            "profile": {
+              "default": true
+            },
+            "containerIDs": ["pinned", "reading-pinned"],
+            "customInfo": {
+              "iconType": {
+                "emoji": "📚"
+              },
+              "windowTheme": {
+                "primaryColorPalette": {
+                  "midTone": {
+                    "red": 1.2,
+                    "green": -0.1,
+                    "blue": 0.5,
+                    "alpha": 1,
+                    "colorSpace": "extendedSRGB"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "items": [
+          "fav-default",
+          {
+            "id": "fav-default",
+            "parentID": null,
+            "childrenIds": ["fav-1", "fav-2", "fav-dup"],
+            "title": null,
+            "data": {
+              "itemContainer": {
+                "containerType": {
+                  "topApps": {
+                    "_0": {
+                      "default": true
+                    }
+                  }
+                }
+              }
+            },
+            "createdAt": 700000000.0,
+            "isUnread": false,
+            "originatingDevice": "device"
+          },
+          "fav-1",
+          {
+            "id": "fav-1",
+            "parentID": "fav-default",
+            "childrenIds": [],
+            "title": null,
+            "data": {
+              "tab": {
+                "savedURL": "https://mail.example.com/",
+                "savedTitle": "Mail",
+                "timeLastActiveAt": 780000000.5
+              }
+            },
+            "createdAt": 700000000.0,
+            "isUnread": false,
+            "originatingDevice": "device"
+          },
+          "fav-2",
+          {
+            "id": "fav-2",
+            "parentID": "fav-default",
+            "childrenIds": [],
+            "title": null,
+            "data": {
+              "tab": {
+                "savedURL": "https://calendar.example.com/",
+                "savedTitle": "Calendar",
+                "timeLastActiveAt": 780000000.5
+              }
+            },
+            "createdAt": 700000000.0,
+            "isUnread": false,
+            "originatingDevice": "device"
+          },
+          "fav-dup",
+          {
+            "id": "fav-dup",
+            "parentID": "fav-default",
+            "childrenIds": [],
+            "title": null,
+            "data": {
+              "tab": {
+                "savedURL": "https://mail.example.com/",
+                "savedTitle": "Mail again",
+                "timeLastActiveAt": 780000000.5
+              }
+            },
+            "createdAt": 700000000.0,
+            "isUnread": false,
+            "originatingDevice": "device"
+          },
+          "fav-work",
+          {
+            "id": "fav-work",
+            "parentID": null,
+            "childrenIds": ["fav-work-1"],
+            "title": null,
+            "data": {
+              "itemContainer": {
+                "containerType": {
+                  "topApps": {
+                    "_0": {
+                      "custom": {
+                        "_0": {
+                          "directoryBasename": "Profile 1",
+                          "machineID": "machine"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "createdAt": 700000000.0,
+            "isUnread": false,
+            "originatingDevice": "device"
+          },
+          "fav-work-1",
+          {
+            "id": "fav-work-1",
+            "parentID": "fav-work",
+            "childrenIds": [],
+            "title": null,
+            "data": {
+              "tab": {
+                "savedURL": "https://tracker.example.com/",
+                "savedTitle": "Tracker",
+                "timeLastActiveAt": 780000000.5
+              }
+            },
+            "createdAt": 700000000.0,
+            "isUnread": false,
+            "originatingDevice": "device"
+          },
+          "home-pinned",
+          {
+            "id": "home-pinned",
+            "parentID": null,
+            "childrenIds": ["pin-1", "folder-a", "easel-1", "pin-arc"],
+            "title": null,
+            "data": {
+              "itemContainer": {
+                "containerType": {
+                  "spaceItems": {
+                    "_0": "space-home"
+                  }
+                }
+              }
+            },
+            "createdAt": 700000000.0,
+            "isUnread": false,
+            "originatingDevice": "device"
+          },
+          "pin-1",
+          {
+            "id": "pin-1",
+            "parentID": "home-pinned",
+            "childrenIds": [],
+            "title": "My News",
+            "data": {
+              "tab": {
+                "savedURL": "https://news.example.com/",
+                "savedTitle": "News",
+                "timeLastActiveAt": 780000000.5
+              }
+            },
+            "createdAt": 700000000.0,
+            "isUnread": false,
+            "originatingDevice": "device"
+          },
+          "folder-a",
+          {
+            "id": "folder-a",
+            "parentID": "home-pinned",
+            "childrenIds": ["folder-b", "pin-2"],
+            "title": "Projects",
+            "data": {
+              "list": {}
+            },
+            "createdAt": 700000000.0,
+            "isUnread": false,
+            "originatingDevice": "device"
+          },
+          "folder-b",
+          {
+            "id": "folder-b",
+            "parentID": "folder-a",
+            "childrenIds": ["pin-3"],
+            "title": "Archive",
+            "data": {
+              "list": {
+                "customInfo": {
+                  "iconType": {
+                    "icon": "folder"
+                  }
+                }
+              }
+            },
+            "createdAt": 700000000.0,
+            "isUnread": false,
+            "originatingDevice": "device"
+          },
+          "pin-2",
+          {
+            "id": "pin-2",
+            "parentID": "folder-a",
+            "childrenIds": [],
+            "title": null,
+            "data": {
+              "tab": {
+                "savedURL": "https://docs.example.com/",
+                "savedTitle": "Docs",
+                "timeLastActiveAt": 780000000.5
+              }
+            },
+            "createdAt": 700000000.0,
+            "isUnread": false,
+            "originatingDevice": "device"
+          },
+          "pin-3",
+          {
+            "id": "pin-3",
+            "parentID": "folder-b",
+            "childrenIds": [],
+            "title": null,
+            "data": {
+              "tab": {
+                "savedURL": "https://old.example.com/",
+                "savedTitle": "Old",
+                "timeLastActiveAt": 780000000.5
+              }
+            },
+            "createdAt": 700000000.0,
+            "isUnread": false,
+            "originatingDevice": "device"
+          },
+          "easel-1",
+          {
+            "id": "easel-1",
+            "parentID": "home-pinned",
+            "childrenIds": [],
+            "title": "Board",
+            "data": {
+              "easel": {
+                "title": "Board",
+                "easelID": "e",
+                "shareStatus": "private"
+              }
+            },
+            "createdAt": 700000000.0,
+            "isUnread": false,
+            "originatingDevice": "device"
+          },
+          "pin-arc",
+          {
+            "id": "pin-arc",
+            "parentID": "home-pinned",
+            "childrenIds": [],
+            "title": null,
+            "data": {
+              "tab": {
+                "savedURL": "arc://boosts",
+                "savedTitle": "Boosts",
+                "timeLastActiveAt": 780000000.5
+              }
+            },
+            "createdAt": 700000000.0,
+            "isUnread": false,
+            "originatingDevice": "device"
+          },
+          "home-unpinned",
+          {
+            "id": "home-unpinned",
+            "parentID": null,
+            "childrenIds": ["today-1", "split-1"],
+            "title": null,
+            "data": {
+              "itemContainer": {
+                "containerType": {
+                  "spaceItems": {
+                    "_0": "space-home"
+                  }
+                }
+              }
+            },
+            "createdAt": 700000000.0,
+            "isUnread": false,
+            "originatingDevice": "device"
+          },
+          "today-1",
+          {
+            "id": "today-1",
+            "parentID": "home-unpinned",
+            "childrenIds": [],
+            "title": null,
+            "data": {
+              "tab": {
+                "savedURL": "https://search.example.com/?q=ante",
+                "savedTitle": "Search",
+                "timeLastActiveAt": 780000000.5
+              }
+            },
+            "createdAt": 700000000.0,
+            "isUnread": false,
+            "originatingDevice": "device"
+          },
+          "split-1",
+          {
+            "id": "split-1",
+            "parentID": "home-unpinned",
+            "childrenIds": ["split-a", "split-b"],
+            "title": null,
+            "data": {
+              "splitView": {
+                "layoutOrientation": "horizontal"
+              }
+            },
+            "createdAt": 700000000.0,
+            "isUnread": false,
+            "originatingDevice": "device"
+          },
+          "split-a",
+          {
+            "id": "split-a",
+            "parentID": "split-1",
+            "childrenIds": [],
+            "title": null,
+            "data": {
+              "tab": {
+                "savedURL": "https://left.example.com/",
+                "savedTitle": "Left",
+                "timeLastActiveAt": 780000000.5
+              }
+            },
+            "createdAt": 700000000.0,
+            "isUnread": false,
+            "originatingDevice": "device"
+          },
+          "split-b",
+          {
+            "id": "split-b",
+            "parentID": "split-1",
+            "childrenIds": [],
+            "title": null,
+            "data": {
+              "tab": {
+                "savedURL": "https://right.example.com/",
+                "savedTitle": "Right",
+                "timeLastActiveAt": 780000000.5
+              }
+            },
+            "createdAt": 700000000.0,
+            "isUnread": false,
+            "originatingDevice": "device"
+          },
+          "today-2",
+          {
+            "id": "today-2",
+            "parentID": "home-unpinned",
+            "childrenIds": [],
+            "title": null,
+            "data": {
+              "tab": {
+                "savedURL": "https://orphan.example.com/",
+                "savedTitle": "Orphan",
+                "timeLastActiveAt": 780000000.5
+              }
+            },
+            "createdAt": 700000000.0,
+            "isUnread": false,
+            "originatingDevice": "device"
+          },
+          "work-pinned",
+          {
+            "id": "work-pinned",
+            "parentID": null,
+            "childrenIds": ["work-1", "missing-item"],
+            "title": null,
+            "data": {
+              "itemContainer": {
+                "containerType": {
+                  "spaceItems": {
+                    "_0": "space-work"
+                  }
+                }
+              }
+            },
+            "createdAt": 700000000.0,
+            "isUnread": false,
+            "originatingDevice": "device"
+          },
+          "work-1",
+          {
+            "id": "work-1",
+            "parentID": "work-pinned",
+            "childrenIds": [],
+            "title": null,
+            "data": {
+              "tab": {
+                "savedURL": "https://wiki.example.com/",
+                "savedTitle": "Wiki",
+                "timeLastActiveAt": 780000000.5
+              }
+            },
+            "createdAt": 700000000.0,
+            "isUnread": false,
+            "originatingDevice": "device"
+          },
+          "work-unpinned",
+          {
+            "id": "work-unpinned",
+            "parentID": null,
+            "childrenIds": [],
+            "title": null,
+            "data": {
+              "itemContainer": {
+                "containerType": {
+                  "spaceItems": {
+                    "_0": "space-work"
+                  }
+                }
+              }
+            },
+            "createdAt": 700000000.0,
+            "isUnread": false,
+            "originatingDevice": "device"
+          },
+          "reading-pinned",
+          {
+            "id": "reading-pinned",
+            "parentID": null,
+            "childrenIds": ["reading-1"],
+            "title": null,
+            "data": {
+              "itemContainer": {
+                "containerType": {
+                  "spaceItems": {
+                    "_0": "space-reading"
+                  }
+                }
+              }
+            },
+            "createdAt": 700000000.0,
+            "isUnread": false,
+            "originatingDevice": "device"
+          },
+          "reading-1",
+          {
+            "id": "reading-1",
+            "parentID": "reading-pinned",
+            "childrenIds": [],
+            "title": null,
+            "data": {
+              "tab": {
+                "savedURL": "https://books.example.com/",
+                "savedTitle": "Books",
+                "timeLastActiveAt": 780000000.5
+              }
+            },
+            "createdAt": 700000000.0,
+            "isUnread": false,
+            "originatingDevice": "device"
+          },
+          "broken",
+          {
+            "id": 5,
+            "data": "nope"
+          },
+          "broken-2",
+          {
+            "data": {
+              "tab": {}
+            }
+          }
+        ],
+        "topAppsContainerIDs": [
+          {
+            "default": true
+          },
+          "fav-default",
+          {
+            "custom": {
+              "_0": {
+                "directoryBasename": "Profile 1",
+                "machineID": "machine"
+              }
+            }
+          },
+          "fav-work"
+        ]
+      }
+    ]
+  },
+  "version": 1,
+  "firebaseSyncState": {}
+}

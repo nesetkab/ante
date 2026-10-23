@@ -1,0 +1,48 @@
+.prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 360px;
+  text-align: center;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 14px;
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--fg) 6%, transparent);
+  color: var(--fg-muted);
+}
+
+.title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.body {
+  margin: 6px 0 18px;
+  color: var(--fg-muted);
+}
+
+.button {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: #fff;
+  font-weight: 500;
+  transition: background-color 120ms ease;
+}
+
+.button:hover {
+  background: color-mix(in oklab, var(--accent) 88%, black);
+}
+
+.button:active {
+  background: color-mix(in oklab, var(--accent) 80%, black);
+}

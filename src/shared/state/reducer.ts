@@ -10,6 +10,7 @@ import type {
   WindowData,
   WindowRuntime,
 } from '../schema'
+import { applyImport } from '../importers/bundle'
 import type { Action } from './actions'
 import {
   descendantIds,
@@ -594,5 +595,12 @@ export function reduce(state: AppState, action: Action): void {
       else runtime.windows[action.id] = { ...defaultWindowRuntime, ...action.patch }
       return
     }
+
+    case 'data/import':
+      applyImport(data, action.bundle)
+      return
+    case 'runtime/arcImport':
+      runtime.arcImportAvailable = action.available
+      return
   }
 }

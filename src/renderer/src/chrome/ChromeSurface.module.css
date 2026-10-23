@@ -44,6 +44,8 @@
   position: absolute;
   display: grid;
   place-items: center;
+  align-content: center;
+  gap: 28px;
   border-radius: 8px;
   background: color-mix(in oklab, var(--panel) 55%, transparent);
   box-shadow: var(--content-shadow);
