@@ -1,7 +1,15 @@
-import { ArrowRight, Command as CommandIcon, Globe, Layers, Search } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { ArrowRight, Command as CommandIcon, Globe, History, Layers, Search } from 'lucide-react'
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react'
 import type { Command, Disposition } from '@shared/commands'
-import { rank } from '@shared/fuzzy'
+import { fuzzyMatch, rank } from '@shared/fuzzy'
 import type { AppState, Id } from '@shared/schema'
 import { shortcuts, type Platform } from '@shared/shortcuts'
 import { activeTabId, displayTitle, getTab, spaceTabOrder } from '@shared/state/tree'
@@ -10,8 +18,10 @@ import { ante } from '../ante'
 import { Favicon } from '../components/Favicon'
 import { useAppState, useWindowData } from '../store'
 import styles from './CommandBar.module.css'
+import { extendsInput, useHistorySearch, useSuggestions } from './useOmnibox'
 
-const MAX_RESULTS = 8
+const MAX_RESULTS = 10
+const STRONG_ACTION_SCORE = 1000
 
 interface Entry {
   key: string
@@ -19,6 +29,7 @@ interface Entry {
   title: string
   detail?: string
   hint?: string
+  navigates?: boolean
   run(disposition: Disposition): void
 }
 
@@ -46,39 +57,86 @@ function collectTabs(state: AppState, spaceId: Id): Id[] {
   return [...new Set([...own, ...others])]
 }
 
+const openEntry = (input: string) => (disposition: Disposition) =>
+  ante.command({ type: 'open', input, disposition })
+
 export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
   const window = useWindowData()
   const state = useAppState((current) => current)
   const activeId = window ? activeTabId(state.data, window) : null
   const initial = mode === 'edit' ? (getTab(state.data, activeId)?.url ?? '') : ''
-  const [query, setQuery] = useState(initial)
-  const [selected, setSelected] = useState(0)
+  const [typed, setTyped] = useState(initial)
+  const [autocomplete, setAutocomplete] = useState(true)
+  const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const fallback: Disposition = mode === 'edit' ? 'current' : 'newTab'
   const engine = state.data.settings.searchEngine
+  const history = useHistorySearch(typed)
+  const suggestions = useSuggestions(typed, typed !== initial && !/^[a-z][a-z0-9+.-]*:/i.test(typed))
+  const completion =
+    autocomplete && extendsInput(history.completion, typed)
+      ? typed + history.completion.slice(typed.length)
+      : null
+  const value = completion ?? typed
 
   useEffect(() => {
     inputRef.current?.focus()
     inputRef.current?.select()
   }, [])
 
+  useLayoutEffect(() => {
+    if (completion) inputRef.current?.setSelectionRange(typed.length, completion.length)
+  }, [completion, typed])
+
   const entries = useMemo<Entry[]>(() => {
     if (!window) return []
-    const text = query.trim()
+    const text = typed.trim()
+    const target = (completion ?? typed).trim()
     const run = (command: Command) => () => ante.command(command)
+    const searchFor = (query: string) => openEntry(searchUrls[engine] + encodeURIComponent(query))
     const result: Entry[] = []
 
-    if (text) {
-      const resolved = resolveInput(text, engine)
-      const isSearch = resolved.startsWith(searchUrls[engine])
+    if (target) {
+      const resolved = resolveInput(target, engine)
+      const searching = resolved.startsWith(searchUrls[engine])
       result.push({
         key: 'go',
-        icon: isSearch ? <Search size={16} /> : <Globe size={16} />,
-        title: isSearch ? text : displayUrl(resolved),
-        detail: isSearch ? `Search ${engineNames[engine]}` : 'Open',
-        run: (disposition) => ante.command({ type: 'open', input: text, disposition }),
+        icon: searching ? <Search size={16} /> : <Globe size={16} />,
+        title: searching ? target : displayUrl(resolved),
+        detail: searching ? `Search ${engineNames[engine]}` : 'Open',
+        navigates: true,
+        run: openEntry(target),
       })
     }
+    if (completion && text) {
+      result.push({
+        key: 'search',
+        icon: <Search size={16} />,
+        title: text,
+        detail: `Search ${engineNames[engine]}`,
+        navigates: true,
+        run: searchFor(text),
+      })
+    }
+
+    const actions = text
+      ? rank(
+          text,
+          shortcuts(ante.platform as Platform).filter((shortcut) => !shortcut.hidden),
+          (shortcut) => [shortcut.label],
+        )
+      : []
+    const actionEntry = (action: (typeof actions)[number]): Entry => ({
+      key: `action:${action.id}`,
+      icon: <CommandIcon size={16} />,
+      title: action.label,
+      hint: 'Action',
+      run: run(action.command),
+    })
+    const strong = actions
+      .filter((action) => (fuzzyMatch(text, action.label)?.score ?? 0) >= STRONG_ACTION_SCORE)
+      .slice(0, 2)
+    result.push(...strong.map(actionEntry))
 
     const tabIds = collectTabs(state, window.spaceId).filter(
       (id) => id !== activeId || mode === 'new',
@@ -87,22 +145,50 @@ export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
     const matchedTabs = text
       ? rank(text, tabs, (tab) => [displayTitle(tab), tab.url])
       : [...tabs].sort((a, b) => b.lastActiveAt - a.lastActiveAt)
-    for (const tab of matchedTabs.slice(0, text ? 5 : 6)) {
+    for (const tab of matchedTabs.slice(0, text ? 3 : 6)) {
       result.push({
         key: `tab:${tab.id}`,
         icon: <Favicon src={tab.favicon} size={16} />,
         title: displayTitle(tab) || displayUrl(tab.url),
         detail: displayUrl(tab.url),
         hint: 'Switch to Tab',
+        navigates: true,
         run: run({ type: 'tab/activate', tabId: tab.id }),
       })
     }
 
     if (text) {
+      const shown = new Set(tabs.map((tab) => tab.url))
+      if (completion) shown.add(resolveInput(completion, engine))
+      const visits = history.entries.filter((entry) => !shown.has(entry.url)).slice(0, 4)
+      for (const entry of visits) {
+        result.push({
+          key: `history:${entry.id}`,
+          icon: entry.favicon ? <Favicon src={entry.favicon} size={16} /> : <History size={16} />,
+          title: entry.title || displayUrl(entry.url),
+          detail: displayUrl(entry.url),
+          navigates: true,
+          run: openEntry(entry.url),
+        })
+      }
+
+      const typedLower = text.toLowerCase()
+      for (const suggestion of suggestions
+        .filter((item) => item.toLowerCase() !== typedLower)
+        .slice(0, 3)) {
+        result.push({
+          key: `suggest:${suggestion}`,
+          icon: <Search size={16} />,
+          title: suggestion,
+          navigates: true,
+          run: searchFor(suggestion),
+        })
+      }
+
       const spaces = state.data.spaceOrder
         .map((id) => state.data.spaces[id])
         .filter((space) => space !== undefined)
-      for (const space of rank(text, spaces, (space) => [space.name]).slice(0, 2)) {
+      for (const space of rank(text, spaces, (space) => [space.name]).slice(0, 1)) {
         result.push({
           key: `space:${space.id}`,
           icon: <Layers size={16} />,
@@ -111,38 +197,48 @@ export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
           run: run({ type: 'space/select', spaceId: space.id }),
         })
       }
-      const actions = shortcuts(ante.platform as Platform).filter((shortcut) => !shortcut.hidden)
-      for (const action of rank(text, actions, (shortcut) => [shortcut.label]).slice(0, 4)) {
-        result.push({
-          key: `action:${action.id}`,
-          icon: <CommandIcon size={16} />,
-          title: action.label,
-          hint: 'Action',
-          run: run(action.command),
-        })
-      }
+      const weak = actions.filter((action) => !strong.includes(action)).slice(0, 2)
+      result.push(...weak.map(actionEntry))
     }
     return result.slice(0, MAX_RESULTS)
-  }, [query, state, window, activeId, mode, engine])
+  }, [typed, completion, history, suggestions, state, window, activeId, mode, engine])
 
-  const current = Math.min(selected, Math.max(entries.length - 1, 0))
+  const selectedIndex = entries.findIndex((entry) => entry.key === selectedKey)
+  const current = selectedIndex >= 0 ? selectedIndex : 0
+
+  const select = (index: number) => {
+    const count = Math.max(entries.length, 1)
+    setSelectedKey(entries[(index + count) % count]?.key ?? null)
+  }
 
   const execute = (entry: Entry | undefined, disposition: Disposition) => {
     if (!entry) return
     entry.run(disposition)
-    if (!entry.key.startsWith('go') && !entry.key.startsWith('tab:'))
-      ante.command({ type: 'overlay/close' })
+    if (!entry.navigates) ante.command({ type: 'overlay/close' })
+  }
+
+  const acceptCompletion = () => {
+    if (!completion) return false
+    setTyped(completion)
+    return true
   }
 
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     switch (event.key) {
       case 'ArrowDown':
         event.preventDefault()
-        setSelected((current + 1) % Math.max(entries.length, 1))
+        select(current + 1)
         return
       case 'ArrowUp':
         event.preventDefault()
-        setSelected((current - 1 + entries.length) % Math.max(entries.length, 1))
+        select(current - 1)
+        return
+      case 'ArrowRight':
+      case 'End':
+        acceptCompletion()
+        return
+      case 'Tab':
+        if (acceptCompletion()) event.preventDefault()
         return
       case 'Enter':
         event.preventDefault()
@@ -163,13 +259,17 @@ export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
           <input
             ref={inputRef}
             className={styles.input}
-            value={query}
+            value={value}
             placeholder="Search or enter address"
             spellCheck={false}
             autoComplete="off"
             onChange={(event) => {
-              setQuery(event.target.value)
-              setSelected(0)
+              const next = event.target.value
+              const inputType = (event.nativeEvent as InputEvent).inputType
+              const atEnd = event.target.selectionStart === next.length
+              setAutocomplete(atEnd && !inputType.startsWith('delete'))
+              setTyped(next)
+              setSelectedKey(null)
             }}
             onKeyDown={onKeyDown}
           />
@@ -184,7 +284,7 @@ export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
                 className={[styles.result, index === current && styles.selected]
                   .filter(Boolean)
                   .join(' ')}
-                onMouseMove={() => setSelected(index)}
+                onMouseMove={() => setSelectedKey(entry.key)}
                 onMouseDown={(event) => {
                   event.preventDefault()
                   execute(entry, fallback)

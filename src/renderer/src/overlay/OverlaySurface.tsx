@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { ante } from '../ante'
 import { Sidebar } from '../chrome/Sidebar'
+import { LibraryPanel } from '../library/LibraryPanel'
 import { useWindowData, useWindowRuntime } from '../store'
 import { CommandBar } from './CommandBar'
 import styles from './OverlaySurface.module.css'
@@ -36,6 +37,9 @@ export function OverlaySurface() {
     <div className={styles.surface}>
       {window?.peekTabId && <PeekFrame />}
       {overlay?.kind === 'commandBar' && <CommandBar key={overlay.mode} mode={overlay.mode} />}
+      {overlay?.kind === 'library' && (
+        <LibraryPanel key={overlay.section} section={overlay.section} />
+      )}
     </div>
   )
 }

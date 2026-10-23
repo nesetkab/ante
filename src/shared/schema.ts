@@ -187,6 +187,7 @@ export interface DownloadRuntime {
   receivedBytes: number
   totalBytes: number
   startedAt: number
+  finishedAt: number | null
   profileId: Id
 }
 

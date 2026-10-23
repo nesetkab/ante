@@ -56,6 +56,7 @@ export class DownloadManager {
         receivedBytes: item.getReceivedBytes(),
         totalBytes: item.getTotalBytes(),
         startedAt: Date.now(),
+        finishedAt: null,
         profileId,
       },
     })
@@ -73,18 +74,19 @@ export class DownloadManager {
     })
     item.once('done', (_event, state) => {
       this.#reserved.delete(path)
-      this.#update(id, item, state)
+      this.#update(id, item, state, Date.now())
       if (state === 'completed' && process.platform === 'darwin') app.dock?.downloadFinished(path)
     })
   }
 
-  #update(id: Id, item: DownloadItem, state: DownloadState): void {
+  #update(id: Id, item: DownloadItem, state: DownloadState, finishedAt: number | null = null) {
     if (!this.#download(id)) return
     this.#store.dispatch({
       type: 'download/update',
       id,
       patch: {
         state,
+        finishedAt,
         receivedBytes: item.getReceivedBytes(),
         totalBytes: item.getTotalBytes(),
       },

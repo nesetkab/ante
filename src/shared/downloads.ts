@@ -1,14 +1,10 @@
 import type { DownloadRuntime } from './schema'
 
 const MAX_ATTEMPTS = 10_000
-const UNSAFE_CHARACTERS = new Set('/\\:*?"<>|')
+const UNSAFE_CHARACTERS = /[/\\:*?"<>|\p{Cc}]/gu
 
 export function safeFileName(name: string): string {
-  const cleaned = [...name]
-    .map((char) => (UNSAFE_CHARACTERS.has(char) || char.charCodeAt(0) < 32 ? '_' : char))
-    .join('')
-    .replace(/^\.+/, '')
-    .trim()
+  const cleaned = name.replace(UNSAFE_CHARACTERS, '_').replace(/^\.+/, '').trim()
   return cleaned || 'download'
 }
 
