@@ -68,7 +68,7 @@ export class TabManager {
       return
     }
     contents.loadURL(url).catch((error: unknown) => {
-      if (!isAbort(error)) console.warn('[tabs] load failed', url, error)
+      if (!contents.isDestroyed() && !isAbort(error)) console.warn('[tabs] load failed', url, error)
     })
   }
 

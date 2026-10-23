@@ -30,10 +30,10 @@ export function isNavigable(url: string): boolean {
 export function resolveInput(input: string, engine: SearchEngine): string {
   const text = input.trim()
   if (!text) return 'about:blank'
+  if (SCHEME.test(text) && isNavigable(text) && !/^[a-z]+:\s/i.test(text)) return text
   if (/\s/.test(text)) return searchUrl(text, engine)
   if (LOCAL_HOST.test(text) || IPV4.test(text)) return `http://${text}`
   if (DOMAIN.test(text)) return `https://${text}`
-  if (SCHEME.test(text) && isNavigable(text)) return text
   return searchUrl(text, engine)
 }
 

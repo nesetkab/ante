@@ -7,6 +7,7 @@ import { createAppState, createInitialData, DEFAULT_PROFILE_ID } from '@shared/s
 import { sanitize } from '@shared/state/sanitize'
 import { rootOf } from '@shared/state/tree'
 import { startArchiveSweeper } from './archive'
+import { runAutomation } from './automation'
 import { CommandRunner } from './commands'
 import { showContextMenu } from './contextMenu'
 import { broadcastPatches, registerIpc } from './ipc'
@@ -81,6 +82,9 @@ async function start(): Promise<void> {
     runInFocused({ type: 'open', input: url, disposition: 'newTab' })
 
   startArchiveSweeper(store)
+
+  const automation = process.env.ANTE_AUTOMATION
+  if (automation) void runAutomation(automation, { store, tabs, windows, runner })
 
   app.on('second-instance', (_event, argv) => {
     const window = windows.focused()
