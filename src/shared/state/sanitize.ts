@@ -1,22 +1,6 @@
 import type { Data, Id } from '../schema'
 import { createInitialData, DEFAULT_PROFILE_ID } from './initial'
 
-function reachable(data: Data): Set<Id> {
-  const seen = new Set<Id>()
-  const visit = (id: Id): void => {
-    const item = data.items[id]
-    if (!item || seen.has(id)) return
-    seen.add(id)
-    if (item.kind !== 'tab') item.children.forEach(visit)
-  }
-  for (const space of Object.values(data.spaces)) {
-    space.pinned.forEach(visit)
-    space.today.forEach(visit)
-  }
-  for (const list of Object.values(data.favorites)) list.forEach(visit)
-  return seen
-}
-
 export function sanitize(input: Data, fallbackSpaceId: Id): Data {
   const data = structuredClone(input)
   if (Object.keys(data.spaces).length === 0) return createInitialData(fallbackSpaceId)
@@ -39,6 +23,21 @@ export function sanitize(input: Data, fallbackSpaceId: Id): Data {
       claimed.add(id)
       return true
     })
+  const claimChildren = (list: Id[]): Id[] =>
+    list.flatMap((id) => {
+      const item = data.items[id]
+      if (!item || item.kind === 'tab') return [id]
+      item.children = claimChildren(keep(item.children))
+      if (item.kind === 'folder') return [id]
+      if (item.children.length < 2) {
+        claimed.delete(id)
+        return item.children
+      }
+      if (item.sizes.length !== item.children.length) {
+        item.sizes = item.children.map(() => 1 / item.children.length)
+      }
+      return [id]
+    })
   for (const space of Object.values(data.spaces)) {
     space.pinned = keep(space.pinned)
     space.today = keep(space.today)
@@ -46,17 +45,16 @@ export function sanitize(input: Data, fallbackSpaceId: Id): Data {
   for (const profileId of Object.keys(data.favorites)) {
     data.favorites[profileId] = keep(data.favorites[profileId] ?? [])
   }
-  for (const item of Object.values(data.items)) {
-    if (item.kind === 'tab') continue
-    item.children = keep(item.children)
-    if (item.kind === 'split' && item.sizes.length !== item.children.length) {
-      item.sizes = item.children.map(() => 1 / item.children.length)
-    }
+  for (const space of Object.values(data.spaces)) {
+    space.pinned = claimChildren(space.pinned)
+    space.today = claimChildren(space.today)
+  }
+  for (const [profileId, list] of Object.entries(data.favorites)) {
+    data.favorites[profileId] = claimChildren(list)
   }
 
-  const live = reachable(data)
   for (const id of Object.keys(data.items)) {
-    if (!live.has(id)) Reflect.deleteProperty(data.items, id)
+    if (!claimed.has(id)) Reflect.deleteProperty(data.items, id)
   }
 
   const firstSpace = data.spaceOrder[0] ?? fallbackSpaceId
