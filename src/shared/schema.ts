@@ -131,6 +131,8 @@ export const settingsSchema = z.object({
   theme: themeModeSchema.default('system'),
   adblock: z.boolean().default(true),
   peekExternalLinks: z.boolean().default(true),
+  autoPip: z.boolean().default(true),
+  devtoolsWidth: z.number().min(280).max(1600).default(480),
 })
 export type Settings = z.infer<typeof settingsSchema>
 export const settingsPatchSchema = settingsSchema.partial()
@@ -160,7 +162,22 @@ export interface TabRuntime {
   zoom: number
   crashed: boolean
   fullscreen: boolean
+  media: TabMedia | null
+  devtools: DevtoolsMode | null
 }
+
+export interface TabMedia {
+  playing: boolean
+  controllable: boolean
+  video: boolean
+  pip: boolean
+  title: string | null
+  artist: string | null
+  artwork: string | null
+  startedAt: number
+}
+
+export type DevtoolsMode = 'docked' | 'window'
 
 export type Overlay = { kind: 'commandBar'; mode: 'new' | 'edit' } | { kind: 'sidebar' }
 

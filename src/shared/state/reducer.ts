@@ -36,6 +36,8 @@ export const defaultTabRuntime: TabRuntime = {
   zoom: 1,
   crashed: false,
   fullscreen: false,
+  media: null,
+  devtools: null,
 }
 
 export const defaultWindowRuntime: WindowRuntime = {
