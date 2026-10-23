@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { BrowserWindow, WebContentsView, screen, type View, type WebContents } from 'electron'
 import { computeLayout, type Layout } from '@shared/layout'
+import { popoverFor, popoverRect } from '@shared/popover'
 import type { Id, Rect, WindowData, WindowKind } from '@shared/schema'
 import { visibleTabIds } from '@shared/state/tree'
 import type { Store } from './store'
@@ -151,8 +152,11 @@ export class AppWindow {
     }
 
     const peekId = window.peekTabId && !claimed.has(window.peekTabId) ? window.peekTabId : null
-    const overlayVisible = overlayState !== null || peekId !== null
+    const popover = overlayState === null && !peekId ? popoverFor(data, runtime, window) : null
+    const popoverPane = popover && layout.panes.find((pane) => pane.tabId === popover.tabId)
+    const overlayVisible = overlayState !== null || peekId !== null || Boolean(popoverPane)
     let overlayBounds: Rect = { x: 0, y: 0, width, height }
+    if (popover && popoverPane) overlayBounds = popoverRect(popoverPane.rect, popover)
     if (overlayState?.kind === 'sidebar') {
       const sidebarWidth = data.settings.sidebarWidth
       const x =

@@ -260,5 +260,40 @@ export function shortcuts(platform: Platform): Shortcut[] {
       command: { type: 'space/nth' as const, index: n - 1 },
       hidden: true,
     })),
+    {
+      id: 'new-private-window',
+      label: 'New Private Window',
+      section: 'file',
+      accelerator: 'CmdOrCtrl+Shift+N',
+      command: { type: 'window/newPrivate' },
+    },
+    {
+      id: 'find',
+      label: 'Find…',
+      section: 'edit',
+      accelerator: 'CmdOrCtrl+F',
+      command: { type: 'find/open' },
+    },
+    {
+      id: 'find-next',
+      label: 'Find Next',
+      section: 'edit',
+      accelerator: 'CmdOrCtrl+G',
+      command: { type: 'find/step', forward: true },
+    },
+    {
+      id: 'find-previous',
+      label: 'Find Previous',
+      section: 'edit',
+      accelerator: 'CmdOrCtrl+Shift+G',
+      command: { type: 'find/step', forward: false },
+    },
+    {
+      id: 'settings',
+      label: 'Settings…',
+      section: 'file',
+      ...(platform === 'darwin' ? {} : { accelerator: 'Ctrl+,' }),
+      command: { type: 'settings/open' },
+    },
   ]
 }

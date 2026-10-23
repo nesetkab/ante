@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { sitePermissionsSchema, type FindState, type Prompt } from './permissions'
 
 export const idSchema = z.string().min(1).max(200)
 export type Id = z.infer<typeof idSchema>
@@ -131,6 +132,7 @@ export const settingsSchema = z.object({
   theme: themeModeSchema.default('system'),
   adblock: z.boolean().default(true),
   peekExternalLinks: z.boolean().default(true),
+  adblockAllowlist: z.array(z.string().min(1).max(253)).max(10000).default([]),
 })
 export type Settings = z.infer<typeof settingsSchema>
 export const settingsPatchSchema = settingsSchema.partial()
@@ -148,6 +150,7 @@ export const dataSchema = z.object({
   archive: z.array(archivedTabSchema).default([]),
   closed: z.array(closedTabSchema).default([]),
   settings: settingsSchema.prefault({}),
+  sitePermissions: sitePermissionsSchema.default({}),
 })
 export type Data = z.infer<typeof dataSchema>
 
@@ -160,6 +163,9 @@ export interface TabRuntime {
   zoom: number
   crashed: boolean
   fullscreen: boolean
+  blocked: number
+  prompt: Prompt | null
+  find: FindState | null
 }
 
 export type Overlay = { kind: 'commandBar'; mode: 'new' | 'edit' } | { kind: 'sidebar' }

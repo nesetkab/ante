@@ -9,7 +9,14 @@ import type {
   TabRuntime,
   WindowRuntime,
 } from '../schema'
+import { clearSitePermission, setSitePermissions } from '../permissions'
 import type { Action } from './actions'
+import {
+  createPrivateSpace,
+  isPrivateProfile,
+  removePrivateProfile,
+  samePrivacy,
+} from './private'
 import {
   descendantIds,
   displayTitle,
@@ -36,6 +43,9 @@ export const defaultTabRuntime: TabRuntime = {
   zoom: 1,
   crashed: false,
   fullscreen: false,
+  blocked: 0,
+  prompt: null,
+  find: null,
 }
 
 export const defaultWindowRuntime: WindowRuntime = {
@@ -245,6 +255,7 @@ export function reduce(state: AppState, action: Action): void {
 
     case 'space/create': {
       if (!data.profiles[action.profileId] || data.spaces[action.id]) return
+      if (isPrivateProfile(action.profileId)) return
       data.spaces[action.id] = {
         id: action.id,
         name: action.name,
@@ -359,7 +370,8 @@ export function reduce(state: AppState, action: Action): void {
       const location = locate(data, action.id)
       const section = rootOf(data, action.id)?.section
       if (section === 'pinned' || section === 'favorites') return
-      if (location) {
+      const isPrivate = isPrivateProfile(rootOf(data, action.id)?.profileId)
+      if (location && !isPrivate) {
         data.closed.unshift({ tab: { ...tab }, location, closedAt: action.now })
         if (data.closed.length > MAX_CLOSED) data.closed.length = MAX_CLOSED
       }
@@ -527,7 +539,8 @@ export function reduce(state: AppState, action: Action): void {
     }
     case 'window/selectSpace': {
       const window = data.windows[action.id]
-      if (window && data.spaces[action.spaceId]) window.spaceId = action.spaceId
+      if (!window || !data.spaces[action.spaceId]) return
+      if (samePrivacy(data, window.spaceId, action.spaceId)) window.spaceId = action.spaceId
       return
     }
     case 'window/activate': {
@@ -535,6 +548,7 @@ export function reduce(state: AppState, action: Action): void {
       const tab = getTab(data, action.tabId)
       if (!window || !tab) return
       const spaceId = rootOf(data, action.tabId)?.spaceId
+      if (spaceId && !samePrivacy(data, window.spaceId, spaceId)) return
       if (spaceId && spaceId !== window.spaceId) window.spaceId = spaceId
       window.activeBySpace[window.spaceId] = action.tabId
       tab.lastActiveAt = action.now
@@ -564,5 +578,24 @@ export function reduce(state: AppState, action: Action): void {
       else runtime.windows[action.id] = { ...defaultWindowRuntime, ...action.patch }
       return
     }
+
+    case 'sitePermission/set':
+      setSitePermissions(data, action.profileId, action.origin, action.permissions, action.decision)
+      return
+    case 'sitePermission/clear':
+      clearSitePermission(data, action.profileId, action.origin, action.permission)
+      return
+    case 'profile/rename': {
+      const profile = data.profiles[action.id]
+      const name = action.name.trim()
+      if (profile && name && !isPrivateProfile(profile.id)) profile.name = name
+      return
+    }
+    case 'private/create':
+      createPrivateSpace(data, action.profileId, action.spaceId)
+      return
+    case 'private/remove':
+      removePrivateProfile(state, action.profileId, { closeWindows: false })
+      return
   }
 }

@@ -1,7 +1,8 @@
 import { app, session, type Session } from 'electron'
 import type { Id } from '@shared/schema'
+import { isPrivateProfile } from '@shared/state/private'
 
-const PROMPTLESS_PERMISSIONS = new Set([
+export const PROMPTLESS_PERMISSIONS: ReadonlySet<string> = new Set([
   'fullscreen',
   'clipboard-sanitized-write',
   'pointerLock',
@@ -14,6 +15,10 @@ export function chromeUserAgent(userAgent: string): string {
     .replace(/\s?Electron\/\S+/i, '')
     .replace(new RegExp(`\\s?${app.getName()}/\\S+`, 'i'), '')
     .trim()
+}
+
+export function partitionFor(profileId: Id): string {
+  return isPrivateProfile(profileId) ? profileId : `persist:profile-${profileId}`
 }
 
 export type SessionSetup = (session: Session, profileId: Id) => void
@@ -30,7 +35,7 @@ export class Sessions {
   forProfile(profileId: Id): Session {
     const existing = this.#configured.get(profileId)
     if (existing) return existing
-    const created = session.fromPartition(`persist:profile-${profileId}`)
+    const created = session.fromPartition(partitionFor(profileId))
     created.setUserAgent(chromeUserAgent(created.getUserAgent()))
     created.setPermissionRequestHandler((_contents, permission, callback) => {
       callback(PROMPTLESS_PERMISSIONS.has(permission))

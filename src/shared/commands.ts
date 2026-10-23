@@ -66,6 +66,39 @@ export const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('little/moveToSpace'), spaceId: idSchema.optional() }),
   z.object({ type: z.literal('archive/restore'), id: idSchema }),
   z.object({ type: z.literal('settings/open') }),
+  z.object({ type: z.literal('find/open') }),
+  z.object({ type: z.literal('find/query'), tabId: idSchema, query: z.string().max(1000) }),
+  z.object({ type: z.literal('find/step'), ...optionalTab.shape, forward: z.boolean() }),
+  z.object({ type: z.literal('find/close'), ...optionalTab.shape }),
+  z.object({
+    type: z.literal('permission/respond'),
+    tabId: idSchema,
+    promptId: idSchema,
+    allow: z.boolean(),
+    remember: z.boolean(),
+    sourceId: z.string().max(500).optional(),
+  }),
+  z.object({ type: z.literal('privacy/siteMenu'), ...optionalTab.shape }),
+  z.object({
+    type: z.literal('privacy/clearData'),
+    profileId: idSchema,
+    cookies: z.boolean(),
+    cache: z.boolean(),
+    storage: z.boolean(),
+  }),
+  z.object({ type: z.literal('window/newPrivate') }),
 ])
 export type Command = z.infer<typeof commandSchema>
 export type CommandType = Command['type']
+
+export const privacyCommandTypes = [
+  'find/open',
+  'find/query',
+  'find/step',
+  'find/close',
+  'permission/respond',
+  'privacy/siteMenu',
+  'privacy/clearData',
+  'window/newPrivate',
+] as const
+export type PrivacyCommand = Extract<Command, { type: (typeof privacyCommandTypes)[number] }>

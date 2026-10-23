@@ -1,5 +1,6 @@
 import type { Data, Id } from '../schema'
 import { createInitialData, DEFAULT_PROFILE_ID } from './initial'
+import { stripPrivate } from './private'
 
 function reachable(data: Data): Set<Id> {
   const seen = new Set<Id>()
@@ -18,7 +19,7 @@ function reachable(data: Data): Set<Id> {
 }
 
 export function sanitize(input: Data, fallbackSpaceId: Id): Data {
-  const data = structuredClone(input)
+  const data = structuredClone(stripPrivate(input))
   if (Object.keys(data.spaces).length === 0) return createInitialData(fallbackSpaceId)
   data.profiles[DEFAULT_PROFILE_ID] ??= { id: DEFAULT_PROFILE_ID, name: 'Default' }
   for (const space of Object.values(data.spaces)) {

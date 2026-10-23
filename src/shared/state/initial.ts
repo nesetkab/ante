@@ -52,7 +52,9 @@ export function createInitialData(spaceId: Id): Data {
       theme: 'system',
       adblock: true,
       peekExternalLinks: true,
+      adblockAllowlist: [],
     },
+    sitePermissions: {},
   }
 }
 
