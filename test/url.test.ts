@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { displayUrl, resolveInput } from '@shared/url'
+import { displayUrl, resolveInput, siteFaviconUrl } from '@shared/url'
 
 describe('resolveInput', () => {
   it.each([
@@ -36,5 +36,15 @@ describe('displayUrl', () => {
 
   it('leaves non-web urls untouched', () => {
     expect(displayUrl('about:blank')).toBe('about:blank')
+  })
+})
+
+describe('siteFaviconUrl', () => {
+  it('points at the site root favicon for web pages only', () => {
+    expect(siteFaviconUrl('https://news.ycombinator.com/item?id=1')).toBe(
+      'https://news.ycombinator.com/favicon.ico',
+    )
+    expect(siteFaviconUrl('about:blank')).toBeNull()
+    expect(siteFaviconUrl('not a url')).toBeNull()
   })
 })

@@ -90,7 +90,7 @@ export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
     for (const tab of matchedTabs.slice(0, text ? 5 : 6)) {
       result.push({
         key: `tab:${tab.id}`,
-        icon: <Favicon src={tab.favicon} size={16} />,
+        icon: <Favicon src={tab.favicon} pageUrl={tab.url} size={16} />,
         title: displayTitle(tab) || displayUrl(tab.url),
         detail: displayUrl(tab.url),
         hint: 'Switch to Tab',

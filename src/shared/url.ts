@@ -58,6 +58,15 @@ export function displayUrl(url: string): string {
   }
 }
 
+export function siteFaviconUrl(url: string): string | null {
+  try {
+    const { protocol, origin } = new URL(url)
+    return protocol === 'http:' || protocol === 'https:' ? `${origin}/favicon.ico` : null
+  } catch {
+    return null
+  }
+}
+
 export function hostOf(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, '')

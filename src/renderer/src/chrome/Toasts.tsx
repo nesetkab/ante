@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react'
-import { ante } from '../ante'
 import { useAppState, useWindowData } from '../store'
+import { onUiEvent } from '../uiEvents'
 import styles from './Toasts.module.css'
 
 const TOAST_MS = 4000
@@ -19,7 +19,7 @@ export function Toasts() {
 
   useEffect(() => {
     let counter = 0
-    return ante.onUiEvent((event) => {
+    return onUiEvent((event) => {
       if (event.type === 'toast') setToast({ id: ++counter, message: event.message })
     })
   }, [])

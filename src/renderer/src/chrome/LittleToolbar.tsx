@@ -39,7 +39,12 @@ export function LittleToolbar() {
         className={styles.location}
         onClick={() => ante.command({ type: 'commandBar/open', mode: 'edit' })}
       >
-        <Favicon src={tab?.favicon ?? null} loading={runtime?.loading} size={14} />
+        <Favicon
+          src={tab?.favicon ?? null}
+          pageUrl={tab?.url}
+          loading={runtime?.loading}
+          size={14}
+        />
         <span className={styles.url}>{tab ? displayUrl(tab.url) : ''}</span>
       </button>
       <button

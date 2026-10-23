@@ -117,7 +117,12 @@ export function Sidebar({ floating = false }: { floating?: boolean }) {
                   ante.command({ type: 'tab/contextMenu', tabId: id })
                 }}
               >
-                <Favicon src={tab.favicon} loading={runtime.tabs[id]?.loading} size={18} />
+                <Favicon
+                  src={tab.favicon}
+                  pageUrl={tab.url}
+                  loading={runtime.tabs[id]?.loading}
+                  size={18}
+                />
               </button>
             )
           })}

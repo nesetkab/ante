@@ -80,7 +80,12 @@ function SplitRow({
           }}
           title={tab.title || tab.url}
         >
-          <Favicon src={tab.favicon} loading={runtime.tabs[tab.id]?.loading} size={14} />
+          <Favicon
+            src={tab.favicon}
+            pageUrl={tab.url}
+            loading={runtime.tabs[tab.id]?.loading}
+            size={14}
+          />
           <span className={styles.title}>{tab.customTitle ?? (tab.title || tab.url)}</span>
         </button>
       ))}

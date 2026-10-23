@@ -399,7 +399,9 @@ export class CommandRunner {
       }
       case 'tab/copyUrl': {
         const tab = getTab(this.#data, tabFor(command.tabId))
-        if (tab) copyText(tab.url)
+        if (!tab) return
+        copyText(tab.url)
+        this.#sendUi(window, { type: 'toast', message: 'Copied URL' })
         return
       }
       case 'tab/togglePin': {

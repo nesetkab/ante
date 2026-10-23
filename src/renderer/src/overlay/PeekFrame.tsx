@@ -34,7 +34,7 @@ export function PeekFrame() {
         }}
       >
         <div className={styles.toolbar}>
-          <Favicon src={tab.favicon} loading={runtime?.loading} size={14} />
+          <Favicon src={tab.favicon} pageUrl={tab.url} loading={runtime?.loading} size={14} />
           <span className={styles.url}>{displayUrl(tab.url)}</span>
           <IconButton label="Open as tab" onClick={() => ante.command({ type: 'peek/expand' })}>
             <Maximize2 size={14} />

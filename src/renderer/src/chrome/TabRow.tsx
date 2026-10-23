@@ -88,12 +88,12 @@ export function TabRow({ tab, runtime, active, depth, persistent, compact = fals
           }}
         >
           <span className={styles.resetFavicon}>
-            <Favicon src={tab.favicon} loading={runtime?.loading} />
+            <Favicon src={tab.favicon} pageUrl={tab.url} loading={runtime?.loading} />
           </span>
           <CornerUpLeft className={styles.resetIcon} size={14} />
         </button>
       ) : (
-        <Favicon src={tab.favicon} loading={runtime?.loading} />
+        <Favicon src={tab.favicon} pageUrl={tab.url} loading={runtime?.loading} />
       )}
       {editing ? (
         <input
