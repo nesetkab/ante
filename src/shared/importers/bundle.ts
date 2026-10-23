@@ -77,7 +77,8 @@ function droppedFavorites(data: Data, bundle: ImportBundle, profileFor: (id: Id)
 export function applyImport(data: Data, bundle: ImportBundle): ImportSummary {
   const pristine = isPristine(data)
   const mapping = resolveProfiles(data, bundle.profiles)
-  const profileFor = (id: Id): Id => mapping.get(id) ?? (data.profiles[id] ? id : DEFAULT_PROFILE_ID)
+  const profileFor = (id: Id): Id =>
+    mapping.get(id) ?? (data.profiles[id] ? id : DEFAULT_PROFILE_ID)
   const dropped = droppedFavorites(data, bundle, profileFor)
 
   let tabCount = 0

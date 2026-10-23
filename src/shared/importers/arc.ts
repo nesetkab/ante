@@ -63,7 +63,9 @@ const colorSchema = z.object({ red: z.number(), green: z.number(), blue: z.numbe
 const profileRefSchema = z
   .union([
     z
-      .object({ custom: z.object({ _0: z.object({ directoryBasename: z.string().trim().min(1) }) }) })
+      .object({
+        custom: z.object({ _0: z.object({ directoryBasename: z.string().trim().min(1) }) }),
+      })
       .transform((value): ArcProfileRef => ({
         kind: 'custom',
         name: value.custom._0.directoryBasename,
@@ -344,8 +346,7 @@ export function arcImportToBundle(arc: ArcImport, options: ArcConvertOptions): I
         }
         case 'split': {
           const fits = node.tabs.length >= 2 && node.tabs.length <= ARC_MAX_SPLIT
-          if (section === 'favorites' || !fits)
-            return node.tabs.map((tab) => addTab(tab, section))
+          if (section === 'favorites' || !fits) return node.tabs.map((tab) => addTab(tab, section))
           const id = newId()
           const children = node.tabs.map((tab) => addTab(tab, section))
           items[id] = {

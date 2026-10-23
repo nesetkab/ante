@@ -40,8 +40,7 @@ export function findArcSidebar(): string | null {
 }
 
 export type ArcImportResult =
-  | { ok: true; spaceIds: Id[]; tabCount: number }
-  | { ok: false; message: string }
+  { ok: true; spaceIds: Id[]; tabCount: number } | { ok: false; message: string }
 
 const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`
 
