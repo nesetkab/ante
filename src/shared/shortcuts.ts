@@ -260,5 +260,18 @@ export function shortcuts(platform: Platform): Shortcut[] {
       command: { type: 'space/nth' as const, index: n - 1 },
       hidden: true,
     })),
+    { id: 'boost-site', label: 'Boost This Site', section: 'tab', command: { type: 'boost/open' } },
+    {
+      id: 'air-traffic-control',
+      label: 'Air Traffic Control',
+      section: 'space',
+      command: { type: 'routes/open' },
+    },
+    {
+      id: 'default-browser',
+      label: 'Set Ante as Default Browser',
+      section: 'file',
+      command: { type: 'browser/setDefault' },
+    },
   ]
 }

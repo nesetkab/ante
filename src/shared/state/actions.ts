@@ -1,7 +1,11 @@
 import { z } from 'zod'
 import {
+  boostPatchSchema,
   containerSchema,
   idSchema,
+  routeMatchSchema,
+  withoutDefaults,
+  zapSelectorSchema,
   settingsPatchSchema,
   spaceSchema,
   splitDirectionSchema,
@@ -59,6 +63,31 @@ export const uiActionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('archive/remove'), id: idSchema }),
   z.object({ type: z.literal('archive/clear') }),
   z.object({ type: z.literal('settings/update'), patch: settingsPatchSchema }),
+  z.object({
+    type: z.literal('boost/create'),
+    id: idSchema,
+    name: z.string().max(200),
+    domain: z.string().max(253),
+  }),
+  z.object({ type: z.literal('boost/update'), id: idSchema, patch: boostPatchSchema }),
+  z.object({ type: z.literal('boost/delete'), id: idSchema }),
+  z.object({ type: z.literal('boost/addZap'), id: idSchema, selector: zapSelectorSchema }),
+  z.object({ type: z.literal('boost/removeZap'), id: idSchema, selector: z.string().max(2000) }),
+  z.object({
+    type: z.literal('route/add'),
+    id: idSchema,
+    match: routeMatchSchema,
+    spaceId: idSchema,
+  }),
+  z.object({
+    type: z.literal('route/update'),
+    id: idSchema,
+    patch: z.object({
+      match: withoutDefaults(routeMatchSchema).optional(),
+      spaceId: idSchema.optional(),
+    }),
+  }),
+  z.object({ type: z.literal('route/delete'), id: idSchema }),
 ])
 export type UiAction = z.infer<typeof uiActionSchema>
 

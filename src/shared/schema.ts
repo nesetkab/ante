@@ -1,5 +1,17 @@
 import { z } from 'zod'
 
+type DefaultedShape = Record<string, z.ZodDefault>
+type UnwrappedShape<Shape extends DefaultedShape> = {
+  [Key in keyof Shape]: ReturnType<Shape[Key]['unwrap']>
+}
+
+export function withoutDefaults<Shape extends DefaultedShape>(
+  schema: z.ZodObject<Shape>,
+): z.ZodObject<UnwrappedShape<Shape>> {
+  const entries = Object.entries(schema.shape).map(([key, field]) => [key, field.unwrap()])
+  return z.object(Object.fromEntries(entries) as UnwrappedShape<Shape>)
+}
+
 export const idSchema = z.string().min(1).max(200)
 export type Id = z.infer<typeof idSchema>
 
@@ -131,9 +143,53 @@ export const settingsSchema = z.object({
   theme: themeModeSchema.default('system'),
   adblock: z.boolean().default(true),
   peekExternalLinks: z.boolean().default(true),
+  externalLinks: z.enum(['little', 'space']).default('little'),
 })
 export type Settings = z.infer<typeof settingsSchema>
-export const settingsPatchSchema = settingsSchema.partial()
+export const settingsPatchSchema = withoutDefaults(settingsSchema).partial()
+
+export const fontFamilySchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(100)
+  .regex(/^[\p{L}\p{N} ._-]+$/u)
+
+export const zapSelectorSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(2000)
+  .refine((selector) => !/[{}<]/.test(selector))
+
+export const boostSchema = z.object({
+  id: idSchema,
+  name: z.string().max(200).default(''),
+  domain: z.string().max(253).default(''),
+  enabled: z.boolean().default(true),
+  css: z.string().max(200_000).default(''),
+  js: z.string().max(200_000).default(''),
+  zaps: z.array(zapSelectorSchema).max(500).default([]),
+  fontFamily: fontFamilySchema.nullable().default(null),
+  tintHue: z.number().min(0).max(360).nullable().default(null),
+  invert: z.boolean().default(false),
+})
+export type Boost = z.infer<typeof boostSchema>
+export const boostPatchSchema = withoutDefaults(boostSchema.omit({ id: true })).partial()
+export type BoostPatch = z.infer<typeof boostPatchSchema>
+
+export const routeMatchSchema = z.object({
+  kind: z.enum(['domain', 'contains', 'regex']).default('domain'),
+  value: z.string().max(2000).default(''),
+})
+export type RouteMatch = z.infer<typeof routeMatchSchema>
+
+export const routeSchema = z.object({
+  id: idSchema,
+  match: routeMatchSchema.prefault({}),
+  spaceId: idSchema,
+})
+export type Route = z.infer<typeof routeSchema>
 
 export const DATA_VERSION = 1
 
@@ -148,6 +204,8 @@ export const dataSchema = z.object({
   archive: z.array(archivedTabSchema).default([]),
   closed: z.array(closedTabSchema).default([]),
   settings: settingsSchema.prefault({}),
+  boosts: z.record(idSchema, boostSchema).default({}),
+  routes: z.array(routeSchema).max(500).default([]),
 })
 export type Data = z.infer<typeof dataSchema>
 

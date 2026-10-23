@@ -10,6 +10,7 @@ import type {
   WindowRuntime,
 } from '../schema'
 import type { Action } from './actions'
+import { reduceBoosts } from './boosts'
 import {
   descendantIds,
   displayTitle,
@@ -564,5 +565,16 @@ export function reduce(state: AppState, action: Action): void {
       else runtime.windows[action.id] = { ...defaultWindowRuntime, ...action.patch }
       return
     }
+
+    case 'boost/create':
+    case 'boost/update':
+    case 'boost/delete':
+    case 'boost/addZap':
+    case 'boost/removeZap':
+    case 'route/add':
+    case 'route/update':
+    case 'route/delete':
+      reduceBoosts(data, action)
+      return
   }
 }

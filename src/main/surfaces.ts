@@ -2,7 +2,7 @@ import { join } from 'node:path'
 import type { WebContents } from 'electron'
 import type { Id } from '@shared/schema'
 
-export type Surface = 'chrome' | 'overlay'
+export type Surface = 'chrome' | 'overlay' | 'panel'
 
 export interface SurfaceInfo {
   windowId: Id
@@ -11,8 +11,13 @@ export interface SurfaceInfo {
 
 export const preloadPath = join(import.meta.dirname, '../preload/index.cjs')
 
-export function loadSurface(contents: WebContents, surface: Surface, windowId: Id): void {
-  const query = { surface, window: windowId }
+export function loadSurface(
+  contents: WebContents,
+  surface: Surface,
+  windowId: Id,
+  extra: Record<string, string> = {},
+): void {
+  const query = { ...extra, surface, window: windowId }
   const devUrl = process.env.ELECTRON_RENDERER_URL
   const loading = devUrl
     ? contents.loadURL(`${devUrl}?${new URLSearchParams(query).toString()}`)

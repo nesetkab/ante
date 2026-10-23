@@ -90,6 +90,8 @@ function tabMenu(id: Id, deps: SidebarMenuDeps): MenuItemConstructorOptions[] {
       })),
     })
   }
+  if (/^https?:/i.test(tab.url))
+    items.push({ label: 'Boost This Site…', click: () => run({ type: 'boost/open', tabId: id }) })
   items.push(separator)
   if (loaded) {
     items.push({
