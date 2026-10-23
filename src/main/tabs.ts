@@ -4,7 +4,7 @@ import { getTab } from '@shared/state/tree'
 import type { Sessions } from './sessions'
 import type { Store } from './store'
 
-export type OpenDisposition = 'foreground' | 'background' | 'popup'
+export type OpenDisposition = 'foreground' | 'background'
 
 export interface TabHooks {
   profileFor(tabId: Id): Id
@@ -14,6 +14,7 @@ export interface TabHooks {
 
 export class TabManager {
   readonly #views = new Map<Id, WebContentsView>()
+  readonly #profiles = new Map<Id, Id>()
   readonly #store: Store
   readonly #sessions: Sessions
   readonly #hooks: TabHooks
@@ -44,9 +45,10 @@ export class TabManager {
     if (existing) return existing
     const tab = getTab(this.#store.state.data, id)
     if (!tab) return null
+    const profileId = this.#hooks.profileFor(id)
     const view = new WebContentsView({
       webPreferences: {
-        session: this.#sessions.forProfile(this.#hooks.profileFor(id)),
+        session: this.#sessions.forProfile(profileId),
         sandbox: true,
         contextIsolation: true,
         nodeIntegration: false,
@@ -55,6 +57,7 @@ export class TabManager {
     })
     view.setBackgroundColor('#ffffff')
     this.#views.set(id, view)
+    this.#profiles.set(id, profileId)
     this.#wire(id, view.webContents)
     this.#runtime(id, { loading: true })
     this.load(id, tab.url)
@@ -76,6 +79,7 @@ export class TabManager {
     const view = this.#views.get(id)
     if (!view) return
     this.#views.delete(id)
+    this.#profiles.delete(id)
     const contents = view.webContents
     if (!contents.isDestroyed()) contents.close()
   }
@@ -83,7 +87,8 @@ export class TabManager {
   reconcile(): void {
     const { data, runtime } = this.#store.state
     for (const id of [...this.#views.keys()]) {
-      if (!getTab(data, id) || !runtime.tabs[id]) this.destroy(id)
+      const stale = !getTab(data, id) || !runtime.tabs[id]
+      if (stale || this.#profiles.get(id) !== this.#hooks.profileFor(id)) this.destroy(id)
     }
   }
 
@@ -135,6 +140,12 @@ export class TabManager {
     })
     contents.on('zoom-changed', () => this.#runtime(id, { zoom: contents.getZoomFactor() }))
     contents.on('context-menu', (_event, params) => this.#hooks.onContextMenu(id, params))
+    contents.on('did-create-window', (popup) => {
+      popup.webContents.setWindowOpenHandler(({ url }) => {
+        this.#hooks.onOpen(id, url, 'foreground')
+        return { action: 'deny' }
+      })
+    })
     contents.setWindowOpenHandler(({ url, disposition, features }) => {
       if (disposition === 'new-window' && features) {
         return { action: 'allow', overrideBrowserWindowOptions: { autoHideMenuBar: true } }

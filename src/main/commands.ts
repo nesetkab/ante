@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type { Command, Disposition } from '@shared/commands'
 import type { Container, Id, Tab, WindowData } from '@shared/schema'
 import { nextSpaceColor } from '@shared/state/initial'
+import { MAX_SPLIT } from '@shared/state/reducer'
 import {
   activeTabId,
   getTab,
@@ -10,7 +11,7 @@ import {
   rootOf,
   spaceTabOrder,
 } from '@shared/state/tree'
-import { hostOf, resolveInput } from '@shared/url'
+import { hostOf, isWebUrl, resolveInput } from '@shared/url'
 import { IPC, type UiEvent } from '@shared/ipc'
 import { copyText } from './clipboard'
 import { showSidebarMenu } from './sidebarMenu'
@@ -59,12 +60,12 @@ export class CommandRunner {
     return Date.now()
   }
 
-  #ensureWindow(windowId: Id | null): AppWindow {
-    const existing = windowId ? this.#windows.get(windowId) : this.#windows.focused()
+  #resolveWindow(windowId: Id | null): AppWindow | null {
+    if (windowId) return this.#windows.get(windowId) ?? null
+    const existing = this.#windows.focused()
     if (existing) return existing
     const spaceId = this.#data.spaceOrder[0]
-    if (!spaceId) throw new Error('No spaces available')
-    return this.#windows.createMain(spaceId)
+    return spaceId ? this.#windows.createMain(spaceId) : null
   }
 
   #windowData(window: AppWindow): WindowData {
@@ -110,9 +111,26 @@ export class CommandRunner {
     window.focusContent(tabId)
   }
 
+  #mainWindowFor(window: AppWindow): AppWindow {
+    if (window.kind === 'main') return window
+    return (
+      this.#windows.lastFocused('main') ??
+      this.#windows.createMain(this.#windowData(window).spaceId)
+    )
+  }
+
+  #openInSpace(window: AppWindow, url: string, spaceId: Id, foreground: boolean): void {
+    const target = this.#mainWindowFor(window)
+    const id = this.createTab(url, { type: 'today', spaceId })
+    if (!foreground) return
+    this.activate(target, id)
+    if (target !== window) target.win.focus()
+  }
+
   open(window: AppWindow, input: string, disposition: Disposition): void {
     const url = resolveInput(input, this.#data.settings.searchEngine)
     const data = this.#windowData(window)
+    this.#store.dispatch({ type: 'runtime/window', id: window.id, patch: { overlay: null } })
     switch (disposition) {
       case 'current': {
         const active = data.kind === 'little' ? data.littleTabId : activeTabId(this.#data, data)
@@ -125,17 +143,12 @@ export class CommandRunner {
         return
       }
       case 'newTab':
-      case 'background': {
-        const spaceId = data.kind === 'little' ? this.#data.spaceOrder[0] : data.spaceId
-        if (!spaceId) return
-        const id = this.createTab(url, { type: 'today', spaceId })
-        if (disposition === 'newTab') this.activate(window, id)
-        else
-          this.#store.dispatch({ type: 'runtime/window', id: window.id, patch: { overlay: null } })
+      case 'background':
+        this.#openInSpace(window, url, data.spaceId, disposition === 'newTab')
         return
-      }
       case 'peek':
-        this.#peek(window, url)
+        if (data.kind === 'little') this.#openInSpace(window, url, data.spaceId, true)
+        else this.#peek(window, url)
         return
       case 'little':
         this.#little(url)
@@ -150,17 +163,17 @@ export class CommandRunner {
   }
 
   openFromTab(openerId: Id, url: string, disposition: OpenDisposition): void {
+    if (!isWebUrl(url)) return
     const opener = this.#tabs.contents(openerId)
     const window = (opener && this.#windows.windowFor(opener)) ?? this.#windows.focused()
     if (!window) return
     const data = this.#windowData(window)
     const openerTab = getTab(this.#data, openerId)
-    const fromPersistent = isPersistent(this.#data, openerId)
     const crossSite = openerTab ? hostOf(openerTab.url) !== hostOf(url) : true
     if (
       data.kind === 'main' &&
       disposition === 'foreground' &&
-      fromPersistent &&
+      isPersistent(this.#data, openerId) &&
       crossSite &&
       this.#data.settings.peekExternalLinks &&
       !data.peekTabId
@@ -168,12 +181,8 @@ export class CommandRunner {
       this.#peek(window, url)
       return
     }
-    const spaceId =
-      rootOf(this.#data, openerId)?.spaceId ??
-      (data.kind === 'main' ? data.spaceId : this.#data.spaceOrder[0])
-    if (!spaceId) return
-    const id = this.createTab(url, { type: 'today', spaceId })
-    if (disposition === 'foreground') this.activate(window, id)
+    const spaceId = rootOf(this.#data, openerId)?.spaceId ?? data.spaceId
+    this.#openInSpace(window, url, spaceId, disposition === 'foreground')
   }
 
   #peek(window: AppWindow, url: string): void {
@@ -211,16 +220,22 @@ export class CommandRunner {
       return
     }
     if (isPersistent(this.#data, tabId)) {
-      const wasActive = activeTabId(this.#data, data) === tabId
       this.#store.dispatch({ type: 'tab/reset', id: tabId })
-      this.#store.dispatch({ type: 'runtime/unload', id: tabId })
-      if (wasActive) this.#selectLoadedNeighbor(window, tabId)
+      this.#unload(tabId)
       return
     }
     this.#store.dispatch({ type: 'tab/remove', id: tabId, now: this.#now() })
     const next = activeTabId(this.#data, this.#windowData(window))
     this.#windows.syncNow()
     window.focusContent(next)
+  }
+
+  #unload(tabId: Id): void {
+    for (const window of this.#windows.all()) {
+      const data = window.data
+      if (data && activeTabId(this.#data, data) === tabId) this.#selectLoadedNeighbor(window, tabId)
+    }
+    this.#store.dispatch({ type: 'runtime/unload', id: tabId })
   }
 
   #selectLoadedNeighbor(window: AppWindow, closedId: Id): void {
@@ -280,6 +295,7 @@ export class CommandRunner {
   #addSplit(window: AppWindow, tabId: Id, direction: 'horizontal' | 'vertical'): void {
     const data = this.#windowData(window)
     const split = parentSplit(this.#data, tabId)
+    if (split && split.children.length >= MAX_SPLIT) return
     const taken = new Set(split?.children ?? [tabId])
     const candidate = spaceTabOrder(this.#data, data.spaceId)
       .filter(
@@ -324,7 +340,8 @@ export class CommandRunner {
   }
 
   run(windowId: Id | null, command: Command): void {
-    const window = this.#ensureWindow(windowId)
+    const window = this.#resolveWindow(windowId)
+    if (!window?.data) return
     const tabFor = (tabId?: Id) => this.#targetTab(window, tabId)
     const contentsFor = (tabId?: Id) => this.#tabs.contents(tabFor(tabId))
 
@@ -388,7 +405,7 @@ export class CommandRunner {
       }
       case 'tab/unload': {
         const tabId = tabFor(command.tabId)
-        if (tabId) this.#store.dispatch({ type: 'runtime/unload', id: tabId })
+        if (tabId) this.#unload(tabId)
         return
       }
       case 'tab/copyUrl': {

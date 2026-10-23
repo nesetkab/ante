@@ -11,16 +11,18 @@ interface IpcDeps {
   store: Store
   surfaces: SurfaceRegistry
   runner: CommandRunner
+  flushPatches: () => void
 }
 
-export function registerIpc({ store, surfaces, runner }: IpcDeps): void {
+export function registerIpc({ store, surfaces, runner, flushPatches }: IpcDeps): void {
   ipcMain.handle(IPC.snapshot, (event): Snapshot => {
-    if (!surfaces.get(event.sender)) throw new Error('Unknown surface')
+    if (!surfaces.verify(event.sender, event.senderFrame)) throw new Error('Unknown surface')
+    flushPatches()
     return { version: store.version, state: store.state }
   })
 
   ipcMain.on(IPC.dispatch, (event, raw: unknown) => {
-    if (!surfaces.get(event.sender)) return
+    if (!surfaces.verify(event.sender, event.senderFrame)) return
     const parsed = uiActionSchema.safeParse(raw)
     if (!parsed.success) {
       console.warn('[ipc] rejected action', parsed.error.issues[0])
@@ -30,7 +32,7 @@ export function registerIpc({ store, surfaces, runner }: IpcDeps): void {
   })
 
   ipcMain.on(IPC.command, (event, raw: unknown) => {
-    const surface = surfaces.get(event.sender)
+    const surface = surfaces.verify(event.sender, event.senderFrame)
     if (!surface) return
     const parsed = commandSchema.safeParse(raw)
     if (!parsed.success) {
@@ -58,10 +60,11 @@ export function broadcastPatches(store: Store, surfaces: SurfaceRegistry): () =>
     }
   }
 
-  return store.subscribe((change) => {
+  store.subscribe((change) => {
     pending.push(...change.patches)
     if (scheduled) return
     scheduled = true
     setImmediate(flush)
   })
+  return flush
 }

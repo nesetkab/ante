@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
-import { app, Menu } from 'electron'
+import { app, Menu, session } from 'electron'
 import type { Command } from '@shared/commands'
 import type { Id } from '@shared/schema'
 import { createAppState, createInitialData, DEFAULT_PROFILE_ID } from '@shared/state/initial'
@@ -54,7 +54,12 @@ async function start(): Promise<void> {
       const contents = tabs.contents(tabId)
       if (!contents) return
       const windowId = windows.windowFor(contents)?.id ?? null
-      showContextMenu(params, { contents, tabId, run: (command) => runner.run(windowId, command) })
+      showContextMenu(params, {
+        contents,
+        tabId,
+        searchEngine: store.state.data.settings.searchEngine,
+        run: (command) => runner.run(windowId, command),
+      })
     },
   })
   const windows = new WindowManager({ store, tabs, surfaces, isQuitting: () => quitting })
@@ -66,8 +71,12 @@ async function start(): Promise<void> {
     if (change.patches.some((patch) => patch.path[0] === 'data'))
       persistence.schedule(store.state.data)
   })
-  broadcastPatches(store, surfaces)
-  registerIpc({ store, surfaces, runner })
+  session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => {
+    callback(false)
+  })
+  session.defaultSession.setPermissionCheckHandler(() => false)
+  const flushPatches = broadcastPatches(store, surfaces)
+  registerIpc({ store, surfaces, runner, flushPatches })
   Menu.setApplicationMenu(buildAppMenu(runInFocused))
 
   const restored = Object.values(store.state.data.windows).filter(

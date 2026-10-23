@@ -2,7 +2,7 @@ import { ArrowRight, Command as CommandIcon, Globe, Layers, Search } from 'lucid
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import type { Command, Disposition } from '@shared/commands'
 import { rank } from '@shared/fuzzy'
-import type { AppState, Id } from '@shared/schema'
+import type { Data, Id } from '@shared/schema'
 import { shortcuts, type Platform } from '@shared/shortcuts'
 import { activeTabId, displayTitle, getTab, spaceTabOrder } from '@shared/state/tree'
 import { displayUrl, resolveInput, searchUrls } from '@shared/url'
@@ -38,24 +38,24 @@ function dispositionFor(event: KeyboardEvent, fallback: Disposition): Dispositio
   return fallback
 }
 
-function collectTabs(state: AppState, spaceId: Id): Id[] {
-  const own = spaceTabOrder(state.data, spaceId)
-  const others = state.data.spaceOrder
+function collectTabs(data: Data, spaceId: Id): Id[] {
+  const own = spaceTabOrder(data, spaceId)
+  const others = data.spaceOrder
     .filter((id) => id !== spaceId)
-    .flatMap((id) => spaceTabOrder(state.data, id))
+    .flatMap((id) => spaceTabOrder(data, id))
   return [...new Set([...own, ...others])]
 }
 
 export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
   const window = useWindowData()
-  const state = useAppState((current) => current)
-  const activeId = window ? activeTabId(state.data, window) : null
-  const initial = mode === 'edit' ? (getTab(state.data, activeId)?.url ?? '') : ''
+  const data = useAppState((current) => current.data)
+  const activeId = window ? activeTabId(data, window) : null
+  const initial = mode === 'edit' ? (getTab(data, activeId)?.url ?? '') : ''
   const [query, setQuery] = useState(initial)
   const [selected, setSelected] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
   const fallback: Disposition = mode === 'edit' ? 'current' : 'newTab'
-  const engine = state.data.settings.searchEngine
+  const engine = data.settings.searchEngine
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -80,10 +80,10 @@ export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
       })
     }
 
-    const tabIds = collectTabs(state, window.spaceId).filter(
+    const tabIds = collectTabs(data, window.spaceId).filter(
       (id) => id !== activeId || mode === 'new',
     )
-    const tabs = tabIds.map((id) => getTab(state.data, id)).filter((tab) => tab !== null)
+    const tabs = tabIds.map((id) => getTab(data, id)).filter((tab) => tab !== null)
     const matchedTabs = text
       ? rank(text, tabs, (tab) => [displayTitle(tab), tab.url])
       : [...tabs].sort((a, b) => b.lastActiveAt - a.lastActiveAt)
@@ -99,8 +99,8 @@ export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
     }
 
     if (text) {
-      const spaces = state.data.spaceOrder
-        .map((id) => state.data.spaces[id])
+      const spaces = data.spaceOrder
+        .map((id) => data.spaces[id])
         .filter((space) => space !== undefined)
       for (const space of rank(text, spaces, (space) => [space.name]).slice(0, 2)) {
         result.push({
@@ -123,7 +123,7 @@ export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
       }
     }
     return result.slice(0, MAX_RESULTS)
-  }, [query, state, window, activeId, mode, engine])
+  }, [query, data, window, activeId, mode, engine])
 
   const current = Math.min(selected, Math.max(entries.length - 1, 0))
 
@@ -147,10 +147,6 @@ export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
       case 'Enter':
         event.preventDefault()
         execute(entries[current], dispositionFor(event, fallback))
-        return
-      case 'Escape':
-        event.preventDefault()
-        ante.command({ type: 'overlay/close' })
         return
     }
   }

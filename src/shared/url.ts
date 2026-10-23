@@ -27,6 +27,15 @@ export function isNavigable(url: string): boolean {
   }
 }
 
+export function isWebUrl(url: string): boolean {
+  try {
+    const { protocol, href } = new URL(url)
+    return protocol === 'http:' || protocol === 'https:' || href === 'about:blank'
+  } catch {
+    return false
+  }
+}
+
 export function resolveInput(input: string, engine: SearchEngine): string {
   const text = input.trim()
   if (!text) return 'about:blank'

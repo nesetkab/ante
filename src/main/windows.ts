@@ -15,7 +15,7 @@ interface WindowContext {
   store: Store
   tabs: TabManager
   surfaces: SurfaceRegistry
-  isQuitting(): boolean
+  keepOnClose(id: Id): boolean
   requestSync(): void
   onFocus(id: Id): void
   onClosed(id: Id): void
@@ -50,6 +50,7 @@ export class AppWindow {
   readonly #ctx: WindowContext
   #boundsTimer: NodeJS.Timeout | null = null
   #htmlFullscreen = false
+  #fullscreenBeforeHtml = false
 
   constructor(data: WindowData, ctx: WindowContext) {
     this.id = data.id
@@ -99,7 +100,7 @@ export class AppWindow {
       ctx.store.dispatch({ type: 'runtime/window', id: this.id, patch: { fullscreen: false } })
     })
     this.win.on('close', () => {
-      if (!ctx.isQuitting()) ctx.store.dispatch({ type: 'window/remove', id: this.id })
+      if (!ctx.keepOnClose(this.id)) ctx.store.dispatch({ type: 'window/remove', id: this.id })
     })
     this.win.on('closed', () => {
       if (!this.overlay.webContents.isDestroyed()) this.overlay.webContents.close()
@@ -150,7 +151,8 @@ export class AppWindow {
       views.push(view)
     }
 
-    const peekId = window.peekTabId && !claimed.has(window.peekTabId) ? window.peekTabId : null
+    const peekId =
+      window.peekTabId && layout.peek && !claimed.has(window.peekTabId) ? window.peekTabId : null
     const overlayVisible = overlayState !== null || peekId !== null
     let overlayBounds: Rect = { x: 0, y: 0, width, height }
     if (overlayState?.kind === 'sidebar') {
@@ -166,20 +168,17 @@ export class AppWindow {
         height: height - FLOATING_SIDEBAR_INSET * 2,
       }
     }
-    if (overlayVisible) {
-      this.overlay.setBounds(overlayBounds)
-      views.push(this.overlay)
+    const peekView = peekId && layout.peek ? this.#ctx.tabs.ensure(peekId) : null
+    if (peekId && peekView && layout.peek) {
+      claimed.add(peekId)
+      peekView.setBounds(layout.peek)
+      peekView.setBorderRadius(PEEK_RADIUS)
     }
-
-    if (peekId && layout.peek) {
-      const view = this.#ctx.tabs.ensure(peekId)
-      if (view) {
-        claimed.add(peekId)
-        view.setBounds(layout.peek)
-        view.setBorderRadius(PEEK_RADIUS)
-        views.push(view)
-      }
-    }
+    if (overlayVisible) this.overlay.setBounds(overlayBounds)
+    const overlayOnTop = overlayState !== null
+    if (peekView && overlayOnTop) views.push(peekView)
+    if (overlayVisible) views.push(this.overlay)
+    if (peekView && !overlayOnTop) views.push(peekView)
 
     return {
       views,
@@ -213,7 +212,8 @@ export class AppWindow {
 
     if (plan.htmlFullscreen !== this.#htmlFullscreen) {
       this.#htmlFullscreen = plan.htmlFullscreen
-      this.win.setFullScreen(plan.htmlFullscreen)
+      if (plan.htmlFullscreen) this.#fullscreenBeforeHtml = this.win.isFullScreen()
+      this.win.setFullScreen(plan.htmlFullscreen || this.#fullscreenBeforeHtml)
     }
     if (isMac) {
       const sidebarShown =
@@ -240,9 +240,19 @@ export class WindowManager {
   #focusOrder: Id[] = []
   #syncScheduled = false
 
-  constructor(ctx: Omit<WindowContext, 'onFocus' | 'onClosed' | 'requestSync'>) {
+  constructor(
+    ctx: Omit<WindowContext, 'onFocus' | 'onClosed' | 'requestSync' | 'keepOnClose'> & {
+      isQuitting: () => boolean
+    },
+  ) {
     this.#ctx = {
       ...ctx,
+      keepOnClose: (id) => {
+        if (ctx.isQuitting()) return true
+        const closing = this.#windows.get(id)
+        if (process.platform === 'darwin' || closing?.kind !== 'main') return false
+        return !this.all().some((window) => window.kind === 'main' && window.id !== id)
+      },
       requestSync: () => this.scheduleSync(),
       onFocus: (id) => {
         this.#focusOrder = [id, ...this.#focusOrder.filter((other) => other !== id)]
@@ -347,9 +357,9 @@ export class WindowManager {
         .filter((window) => window !== undefined),
       ...this.all().filter((window) => !this.#focusOrder.includes(window.id)),
     ]
+    this.#ctx.tabs.reconcile()
     const plans = ordered.map((window) => [window, window.plan(claimed)] as const)
     for (const [window, plan] of plans) window.detachStale(plan)
     for (const [window, plan] of plans) window.attach(plan)
-    this.#ctx.tabs.reconcile()
   }
 }

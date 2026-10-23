@@ -5,6 +5,7 @@ import { displayTitle } from '@shared/state/tree'
 import { ante } from '../ante'
 import { Favicon } from '../components/Favicon'
 import { IconButton } from '../components/IconButton'
+import { onUiEvent } from '../uiEvents'
 import styles from './Sidebar.module.css'
 
 interface TabRowProps {
@@ -25,7 +26,7 @@ export function TabRow({ tab, runtime, active, depth, persistent, compact = fals
 
   useEffect(
     () =>
-      ante.onUiEvent((event) => {
+      onUiEvent((event) => {
         if (event.type === 'rename' && event.id === tab.id) setEditing(true)
       }),
     [tab.id],

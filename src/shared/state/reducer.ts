@@ -7,6 +7,7 @@ import type {
   Location,
   Tab,
   TabRuntime,
+  WindowData,
   WindowRuntime,
 } from '../schema'
 import type { Action } from './actions'
@@ -16,6 +17,7 @@ import {
   flattenTabs,
   getList,
   getTab,
+  isPersistent,
   locate,
   rootOf,
   sameContainer,
@@ -152,10 +154,41 @@ function move(state: AppState, id: Id, to: Container, index: number): boolean {
     if (to.type === 'split') equalizeSplit(data, to.id)
     return true
   }
+  const displaced = activeEntriesWithin(data, id)
   detach(state, id)
   if (!insert(data, to, index, id)) return false
   applySection(data, id, sectionOfContainer(data, to))
+  for (const entry of displaced) {
+    const root = rootOf(data, entry.activeId)
+    if (root?.section !== 'favorites' && root?.spaceId !== entry.spaceId) {
+      entry.window.activeBySpace[entry.spaceId] = entry.fallback
+    }
+  }
   return true
+}
+
+interface ActiveEntry {
+  window: WindowData
+  spaceId: Id
+  activeId: Id
+  fallback: Id | null
+}
+
+function activeEntriesWithin(data: Data, rootId: Id): ActiveEntry[] {
+  const ids = new Set(descendantIds(data, rootId))
+  const entries: ActiveEntry[] = []
+  for (const window of Object.values(data.windows)) {
+    for (const [spaceId, activeId] of Object.entries(window.activeBySpace)) {
+      if (!activeId || !ids.has(activeId)) continue
+      entries.push({
+        window,
+        spaceId,
+        activeId,
+        fallback: neighborAfterRemoval(data, spaceId, activeId, ids),
+      })
+    }
+  }
+  return entries
 }
 
 function topLevelId(data: Data, id: Id): Id {
@@ -323,8 +356,7 @@ export function reduce(state: AppState, action: Action): void {
     }
     case 'tab/setSavedUrl': {
       const tab = getTab(data, action.id)
-      const section = rootOf(data, action.id)?.section
-      if (!tab || (section !== 'pinned' && section !== 'favorites')) return
+      if (!tab || !isPersistent(data, action.id)) return
       tab.savedUrl = tab.url
       tab.savedTitle = tab.title
       return
@@ -357,8 +389,7 @@ export function reduce(state: AppState, action: Action): void {
       const tab = getTab(data, action.id)
       if (!tab) return
       const location = locate(data, action.id)
-      const section = rootOf(data, action.id)?.section
-      if (section === 'pinned' || section === 'favorites') return
+      if (isPersistent(data, action.id)) return
       if (location) {
         data.closed.unshift({ tab: { ...tab }, location, closedAt: action.now })
         if (data.closed.length > MAX_CLOSED) data.closed.length = MAX_CLOSED
@@ -424,10 +455,12 @@ export function reduce(state: AppState, action: Action): void {
       if (folder?.kind === 'folder') folder.open = action.open ?? !folder.open
       return
     }
-    case 'folder/ungroup': {
-      const folder = data.items[action.id]
-      if (folder?.kind !== 'folder') return
-      replaceInParent(data, action.id, [...folder.children])
+    case 'folder/ungroup':
+    case 'split/dissolve': {
+      const item = data.items[action.id]
+      const kind = action.type === 'folder/ungroup' ? 'folder' : 'split'
+      if (!item || item.kind === 'tab' || item.kind !== kind) return
+      replaceInParent(data, action.id, [...item.children])
       Reflect.deleteProperty(data.items, action.id)
       return
     }
@@ -445,13 +478,6 @@ export function reduce(state: AppState, action: Action): void {
     case 'split/direction': {
       const split = data.items[action.id]
       if (split?.kind === 'split') split.direction = action.direction
-      return
-    }
-    case 'split/dissolve': {
-      const split = data.items[action.id]
-      if (split?.kind !== 'split') return
-      replaceInParent(data, action.id, [...split.children])
-      Reflect.deleteProperty(data.items, action.id)
       return
     }
 
@@ -518,6 +544,7 @@ export function reduce(state: AppState, action: Action): void {
       }
       Reflect.deleteProperty(data.windows, action.id)
       Reflect.deleteProperty(runtime.windows, action.id)
+      if (!Object.values(data.windows).some((other) => other.kind === 'main')) runtime.tabs = {}
       return
     }
     case 'window/update': {

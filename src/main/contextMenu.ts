@@ -5,13 +5,15 @@ import {
   type WebContents,
 } from 'electron'
 import type { Command } from '@shared/commands'
-import type { Id } from '@shared/schema'
+import type { Id, SearchEngine } from '@shared/schema'
+import { isWebUrl, searchUrl } from '@shared/url'
 import { copyText } from './clipboard'
 
 interface ContextMenuDeps {
   contents: WebContents
   tabId: Id
   run: (command: Command) => void
+  searchEngine: SearchEngine
 }
 
 export function buildContextMenu(
@@ -22,7 +24,7 @@ export function buildContextMenu(
   const items: MenuItemConstructorOptions[] = []
   const separator: MenuItemConstructorOptions = { type: 'separator' }
 
-  if (params.linkURL) {
+  if (params.linkURL && isWebUrl(params.linkURL)) {
     items.push(
       {
         label: 'Open Link in New Tab',
@@ -47,10 +49,14 @@ export function buildContextMenu(
 
   if (params.mediaType === 'image' && params.srcURL) {
     items.push(
-      {
-        label: 'Open Image in New Tab',
-        click: () => run({ type: 'open', input: params.srcURL, disposition: 'background' }),
-      },
+      ...(isWebUrl(params.srcURL)
+        ? [
+            {
+              label: 'Open Image in New Tab',
+              click: () => run({ type: 'open', input: params.srcURL, disposition: 'background' }),
+            },
+          ]
+        : []),
       { label: 'Save Image As…', click: () => contents.downloadURL(params.srcURL) },
       { label: 'Copy Image', click: () => contents.copyImageAt(params.x, params.y) },
       { label: 'Copy Image Address', click: () => copyText(params.srcURL) },
@@ -89,7 +95,12 @@ export function buildContextMenu(
       { role: 'copy' },
       {
         label: `Search for “${preview}”`,
-        click: () => run({ type: 'open', input: text, disposition: 'background' }),
+        click: () =>
+          run({
+            type: 'open',
+            input: searchUrl(text, deps.searchEngine),
+            disposition: 'background',
+          }),
       },
       separator,
     )
