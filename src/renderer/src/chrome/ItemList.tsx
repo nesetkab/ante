@@ -3,8 +3,11 @@ import type { Data, Folder, Id, Runtime, Split } from '@shared/schema'
 import { getTab } from '@shared/state/tree'
 import { ante } from '../ante'
 import { Favicon } from '../components/Favicon'
+import { RenameInput, useRenameEvent } from '../components/RenameInput'
 import styles from './Sidebar.module.css'
 import { TabRow } from './TabRow'
+import { useDragSource } from './drag'
+import { dropRow } from './dropTargets'
 
 interface ListContext {
   data: Data
@@ -19,16 +22,19 @@ interface ItemListProps extends ListContext {
 }
 
 function FolderRow({ folder, depth, ...context }: ListContext & { folder: Folder; depth: number }) {
+  const { dragging, onPointerDown } = useDragSource({ type: 'item', id: folder.id, variant: 'row' })
+  const [editing, setEditing] = useRenameEvent(folder.id)
   return (
     <div className={styles.folder}>
       <div
         role="button"
         tabIndex={-1}
-        className={styles.row}
+        className={[styles.row, dragging && styles.dragging].filter(Boolean).join(' ')}
         style={{ paddingLeft: 10 + depth * 14 }}
-        onMouseDown={(event) => {
-          if (event.button === 0) ante.dispatch({ type: 'folder/toggle', id: folder.id })
-        }}
+        {...dropRow(folder.id, depth)}
+        onPointerDown={editing ? undefined : onPointerDown}
+        onClick={() => ante.dispatch({ type: 'folder/toggle', id: folder.id })}
+        onDoubleClick={() => setEditing(true)}
         onContextMenu={(event) => {
           event.preventDefault()
           ante.command({ type: 'tab/contextMenu', tabId: folder.id })
@@ -43,7 +49,19 @@ function FolderRow({ folder, depth, ...context }: ListContext & { folder: Folder
         ) : (
           <FolderIcon size={15} className={styles.folderIcon} />
         )}
-        <span className={styles.title}>{folder.name || 'Untitled'}</span>
+        {editing ? (
+          <RenameInput
+            className={styles.renameInput}
+            value={folder.name}
+            onCancel={() => setEditing(false)}
+            onCommit={(name) => {
+              setEditing(false)
+              if (name) ante.dispatch({ type: 'folder/rename', id: folder.id, name })
+            }}
+          />
+        ) : (
+          <span className={styles.title}>{folder.name || 'Untitled'}</span>
+        )}
       </div>
       {folder.open && <ItemList {...context} ids={folder.children} depth={depth + 1} />}
     </div>
@@ -59,10 +77,15 @@ function SplitRow({
 }: ListContext & { split: Split; depth: number }) {
   const tabs = split.children.map((id) => getTab(data, id)).filter((tab) => tab !== null)
   const containsActive = activeId !== null && split.children.includes(activeId)
+  const { dragging, onPointerDown } = useDragSource({ type: 'item', id: split.id, variant: 'row' })
   return (
     <div
-      className={[styles.splitRow, containsActive && styles.active].filter(Boolean).join(' ')}
+      className={[styles.splitRow, containsActive && styles.active, dragging && styles.dragging]
+        .filter(Boolean)
+        .join(' ')}
       style={{ marginLeft: depth * 14 }}
+      {...dropRow(split.id, depth)}
+      onPointerDown={onPointerDown}
       onContextMenu={(event) => {
         event.preventDefault()
         ante.command({ type: 'tab/contextMenu', tabId: split.id })

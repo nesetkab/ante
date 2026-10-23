@@ -17,6 +17,8 @@ import { IPC, type UiEvent } from '@shared/ipc'
 import { copyText } from './clipboard'
 import { describeArcImport, importFromArc } from './importers/arc'
 import { showSidebarMenu } from './sidebarMenu'
+import { deleteSpaceWithConfirm } from './spaceDelete'
+import { showSpaceMenu } from './spaceMenu'
 import type { OpenDisposition, TabManager } from './tabs'
 import type { Store } from './store'
 import type { AppWindow, WindowManager } from './windows'
@@ -603,6 +605,21 @@ export class CommandRunner {
         this.#sendUi(window, { type: 'toast', message: describeArcImport(result) })
         return
       }
+      case 'space/delete':
+        void deleteSpaceWithConfirm(
+          { store: this.#store, windows: this.#windows, window },
+          command.spaceId,
+        )
+        return
+      case 'space/contextMenu':
+        showSpaceMenu(command.spaceId, {
+          state: this.#store.state,
+          dispatch: this.#store.dispatch,
+          ui: (event) => this.#sendUi(window, event),
+          deleteSpace: () =>
+            this.run(window.id, { type: 'space/delete', spaceId: command.spaceId }),
+        })
+        return
     }
   }
 }

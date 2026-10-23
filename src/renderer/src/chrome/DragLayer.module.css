@@ -1,0 +1,109 @@
+.layer {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.ghost {
+  position: fixed;
+  display: flex;
+  animation: lift 140ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes lift {
+  from {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  to {
+    transform: scale(1.03);
+    opacity: 0.96;
+  }
+}
+
+.row,
+.tile,
+.dot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow:
+    0 10px 28px rgb(0 0 0 / 0.16),
+    0 2px 6px rgb(0 0 0 / 0.08),
+    0 0 0 0.5px var(--panel-border);
+}
+
+.row {
+  padding: 0 10px;
+}
+
+.tile,
+.dot {
+  justify-content: center;
+}
+
+.dot {
+  border-radius: 6px;
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.muted {
+  flex: none;
+  color: var(--fg-muted);
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.emoji {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.line,
+.vline {
+  position: fixed;
+  border-radius: 1px;
+  background: var(--accent);
+}
+
+.line::before {
+  content: '';
+  position: absolute;
+  left: -3px;
+  top: -2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  border: 1.5px solid var(--accent);
+  background: var(--sidebar-bg);
+}
+
+.box {
+  position: fixed;
+  border-radius: var(--radius);
+  background: color-mix(in oklab, var(--accent) 12%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--accent) 70%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ghost {
+    animation: none;
+  }
+}

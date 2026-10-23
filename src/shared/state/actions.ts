@@ -60,6 +60,7 @@ export const uiActionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('archive/remove'), id: idSchema }),
   z.object({ type: z.literal('archive/clear') }),
   z.object({ type: z.literal('settings/update'), patch: settingsPatchSchema }),
+  z.object({ type: z.literal('profile/create'), id: idSchema, name: z.string().max(100) }),
 ])
 export type UiAction = z.infer<typeof uiActionSchema>
 

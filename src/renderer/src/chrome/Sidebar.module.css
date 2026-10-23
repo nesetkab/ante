@@ -353,3 +353,38 @@
   font-size: 13px;
   line-height: 1;
 }
+
+.dragging {
+  opacity: 0.35;
+}
+
+.addressSlot {
+  position: relative;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.favoritesDrop {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius);
+  border: 1px dashed color-mix(in oklab, var(--fg) 28%, transparent);
+  background: var(--sidebar-bg);
+  color: var(--fg-muted);
+  font-size: 12px;
+}
+
+.spaceHeaderActions {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.spaceHeader:hover .spaceHeaderActions {
+  opacity: 1;
+}

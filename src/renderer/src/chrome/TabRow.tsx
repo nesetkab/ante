@@ -6,6 +6,8 @@ import { ante } from '../ante'
 import { Favicon } from '../components/Favicon'
 import { IconButton } from '../components/IconButton'
 import { onUiEvent } from '../uiEvents'
+import { useDragSource } from './drag'
+import { dropRow } from './dropTargets'
 import styles from './Sidebar.module.css'
 
 interface TabRowProps {
@@ -23,6 +25,7 @@ export function TabRow({ tab, runtime, active, depth, persistent, compact = fals
   const title = displayTitle(tab)
   const drifted = persistent && tab.savedUrl !== null && tab.savedUrl !== tab.url
   const unloaded = persistent && !runtime
+  const { dragging, onPointerDown } = useDragSource({ type: 'item', id: tab.id, variant: 'row' })
 
   useEffect(
     () =>
@@ -61,10 +64,13 @@ export function TabRow({ tab, runtime, active, depth, persistent, compact = fals
         active && styles.active,
         unloaded && styles.unloaded,
         compact && styles.compact,
+        dragging && styles.dragging,
       ]
         .filter(Boolean)
         .join(' ')}
       style={{ paddingLeft: 10 + depth * 14 }}
+      {...dropRow(tab.id, depth)}
+      onPointerDown={editing ? undefined : onPointerDown}
       onMouseDown={(event) => {
         if (event.button === 0 && !editing) ante.command({ type: 'tab/activate', tabId: tab.id })
       }}

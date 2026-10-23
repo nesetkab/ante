@@ -3,12 +3,15 @@ import { useRef, type WheelEvent } from 'react'
 import { activeTabId, getTab } from '@shared/state/tree'
 import { displayUrl } from '@shared/url'
 import { ante, isMac } from '../ante'
-import { Favicon } from '../components/Favicon'
 import { IconButton } from '../components/IconButton'
 import { useAppState, useWindowData } from '../store'
+import { DragLayer } from './DragLayer'
+import { dropZone } from './dropTargets'
+import { Favorites, FavoritesDrop } from './Favorites'
 import { ItemList } from './ItemList'
 import styles from './Sidebar.module.css'
 import { SpaceBar } from './SpaceBar'
+import { SpaceHeader } from './SpaceHeader'
 
 const SWIPE_THRESHOLD = 90
 
@@ -40,7 +43,6 @@ export function Sidebar({ floating = false }: { floating?: boolean }) {
   const activeId = activeTabId(data, window)
   const activeTab = getTab(data, activeId)
   const activeRuntime = activeId ? runtime.tabs[activeId] : undefined
-  const favorites = space ? (data.favorites[space.profileId] ?? []) : []
 
   return (
     <aside
@@ -84,58 +86,29 @@ export function Sidebar({ floating = false }: { floating?: boolean }) {
         )}
       </header>
 
-      <button
-        type="button"
-        className={styles.address}
-        onClick={() => ante.command({ type: 'commandBar/open', mode: activeTab ? 'edit' : 'new' })}
-      >
-        {activeTab ? displayUrl(activeTab.url) : 'Search or enter address'}
-      </button>
+      <div className={styles.addressSlot}>
+        <button
+          type="button"
+          className={styles.address}
+          onClick={() =>
+            ante.command({ type: 'commandBar/open', mode: activeTab ? 'edit' : 'new' })
+          }
+        >
+          {activeTab ? displayUrl(activeTab.url) : 'Search or enter address'}
+        </button>
+        {space && (data.favorites[space.profileId] ?? []).length === 0 && (
+          <FavoritesDrop profileId={space.profileId} />
+        )}
+      </div>
 
-      {favorites.length > 0 && (
-        <div className={styles.favorites}>
-          {favorites.map((id) => {
-            const tab = getTab(data, id)
-            if (!tab) return null
-            return (
-              <button
-                key={id}
-                type="button"
-                title={tab.customTitle ?? tab.title}
-                className={[
-                  styles.favorite,
-                  id === activeId && styles.favoriteActive,
-                  !runtime.tabs[id] && styles.unloaded,
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-                onMouseDown={(event) => {
-                  if (event.button === 0) ante.command({ type: 'tab/activate', tabId: id })
-                }}
-                onContextMenu={(event) => {
-                  event.preventDefault()
-                  ante.command({ type: 'tab/contextMenu', tabId: id })
-                }}
-              >
-                <Favicon
-                  src={tab.favicon}
-                  pageUrl={tab.url}
-                  loading={runtime.tabs[id]?.loading}
-                  size={18}
-                />
-              </button>
-            )
-          })}
-        </div>
+      {space && (
+        <Favorites data={data} runtime={runtime} profileId={space.profileId} activeId={activeId} />
       )}
 
-      <div className={styles.scroll}>
+      <div className={styles.scroll} data-drag-scroll>
         {space && (
           <>
-            <div className={styles.spaceHeader}>
-              {space.icon && <span className={styles.spaceIcon}>{space.icon}</span>}
-              <span className={styles.spaceName}>{space.name}</span>
-            </div>
+            <SpaceHeader space={space} />
             <ItemList
               ids={space.pinned}
               data={data}
@@ -143,7 +116,16 @@ export function Sidebar({ floating = false }: { floating?: boolean }) {
               activeId={activeId}
               persistent
             />
-            <div className={styles.todayDivider}>
+            <div
+              className={styles.todayDivider}
+              {...dropZone({
+                placement: {
+                  to: { type: 'pinned', spaceId: space.id },
+                  index: space.pinned.length,
+                },
+                line: 'top',
+              })}
+            >
               <span className={styles.dividerLine} />
               {space.today.length > 0 && (
                 <button
@@ -158,6 +140,10 @@ export function Sidebar({ floating = false }: { floating?: boolean }) {
             <button
               type="button"
               className={[styles.row, styles.newTab].join(' ')}
+              {...dropZone({
+                placement: { to: { type: 'today', spaceId: space.id }, index: 0 },
+                line: 'bottom',
+              })}
               onClick={() => ante.command({ type: 'commandBar/open', mode: 'new' })}
             >
               <Plus size={15} />
@@ -175,6 +161,7 @@ export function Sidebar({ floating = false }: { floating?: boolean }) {
       </div>
 
       <SpaceBar />
+      <DragLayer />
     </aside>
   )
 }

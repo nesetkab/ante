@@ -67,6 +67,8 @@ export const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('archive/restore'), id: idSchema }),
   z.object({ type: z.literal('settings/open') }),
   z.object({ type: z.literal('import/arc') }),
+  z.object({ type: z.literal('space/delete'), spaceId: idSchema }),
+  z.object({ type: z.literal('space/contextMenu'), spaceId: idSchema }),
 ])
 export type Command = z.infer<typeof commandSchema>
 export type CommandType = Command['type']

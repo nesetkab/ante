@@ -65,8 +65,14 @@ function isAncestor(data: Data, ancestorId: Id, id: Id): boolean {
   return descendantIds(data, ancestorId).includes(id)
 }
 
-function canPlace(data: Data, item: Item, container: Container): boolean {
-  if (!getList(data, container)) return false
+function hasList(data: Data, container: Container): boolean {
+  return container.type === 'favorites'
+    ? data.profiles[container.profileId] !== undefined
+    : getList(data, container) !== null
+}
+
+export function canPlace(data: Data, item: Item, container: Container): boolean {
+  if (!hasList(data, container)) return false
   switch (container.type) {
     case 'favorites':
       return item.kind === 'tab'
@@ -88,6 +94,8 @@ function canPlace(data: Data, item: Item, container: Container): boolean {
 }
 
 function insert(data: Data, container: Container, index: number, id: Id): boolean {
+  if (container.type === 'favorites' && data.profiles[container.profileId])
+    data.favorites[container.profileId] ??= []
   const list = getList(data, container)
   if (!list) return false
   list.splice(clamp(index, 0, list.length), 0, id)
@@ -159,9 +167,12 @@ function move(state: AppState, id: Id, to: Container, index: number): boolean {
     return true
   }
   const displaced = activeEntriesWithin(data, id)
+  const profileBefore = rootOf(data, id)?.profileId ?? null
   detach(state, id)
   if (!insert(data, to, index, id)) return false
   applySection(data, id, sectionOfContainer(data, to))
+  const profileAfter = rootOf(data, id)?.profileId ?? null
+  if (profileBefore && profileAfter && profileBefore !== profileAfter) unloadTabs(state, [id])
   for (const entry of displaced) {
     const root = rootOf(data, entry.activeId)
     if (root?.section !== 'favorites' && root?.spaceId !== entry.spaceId) {
@@ -193,6 +204,11 @@ function activeEntriesWithin(data: Data, rootId: Id): ActiveEntry[] {
     }
   }
   return entries
+}
+
+function unloadTabs(state: AppState, ids: readonly Id[]): void {
+  for (const tabId of flattenTabs(state.data, ids))
+    Reflect.deleteProperty(state.runtime.tabs, tabId)
 }
 
 function topLevelId(data: Data, id: Id): Id {
@@ -298,7 +314,10 @@ export function reduce(state: AppState, action: Action): void {
       const space = data.spaces[action.id]
       if (!space) return
       if (action.patch.profileId && !data.profiles[action.patch.profileId]) return
+      const profileChanged =
+        action.patch.profileId !== undefined && action.patch.profileId !== space.profileId
       Object.assign(space, action.patch)
+      if (profileChanged) unloadTabs(state, [...space.pinned, ...space.today])
       return
     }
     case 'space/delete': {
@@ -602,5 +621,11 @@ export function reduce(state: AppState, action: Action): void {
     case 'runtime/arcImport':
       runtime.arcImportAvailable = action.available
       return
+    case 'profile/create': {
+      if (data.profiles[action.id]) return
+      data.profiles[action.id] = { id: action.id, name: action.name.trim() || 'Profile' }
+      data.favorites[action.id] ??= []
+      return
+    }
   }
 }
