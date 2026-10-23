@@ -126,7 +126,7 @@ describe('item/move between sections', () => {
     )
     expect(space(state)?.today).toEqual(['c'])
     expect(space(state)?.pinned).toEqual(['f', 'b'])
-    expect(state.data.favorites['missing']).toBeUndefined()
+    expect(state.data.favorites.missing).toBeUndefined()
   })
 })
 
