@@ -28,6 +28,9 @@ const urlArguments = (argv: readonly string[]) =>
 
 async function start(): Promise<void> {
   await app.whenReady()
+  if (process.platform === 'darwin' && !app.isPackaged) {
+    app.dock?.setIcon(join(app.getAppPath(), 'build', 'icon.png'))
+  }
 
   const persistence = new Persistence(join(app.getPath('userData'), 'state.json'))
   const fallbackSpaceId = randomUUID()

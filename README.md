@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/logo-preview.png" alt="Ante" width="360" /></p>
+
 # Ante
 
 An open source browser that picks up where Arc left off.
