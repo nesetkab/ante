@@ -13,6 +13,7 @@ import {
 import { hostOf, resolveInput } from '@shared/url'
 import { IPC, type UiEvent } from '@shared/ipc'
 import { copyText } from './clipboard'
+import { describeArcImport, importFromArc } from './importers/arc'
 import { showSidebarMenu } from './sidebarMenu'
 import type { OpenDisposition, TabManager } from './tabs'
 import type { Store } from './store'
@@ -588,6 +589,13 @@ export class CommandRunner {
       case 'settings/open':
         this.#openSettings()
         return
+      case 'import/arc': {
+        const result = importFromArc(this.#store)
+        const first = result.ok ? result.spaceIds[0] : undefined
+        if (first) this.#selectSpace(window, first)
+        this.#sendUi(window, { type: 'toast', message: describeArcImport(result) })
+        return
+      }
     }
   }
 }

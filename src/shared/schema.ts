@@ -173,6 +173,7 @@ export interface WindowRuntime {
 export interface Runtime {
   tabs: Record<Id, TabRuntime>
   windows: Record<Id, WindowRuntime>
+  arcImportAvailable?: boolean
 }
 
 export interface AppState {
