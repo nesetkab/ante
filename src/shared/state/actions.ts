@@ -1,5 +1,11 @@
 import { z } from 'zod'
 import {
+  originSchema,
+  sitePermissionSchema,
+  type PermissionDecision,
+  type SitePermission,
+} from '../permissions'
+import {
   boostPatchSchema,
   containerSchema,
   idSchema,
@@ -91,6 +97,13 @@ export const uiActionSchema = z.discriminatedUnion('type', [
     }),
   }),
   z.object({ type: z.literal('route/delete'), id: idSchema }),
+  z.object({
+    type: z.literal('sitePermission/clear'),
+    profileId: idSchema,
+    origin: originSchema,
+    permission: sitePermissionSchema.optional(),
+  }),
+  z.object({ type: z.literal('profile/rename'), id: idSchema, name: z.string().max(100) }),
 ])
 export type UiAction = z.infer<typeof uiActionSchema>
 
@@ -123,5 +136,14 @@ export type InternalAction =
   | { type: 'download/add'; download: DownloadRuntime }
   | { type: 'download/update'; id: Id; patch: Partial<Omit<DownloadRuntime, 'id'>> }
   | { type: 'download/remove'; ids: Id[] }
+  | {
+      type: 'sitePermission/set'
+      profileId: Id
+      origin: string
+      permissions: SitePermission[]
+      decision: PermissionDecision
+    }
+  | { type: 'private/create'; profileId: Id; spaceId: Id }
+  | { type: 'private/remove'; profileId: Id }
 
 export type Action = UiAction | InternalAction

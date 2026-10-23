@@ -192,6 +192,7 @@ export function buildData(fixture: Fixture = {}): Data {
     settings: settingsSchema.parse({}),
     boosts: {},
     routes: [],
+    sitePermissions: {},
   }
 }
 

@@ -1,10 +1,12 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { dataSchema, type Data } from '@shared/schema'
+import { stripPrivate } from '@shared/state/private'
 
 const SAVE_DELAY_MS = 500
 
-export function toPersisted(data: Data): Data {
+export function toPersisted(input: Data): Data {
+  const data = stripPrivate(input)
   const windows = Object.fromEntries(
     Object.values(data.windows)
       .filter((window) => window.kind === 'main')

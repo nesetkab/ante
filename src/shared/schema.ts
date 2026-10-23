@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { sitePermissionsSchema, type FindState, type Prompt } from './permissions'
 
 type DefaultedShape = Record<string, z.ZodDefault>
 type UnwrappedShape<Shape extends DefaultedShape> = {
@@ -144,6 +145,7 @@ export const settingsSchema = z.object({
   adblock: z.boolean().default(true),
   peekExternalLinks: z.boolean().default(true),
   externalLinks: z.enum(['little', 'space']).default('little'),
+  adblockAllowlist: z.array(z.string().min(1).max(253)).max(10000).default([]),
 })
 export type Settings = z.infer<typeof settingsSchema>
 export const settingsPatchSchema = withoutDefaults(settingsSchema).partial()
@@ -206,6 +208,7 @@ export const dataSchema = z.object({
   settings: settingsSchema.prefault({}),
   boosts: z.record(idSchema, boostSchema).default({}),
   routes: z.array(routeSchema).max(500).default([]),
+  sitePermissions: sitePermissionsSchema.default({}),
 })
 export type Data = z.infer<typeof dataSchema>
 
@@ -218,6 +221,9 @@ export interface TabRuntime {
   zoom: number
   crashed: boolean
   fullscreen: boolean
+  blocked: number
+  prompt: Prompt | null
+  find: FindState | null
 }
 
 export const librarySectionSchema = z.enum(['history', 'archive', 'downloads'])

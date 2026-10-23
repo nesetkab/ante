@@ -63,6 +63,8 @@ export function buildAppMenu(run: (command: Command) => void): Menu {
         { role: 'paste' },
         { role: 'pasteAndMatchStyle' },
         { role: 'selectAll' },
+        { type: 'separator' },
+        ...itemsFor('edit'),
       ],
     },
     {
