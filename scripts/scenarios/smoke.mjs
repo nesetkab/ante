@@ -8,6 +8,19 @@ const assert = (condition, message) => {
 export default async function smoke({ store, run, waitFor, windows }) {
   await waitFor((state) => Object.keys(state.data.windows).length === 1)
   const window = windows.all()[0]
+  const rendered = (contents, selector) =>
+    contents.executeJavaScript(
+      `typeof window.ante === 'object' && document.querySelector(${JSON.stringify(selector)}) !== null`,
+    )
+  await waitFor(() => !window.win.webContents.isLoading())
+  for (
+    let attempt = 0;
+    attempt < 50 && !(await rendered(window.win.webContents, 'aside'));
+    attempt += 1
+  ) {
+    await new Promise((resolve) => setTimeout(resolve, 100))
+  }
+  assert(await rendered(window.win.webContents, 'aside'), 'the sidebar should render')
   const spaceId = () => store.state.data.windows[window.id].spaceId
   const space = () => store.state.data.spaces[spaceId()]
 
@@ -38,6 +51,15 @@ export default async function smoke({ store, run, waitFor, windows }) {
 
   run({ type: 'tab/reopenClosed' }, window.id)
   await waitFor((state) => Boolean(state.data.items[second]))
+
+  run({ type: 'commandBar/open', mode: 'new' }, window.id)
+  let commandBar = false
+  for (let attempt = 0; attempt < 50 && !commandBar; attempt += 1) {
+    commandBar = await rendered(window.overlay.webContents, 'input')
+    if (!commandBar) await new Promise((resolve) => setTimeout(resolve, 100))
+  }
+  assert(commandBar, 'the command bar should render in the overlay')
+  run({ type: 'overlay/close' }, window.id)
 
   run({ type: 'open', input: page('Peek'), disposition: 'peek' }, window.id)
   await waitFor((state) => state.data.windows[window.id].peekTabId !== null)

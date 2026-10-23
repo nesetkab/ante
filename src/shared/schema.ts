@@ -162,7 +162,13 @@ export interface TabRuntime {
   fullscreen: boolean
 }
 
-export type Overlay = { kind: 'commandBar'; mode: 'new' | 'edit' } | { kind: 'sidebar' }
+export const librarySectionSchema = z.enum(['history', 'archive', 'downloads'])
+export type LibrarySection = z.infer<typeof librarySectionSchema>
+
+export type Overlay =
+  | { kind: 'commandBar'; mode: 'new' | 'edit' }
+  | { kind: 'sidebar' }
+  | { kind: 'library'; section: LibrarySection }
 
 export interface WindowRuntime {
   overlay: Overlay | null
@@ -170,9 +176,25 @@ export interface WindowRuntime {
   fullscreen: boolean
 }
 
+export type DownloadState = 'progressing' | 'paused' | 'completed' | 'cancelled' | 'interrupted'
+
+export interface DownloadRuntime {
+  id: Id
+  url: string
+  filename: string
+  path: string
+  state: DownloadState
+  receivedBytes: number
+  totalBytes: number
+  startedAt: number
+  finishedAt: number | null
+  profileId: Id
+}
+
 export interface Runtime {
   tabs: Record<Id, TabRuntime>
   windows: Record<Id, WindowRuntime>
+  downloads: Record<Id, DownloadRuntime>
   arcImportAvailable?: boolean
 }
 

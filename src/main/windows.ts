@@ -83,7 +83,10 @@ export class AppWindow {
     loadSurface(this.win.webContents, 'chrome', this.id)
     loadSurface(this.overlay.webContents, 'overlay', this.id)
 
-    this.win.once('ready-to-show', () => this.win.show())
+    this.win.once('ready-to-show', () => {
+      if (process.env.ANTE_AUTOMATION) this.win.showInactive()
+      else this.win.show()
+    })
     this.win.on('focus', () => {
       ctx.onFocus(this.id)
       ctx.store.dispatch({ type: 'runtime/window', id: this.id, patch: { focused: true } })
@@ -167,6 +170,8 @@ export class AppWindow {
         width: sidebarWidth,
         height: height - FLOATING_SIDEBAR_INSET * 2,
       }
+    } else if (overlayState?.kind === 'library' && window.kind === 'main') {
+      overlayBounds = layout.content
     }
     const peekView = peekId && layout.peek ? this.#ctx.tabs.ensure(peekId) : null
     if (peekId && peekView && layout.peek) {

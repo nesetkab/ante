@@ -57,7 +57,7 @@ export function createInitialData(spaceId: Id): Data {
 }
 
 export function createAppState(data: Data): AppState {
-  return { data, runtime: { tabs: {}, windows: {} } }
+  return { data, runtime: { tabs: {}, windows: {}, downloads: {} } }
 }
 
 export const archiveThresholds = {

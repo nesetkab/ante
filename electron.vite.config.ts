@@ -11,6 +11,7 @@ export default defineConfig({
   preload: {
     resolve: { alias },
     build: {
+      externalizeDeps: false,
       rollupOptions: {
         output: { format: 'cjs', entryFileNames: '[name].cjs' },
       },

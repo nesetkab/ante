@@ -266,5 +266,31 @@ export function shortcuts(platform: Platform): Shortcut[] {
       section: 'file',
       command: { type: 'import/arc' },
     },
+    {
+      id: 'library',
+      label: 'Library',
+      section: 'view',
+      accelerator: 'CmdOrCtrl+Y',
+      command: { type: 'library/open' },
+    },
+    {
+      id: 'history',
+      label: 'History',
+      section: 'view',
+      command: { type: 'library/open', section: 'history' },
+    },
+    {
+      id: 'downloads',
+      label: 'Downloads',
+      section: 'view',
+      accelerator: 'CmdOrCtrl+Alt+L',
+      command: { type: 'library/open', section: 'downloads' },
+    },
+    {
+      id: 'archive',
+      label: 'Archived Tabs',
+      section: 'view',
+      command: { type: 'library/open', section: 'archive' },
+    },
   ]
 }

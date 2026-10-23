@@ -7,6 +7,7 @@ import {
   splitDirectionSchema,
   type Container,
   type Data,
+  type DownloadRuntime,
   type Id,
   type Tab,
   type TabRuntime,
@@ -90,5 +91,8 @@ export type InternalAction =
   | { type: 'runtime/window'; id: Id; patch: Partial<WindowRuntime> }
   | { type: 'data/import'; bundle: ImportBundle }
   | { type: 'runtime/arcImport'; available: boolean }
+  | { type: 'download/add'; download: DownloadRuntime }
+  | { type: 'download/update'; id: Id; patch: Partial<Omit<DownloadRuntime, 'id'>> }
+  | { type: 'download/remove'; ids: Id[] }
 
 export type Action = UiAction | InternalAction

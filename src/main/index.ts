@@ -12,6 +12,9 @@ import { CommandRunner } from './commands'
 import { detectArcImport } from './importers/arc'
 import { showContextMenu } from './contextMenu'
 import { broadcastPatches, registerIpc } from './ipc'
+import { DownloadManager } from './downloads'
+import { HistoryStore, recordHistory } from './history'
+import { registerLibraryIpc } from './libraryIpc'
 import { buildAppMenu } from './menu'
 import { Persistence } from './persistence'
 import { Sessions } from './sessions'
@@ -82,6 +85,14 @@ async function start(): Promise<void> {
   session.defaultSession.setPermissionCheckHandler(() => false)
   const flushPatches = broadcastPatches(store, surfaces)
   registerIpc({ store, surfaces, runner, flushPatches })
+  const history = new HistoryStore(join(app.getPath('userData'), 'history.sqlite'))
+  history.prune()
+  recordHistory(store, history, {
+    profileFor,
+    isRecording: (tabId) => tabs.contents(tabId)?.session.isPersistent() ?? false,
+  })
+  const downloads = new DownloadManager(store, sessions)
+  registerLibraryIpc({ store, surfaces, history, downloads })
   Menu.setApplicationMenu(buildAppMenu(runInFocused))
 
   const restored = Object.values(store.state.data.windows).filter(
@@ -118,6 +129,7 @@ async function start(): Promise<void> {
     persistence.schedule(store.state.data)
     persistence.flush()
   })
+  app.on('will-quit', () => history.close())
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit()
   })

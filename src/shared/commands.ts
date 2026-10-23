@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { idSchema } from './schema'
+import { idSchema, librarySectionSchema } from './schema'
 
 const optionalTab = z.object({ tabId: idSchema.optional() })
 
@@ -69,6 +69,7 @@ export const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('import/arc') }),
   z.object({ type: z.literal('space/delete'), spaceId: idSchema }),
   z.object({ type: z.literal('space/contextMenu'), spaceId: idSchema }),
+  z.object({ type: z.literal('library/open'), section: librarySectionSchema.optional() }),
 ])
 export type Command = z.infer<typeof commandSchema>
 export type CommandType = Command['type']
