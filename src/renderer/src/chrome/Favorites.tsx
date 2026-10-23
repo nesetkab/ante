@@ -36,9 +36,7 @@ function FavoriteTile({
         .join(' ')}
       {...dropTile(id)}
       onPointerDown={onPointerDown}
-      onMouseDown={(event) => {
-        if (event.button === 0) ante.command({ type: 'tab/activate', tabId: id })
-      }}
+      onClick={() => ante.command({ type: 'tab/activate', tabId: id })}
       onContextMenu={(event) => {
         event.preventDefault()
         ante.command({ type: 'tab/contextMenu', tabId: id })

@@ -52,7 +52,10 @@ export function createInitialData(spaceId: Id): Data {
       theme: 'system',
       adblock: true,
       peekExternalLinks: true,
+      externalLinks: 'little',
     },
+    boosts: {},
+    routes: [],
   }
 }
 

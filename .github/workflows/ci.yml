@@ -41,6 +41,6 @@ jobs:
       - run: npm ci
       - run: npm run build
       - if: runner.os == 'Linux'
-        run: xvfb-run -a npm run smoke
+        run: xvfb-run -a npm run e2e
       - if: runner.os != 'Linux'
-        run: npm run smoke
+        run: npm run e2e

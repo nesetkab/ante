@@ -71,8 +71,8 @@ export function TabRow({ tab, runtime, active, depth, persistent, compact = fals
       style={{ paddingLeft: 10 + depth * 14 }}
       {...dropRow(tab.id, depth)}
       onPointerDown={editing ? undefined : onPointerDown}
-      onMouseDown={(event) => {
-        if (event.button === 0 && !editing) ante.command({ type: 'tab/activate', tabId: tab.id })
+      onClick={() => {
+        if (!editing) ante.command({ type: 'tab/activate', tabId: tab.id })
       }}
       onAuxClick={onAuxClick}
       onDoubleClick={() => setEditing(true)}
@@ -121,7 +121,10 @@ export function TabRow({ tab, runtime, active, depth, persistent, compact = fals
           size="sm"
           label={runtime.muted ? 'Unmute tab' : 'Mute tab'}
           onMouseDown={stop}
-          onClick={() => ante.command({ type: 'tab/toggleMute', tabId: tab.id })}
+          onClick={(event) => {
+            event.stopPropagation()
+            ante.command({ type: 'tab/toggleMute', tabId: tab.id })
+          }}
         >
           {runtime.muted ? <VolumeX size={13} /> : <Volume2 size={13} />}
         </IconButton>
@@ -132,7 +135,10 @@ export function TabRow({ tab, runtime, active, depth, persistent, compact = fals
           label={persistent ? 'Unload tab' : 'Close tab'}
           className={styles.close}
           onMouseDown={stop}
-          onClick={() => ante.command({ type: 'tab/close', tabId: tab.id })}
+          onClick={(event) => {
+            event.stopPropagation()
+            ante.command({ type: 'tab/close', tabId: tab.id })
+          }}
         >
           {persistent ? <span className={styles.unloadGlyph} /> : <X size={13} />}
         </IconButton>

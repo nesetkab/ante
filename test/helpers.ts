@@ -12,6 +12,7 @@ import {
   type SplitDirection,
   type Tab,
   type WindowData,
+  settingsSchema,
 } from '@shared/schema'
 import type { Action } from '@shared/state/actions'
 import { createAppState, DEFAULT_PROFILE_ID, spaceColors } from '@shared/state/initial'
@@ -188,15 +189,9 @@ export function buildData(fixture: Fixture = {}): Data {
     windows,
     archive: [],
     closed: [],
-    settings: {
-      searchEngine: 'google',
-      archiveAfter: '12h',
-      sidebarWidth: 260,
-      sidebarSide: 'left',
-      theme: 'system',
-      adblock: true,
-      peekExternalLinks: true,
-    },
+    settings: settingsSchema.parse({}),
+    boosts: {},
+    routes: [],
   }
 }
 

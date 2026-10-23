@@ -98,9 +98,7 @@ function SplitRow({
           className={[styles.splitPane, tab.id === activeId && styles.splitPaneActive]
             .filter(Boolean)
             .join(' ')}
-          onMouseDown={(event) => {
-            if (event.button === 0) ante.command({ type: 'tab/activate', tabId: tab.id })
-          }}
+          onClick={() => ante.command({ type: 'tab/activate', tabId: tab.id })}
           title={tab.title || tab.url}
         >
           <Favicon

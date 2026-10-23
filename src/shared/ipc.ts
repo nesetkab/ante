@@ -11,7 +11,11 @@ export const IPC = {
   ui: 'ante:ui',
 } as const
 
-export type UiEvent = { type: 'rename'; id: string } | { type: 'toast'; message: string }
+export type UiEvent =
+  | { type: 'rename'; id: string }
+  | { type: 'toast'; message: string }
+  | { type: 'zap'; boostId: string; active: boolean }
+  | { type: 'defaultBrowser'; isDefault: boolean }
 
 export interface Snapshot {
   version: number

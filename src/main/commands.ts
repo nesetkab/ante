@@ -16,6 +16,7 @@ import { nextZoom } from '@shared/zoom'
 import { IPC, type UiEvent } from '@shared/ipc'
 import { copyText } from './clipboard'
 import { describeArcImport, importFromArc } from './importers/arc'
+import type { FeatureCommand } from './features'
 import { showSidebarMenu } from './sidebarMenu'
 import { deleteSpaceWithConfirm } from './spaceDelete'
 import { showSpaceMenu } from './spaceMenu'
@@ -28,6 +29,7 @@ interface Deps {
   tabs: TabManager
   windows: WindowManager
   openSettings: () => void
+  runFeature: (window: AppWindow, command: FeatureCommand) => void
 }
 
 export class CommandRunner {
@@ -35,12 +37,14 @@ export class CommandRunner {
   readonly #tabs: TabManager
   readonly #windows: WindowManager
   readonly #openSettings: () => void
+  readonly #runFeature: (window: AppWindow, command: FeatureCommand) => void
 
   constructor(deps: Deps) {
     this.#store = deps.store
     this.#tabs = deps.tabs
     this.#windows = deps.windows
     this.#openSettings = deps.openSettings
+    this.#runFeature = deps.runFeature
   }
 
   get #data() {
@@ -636,6 +640,15 @@ export class CommandRunner {
         window.focusOverlay()
         return
       }
+      case 'boost/open':
+      case 'boost/zap':
+      case 'boost/zapStop':
+      case 'boost/reloadTabs':
+      case 'routes/open':
+      case 'browser/setDefault':
+      case 'browser/checkDefault':
+        this.#runFeature(window, command)
+        return
     }
   }
 }

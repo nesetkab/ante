@@ -8,14 +8,18 @@ import { sanitize } from '@shared/state/sanitize'
 import { rootOf } from '@shared/state/tree'
 import { startArchiveSweeper } from './archive'
 import { runAutomation } from './automation'
+import { BoostManager } from './boosts'
 import { CommandRunner } from './commands'
 import { detectArcImport } from './importers/arc'
 import { showContextMenu } from './contextMenu'
+import { externalLinks } from './external'
+import { Features } from './features'
 import { broadcastPatches, registerIpc } from './ipc'
 import { DownloadManager } from './downloads'
 import { HistoryStore, recordHistory } from './history'
 import { registerLibraryIpc } from './libraryIpc'
 import { buildAppMenu } from './menu'
+import { PanelManager } from './panels'
 import { Persistence } from './persistence'
 import { Sessions } from './sessions'
 import { Store } from './store'
@@ -25,6 +29,7 @@ import { WindowManager } from './windows'
 
 app.setName('Ante')
 if (process.env.ANTE_USER_DATA) app.setPath('userData', process.env.ANTE_USER_DATA)
+externalLinks.listen()
 
 const urlArguments = (argv: readonly string[]) =>
   argv.slice(1).filter((arg) => /^https?:\/\//i.test(arg))
@@ -71,7 +76,25 @@ async function start(): Promise<void> {
     },
   })
   const windows = new WindowManager({ store, tabs, surfaces, isQuitting: () => quitting })
-  const runner = new CommandRunner({ store, tabs, windows, openSettings: () => undefined })
+  const boosts = new BoostManager(store, tabs)
+  boosts.start()
+  const panels = new PanelManager(store, surfaces)
+  const features = new Features({
+    store,
+    tabs,
+    windows,
+    surfaces,
+    boosts,
+    panels,
+    runner: () => runner,
+  })
+  const runner = new CommandRunner({
+    store,
+    tabs,
+    windows,
+    openSettings: () => undefined,
+    runFeature: (window, command) => features.run(window, command),
+  })
   const runInFocused = (command: Command) => runner.run(windows.focused()?.id ?? null, command)
 
   store.subscribe((change) => {
@@ -103,8 +126,8 @@ async function start(): Promise<void> {
     const spaceId = store.state.data.spaceOrder[0]
     if (spaceId) windows.createMain(spaceId)
   }
-  for (const url of urlArguments(process.argv))
-    runInFocused({ type: 'open', input: url, disposition: 'newTab' })
+  externalLinks.attach((url) => features.openExternal(url))
+  for (const url of urlArguments(process.argv)) externalLinks.push(url)
 
   startArchiveSweeper(store)
 
@@ -117,8 +140,7 @@ async function start(): Promise<void> {
       if (window.win.isMinimized()) window.win.restore()
       window.win.focus()
     }
-    for (const url of urlArguments(argv))
-      runInFocused({ type: 'open', input: url, disposition: 'newTab' })
+    for (const url of urlArguments(argv)) externalLinks.push(url)
   })
   app.on('activate', () => {
     const spaceId = store.state.data.spaceOrder[0]

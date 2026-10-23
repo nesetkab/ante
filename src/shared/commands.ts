@@ -70,6 +70,13 @@ export const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('space/delete'), spaceId: idSchema }),
   z.object({ type: z.literal('space/contextMenu'), spaceId: idSchema }),
   z.object({ type: z.literal('library/open'), section: librarySectionSchema.optional() }),
+  z.object({ type: z.literal('boost/open'), ...optionalTab.shape }),
+  z.object({ type: z.literal('boost/zap'), boostId: idSchema, ...optionalTab.shape }),
+  z.object({ type: z.literal('boost/zapStop') }),
+  z.object({ type: z.literal('boost/reloadTabs'), boostId: idSchema }),
+  z.object({ type: z.literal('routes/open') }),
+  z.object({ type: z.literal('browser/setDefault') }),
+  z.object({ type: z.literal('browser/checkDefault') }),
 ])
 export type Command = z.infer<typeof commandSchema>
 export type CommandType = Command['type']

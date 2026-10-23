@@ -43,3 +43,4 @@ Anything that is pure logic belongs in `src/shared` with tests in `test/`.
 
 - Unit tests: `test/*.test.ts`, run with `npm test`.
 - End to end: `scripts/scenarios/*.mjs` receive an automation context (`store`, `run`, `waitFor`, `windows`) and drive the real app. Run one with `npm run build && node scripts/smoke.mjs scripts/scenarios/<name>.mjs`.
+- Manual scenarios that depend on real input timing, like `scripts/manual/drag.mjs`, run the same way but are not part of `npm run e2e`.

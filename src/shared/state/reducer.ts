@@ -12,6 +12,7 @@ import type {
 } from '../schema'
 import { applyImport } from '../importers/bundle'
 import type { Action } from './actions'
+import { reduceBoosts } from './boosts'
 import {
   descendantIds,
   displayTitle,
@@ -637,6 +638,16 @@ export function reduce(state: AppState, action: Action): void {
     }
     case 'download/remove':
       for (const id of action.ids) Reflect.deleteProperty(runtime.downloads, id)
+      return
+    case 'boost/create':
+    case 'boost/update':
+    case 'boost/delete':
+    case 'boost/addZap':
+    case 'boost/removeZap':
+    case 'route/add':
+    case 'route/update':
+    case 'route/delete':
+      reduceBoosts(data, action)
       return
   }
 }

@@ -24,7 +24,8 @@
     "check": "npm run typecheck && npm run lint && npm run format:check && npm test",
     "package": "npm run build && electron-builder",
     "icons": "electron scripts/render-icons.mjs",
-    "package:dir": "npm run build && electron-builder --dir"
+    "package:dir": "npm run build && electron-builder --dir",
+    "e2e": "node scripts/e2e.mjs"
   },
   "dependencies": {
     "immer": "^11.2.9",
