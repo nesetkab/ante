@@ -79,6 +79,27 @@ export class TabManager {
     return view
   }
 
+  histories(include: (id: Id) => boolean): Record<Id, SavedHistory> {
+    const result: Record<Id, SavedHistory> = {}
+    for (const [id, saved] of this.#histories) if (include(id)) result[id] = saved
+    for (const [id, view] of this.#views) {
+      const contents = view.webContents
+      if (contents.isDestroyed() || !include(id)) continue
+      const saved = trimHistory(
+        contents.navigationHistory.getAllEntries(),
+        contents.navigationHistory.getActiveIndex(),
+      )
+      if (saved) result[id] = saved
+    }
+    return result
+  }
+
+  restoreHistories(histories: Record<Id, SavedHistory>): void {
+    for (const [id, saved] of Object.entries(histories)) {
+      if (!this.#views.has(id)) this.#histories.set(id, saved)
+    }
+  }
+
   discardHistory(id: Id): void {
     this.#histories.delete(id)
     if (this.#views.has(id)) this.#discard.add(id)

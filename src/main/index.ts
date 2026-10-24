@@ -7,7 +7,7 @@ import { createAppState, createInitialData, DEFAULT_PROFILE_ID } from '@shared/s
 import { isPrivateProfile } from '@shared/state/private'
 import { sanitize } from '@shared/state/sanitize'
 import { referencedAssets } from '@shared/easels'
-import { profileIndex } from '@shared/state/tree'
+import { getTab, profileIndex } from '@shared/state/tree'
 import { searchTemplate } from '@shared/url'
 import { startArchiveSweeper } from './archive'
 import { runAutomation } from './automation'
@@ -35,6 +35,7 @@ import { Sessions } from './sessions'
 import { Store } from './store'
 import { PrivacySignals } from './privacy/signals'
 import { SyncManager } from './sync'
+import { readTabHistories, writeTabHistoriesSync } from './tabHistories'
 import { UpdateChecker } from './updates'
 import { SurfaceRegistry } from './surfaces'
 import { TabManager } from './tabs'
@@ -64,6 +65,9 @@ async function start(): Promise<void> {
   const profileFor = (tabId: Id): Id =>
     profileIndex(store.state.data).get(tabId) ?? DEFAULT_PROFILE_ID
 
+  const historiesPath = join(app.getPath('userData'), 'tab-histories.json')
+  const keepsHistory = (tabId: Id) =>
+    getTab(store.state.data, tabId) !== null && !isPrivateProfile(profileFor(tabId))
   const tabs: TabManager = new TabManager(store, sessions, {
     profileFor,
     onOpen: (openerId, url, disposition) => runner.openFromTab(openerId, url, disposition),
@@ -81,6 +85,11 @@ async function start(): Promise<void> {
     },
   })
   const devtools = new DevtoolsDock(store, tabs, () => windows.scheduleSync())
+  tabs.restoreHistories(
+    Object.fromEntries(
+      Object.entries(readTabHistories(historiesPath)).filter(([tabId]) => keepsHistory(tabId)),
+    ),
+  )
   const windows = new WindowManager({
     store,
     tabs,
@@ -238,6 +247,7 @@ async function start(): Promise<void> {
     if (windows.all().length === 0 && spaceId) windows.createMain(spaceId)
   })
   app.on('before-quit', () => {
+    if (!quitting) writeTabHistoriesSync(historiesPath, tabs.histories(keepsHistory))
     quitting = true
     updates.stop()
     sync.flush()
