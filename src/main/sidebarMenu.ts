@@ -35,6 +35,9 @@ function tabMenu(id: Id, deps: SidebarMenuDeps): MenuItemConstructorOptions[] {
   const items: MenuItemConstructorOptions[] = [
     { label: 'Rename…', click: () => ui({ type: 'rename', id }) },
     { label: 'Copy URL', click: () => run({ type: 'tab/copyUrl', tabId: id }) },
+    ...(process.platform === 'darwin'
+      ? [{ label: 'Share…', click: () => run({ type: 'tab/share', tabId: id }) }]
+      : []),
     {
       label: 'Copy as Markdown',
       click: () => run({ type: 'tab/copyUrl', tabId: id, markdown: true }),

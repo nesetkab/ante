@@ -70,6 +70,30 @@ export function shortcuts(platform: Platform): Shortcut[] {
       command: { type: 'tab/reopenClosed' },
     },
     {
+      id: 'open-file',
+      label: 'Open File…',
+      section: 'file',
+      accelerator: 'CmdOrCtrl+O',
+      command: { type: 'file/open' },
+    },
+    {
+      id: 'save-page',
+      label: 'Save Page As…',
+      section: 'file',
+      accelerator: 'CmdOrCtrl+Shift+S',
+      command: { type: 'tab/savePage' },
+    },
+    ...(platform === 'darwin'
+      ? [
+          {
+            id: 'share',
+            label: 'Share…',
+            section: 'file' as const,
+            command: { type: 'tab/share' as const },
+          },
+        ]
+      : []),
+    {
       id: 'copy-url',
       label: 'Copy URL',
       section: 'file',

@@ -47,6 +47,9 @@ export const commandSchema = z.discriminatedUnion('type', [
     delta: z.union([z.literal(-1), z.literal(0), z.literal(1)]),
   }),
   z.object({ type: z.literal('tab/devtools'), ...optionalTab.shape }),
+  z.object({ type: z.literal('tab/savePage'), ...optionalTab.shape }),
+  z.object({ type: z.literal('tab/share'), ...optionalTab.shape }),
+  z.object({ type: z.literal('file/open') }),
   z.object({ type: z.literal('tab/contextMenu'), tabId: idSchema }),
   z.object({
     type: z.literal('split/add'),

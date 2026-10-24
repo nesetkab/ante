@@ -32,6 +32,7 @@ import { showSidebarMenu } from './sidebarMenu'
 import { deleteSpaceWithConfirm } from './spaceDelete'
 import { showSpaceMenu } from './spaceMenu'
 import type { OpenDisposition, TabManager } from './tabs'
+import { pickFiles, savePage, sharePage } from './pageActions'
 import type { Store } from './store'
 import type { UpdateChecker } from './updates'
 import type { AppWindow, WindowManager } from './windows'
@@ -492,6 +493,25 @@ export class CommandRunner {
         this.#store.dispatch({ type: 'runtime/tab', id: tabId, patch: { zoom } })
         return
       }
+      case 'tab/savePage': {
+        const contents = contentsFor(command.tabId)
+        if (!contents) return
+        savePage(window.win, contents).catch((error: unknown) => {
+          console.error('[commands] save page failed', error)
+          this.toast(window, 'Could not save the page')
+        })
+        return
+      }
+      case 'tab/share': {
+        const tab = getTab(this.#data, tabFor(command.tabId))
+        if (tab && isWebUrl(tab.url)) sharePage(window.win, tab.url)
+        return
+      }
+      case 'file/open':
+        void pickFiles(window.win).then((urls) => {
+          for (const url of urls) this.open(window, url, 'newTab')
+        })
+        return
       case 'tab/devtools': {
         const tabId = tabFor(command.tabId)
         if (tabId) this.#devtools.toggle(tabId)
