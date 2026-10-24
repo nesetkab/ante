@@ -1,11 +1,9 @@
+import { sameIds } from './tree'
 import type { Data, Id } from '../schema'
 import { referencedEaselIds } from '../easels'
 import { referencedNoteIds } from '../notes'
 import { createInitialData, DEFAULT_PROFILE_ID } from './initial'
 import { isPrivateSpace, stripPrivate } from './private'
-
-const sameIds = (a: readonly Id[], b: readonly Id[]): boolean =>
-  a.length === b.length && a.every((id, index) => id === b[index])
 
 function repairTree(data: Data, loose: ReadonlySet<Id>): void {
   data.profiles[DEFAULT_PROFILE_ID] ??= { id: DEFAULT_PROFILE_ID, name: 'Default' }

@@ -14,7 +14,7 @@ import { BoostManager } from './boosts'
 import { CommandRunner } from './commands'
 import { detectArcImport } from './importers/arc'
 import { showContextMenu } from './contextMenu'
-import { externalLinks } from './external'
+import { externalLinks, urlArguments } from './external'
 import { Features } from './features'
 import { broadcastPatches, registerIpc } from './ipc'
 import { DownloadManager } from './downloads'
@@ -41,9 +41,6 @@ app.setName('Ante')
 registerAssetScheme()
 if (process.env.ANTE_USER_DATA) app.setPath('userData', process.env.ANTE_USER_DATA)
 externalLinks.listen()
-
-const urlArguments = (argv: readonly string[]) =>
-  argv.slice(1).filter((arg) => /^https?:\/\//i.test(arg))
 
 async function start(): Promise<void> {
   await app.whenReady()

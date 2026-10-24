@@ -156,6 +156,10 @@ export function sameContainer(a: Container, b: Container): boolean {
   }
 }
 
+export function sameIds(a: readonly Id[], b: readonly Id[]): boolean {
+  return a.length === b.length && a.every((id, index) => id === b[index])
+}
+
 export function displayTitle(tab: Tab): string {
   return tab.customTitle ?? (tab.title || tab.url)
 }

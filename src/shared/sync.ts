@@ -24,7 +24,7 @@ import {
 } from './schema'
 import { isPrivateProfile, isPrivateSpace } from './state/private'
 import { repairLive } from './state/sanitize'
-import { descendantIds } from './state/tree'
+import { descendantIds, sameIds } from './state/tree'
 
 export const SYNC_SCHEMA_VERSION = 1
 export const TOMBSTONE_TTL_MS = 30 * 24 * 60 * 60 * 1000
@@ -414,9 +414,6 @@ function readIncoming(entities: SyncEntities): Incoming {
   }
   return incoming
 }
-
-const sameIds = (a: readonly Id[], b: readonly Id[]): boolean =>
-  a.length === b.length && a.every((id, index) => id === b[index])
 
 function todayItems(data: Data): Set<Id> {
   const roots = Object.values(data.spaces).flatMap((space) => space.today)
