@@ -17,7 +17,7 @@ Arc is being discontinued. Ante keeps the parts that made it good: a vertical si
 - **Boosts.** Restyle any site with CSS, JavaScript, fonts and colors, or zap away parts of a page.
 - **Air Traffic Control.** Route links from other apps into the right space.
 - **Chrome extensions.** Install from the Chrome Web Store. Extensions get their own button in the sidebar.
-- **Built-in ad and tracker blocking**, per-site permission prompts, private windows and per-profile data clearing.
+- **Built-in ad and tracker blocking**, Global Privacy Control, per-site permission prompts, private windows and per-profile data clearing.
 - **Media mini player** for tabs playing in the background, with automatic picture in picture.
 - **Sync without an account.** Point Ante at iCloud Drive, Dropbox or any synced folder and your spaces, pinned tabs, favorites, notes and boosts follow you to your other computers. No server, nothing leaves your own storage.
 - **Notes and Easels.** Write notes or build freeform boards with text, drawings, links, images and page captures. Both live in the sidebar like tabs.
@@ -26,7 +26,8 @@ Arc is being discontinued. Ante keeps the parts that made it good: a vertical si
 - **Library** with history, downloads and archived tabs (`⌘Y`). A ring on the library button shows download progress.
 - **Favorites show unread counts** for sites like Gmail, Slack and Discord.
 - **Tabs go to sleep.** Today tabs you haven't touched in an hour free their memory and reload when you come back. Calls, music and anything on screen stay awake.
-- **Keyboard friendly.** Move through the sidebar with the arrow keys. `⌘⇧⌥C` copies the page as a Markdown link.
+- **Keyboard friendly.** Move through the sidebar with the arrow keys. Change any shortcut in Settings. `⌘⇧⌥C` copies the page as a Markdown link.
+- **Tabs remember where you were.** Back and forward history and scroll position come back after a tab sleeps or Ante restarts.
 - **Developer tools** docked next to the page.
 
 ## Getting started
