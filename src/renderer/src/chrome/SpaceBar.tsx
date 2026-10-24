@@ -1,5 +1,6 @@
 import { Plus } from 'lucide-react'
 import type { Space } from '@shared/schema'
+import { isPrivateSpace } from '@shared/state/private'
 import { ante } from '../ante'
 import { IconButton } from '../components/IconButton'
 import { useAppState, useWindowData } from '../store'
@@ -38,6 +39,15 @@ export function SpaceBar() {
   const window = useWindowData()
   const spaces = useAppState((state) => state.data.spaces)
   const order = useAppState((state) => state.data.spaceOrder)
+  const data = useAppState((state) => state.data)
+
+  if (window && isPrivateSpace(data, window.spaceId)) {
+    return (
+      <footer className={styles.spaceBar}>
+        <span className={styles.privateLabel}>Private window</span>
+      </footer>
+    )
+  }
 
   return (
     <footer className={styles.spaceBar}>

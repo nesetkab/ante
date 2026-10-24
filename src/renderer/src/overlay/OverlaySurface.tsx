@@ -6,6 +6,7 @@ import { useWindowData, useWindowRuntime } from '../store'
 import { CommandBar } from './CommandBar'
 import styles from './OverlaySurface.module.css'
 import { PeekFrame } from './PeekFrame'
+import { Popover } from './Popover'
 
 export function OverlaySurface() {
   const window = useWindowData()
@@ -32,6 +33,8 @@ export function OverlaySurface() {
       </div>
     )
   }
+
+  if (!overlay && !window?.peekTabId) return <Popover />
 
   return (
     <div className={styles.surface}>

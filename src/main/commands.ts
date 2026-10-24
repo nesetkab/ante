@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type { Command, Disposition } from '@shared/commands'
 import type { Container, Id, Tab, WindowData } from '@shared/schema'
 import { nextSpaceColor } from '@shared/state/initial'
+import { samePrivacy } from '@shared/state/private'
 import { MAX_SPLIT } from '@shared/state/reducer'
 import {
   activeTabId,
@@ -17,6 +18,7 @@ import { IPC, type UiEvent } from '@shared/ipc'
 import { copyText } from './clipboard'
 import { describeArcImport, importFromArc } from './importers/arc'
 import type { FeatureCommand } from './features'
+import type { PrivacyCommand } from './privacy'
 import { showSidebarMenu } from './sidebarMenu'
 import { deleteSpaceWithConfirm } from './spaceDelete'
 import { showSpaceMenu } from './spaceMenu'
@@ -30,6 +32,7 @@ interface Deps {
   windows: WindowManager
   openSettings: () => void
   runFeature: (window: AppWindow, command: FeatureCommand) => void
+  runPrivacy: (window: AppWindow, command: PrivacyCommand) => void
 }
 
 export class CommandRunner {
@@ -38,6 +41,7 @@ export class CommandRunner {
   readonly #windows: WindowManager
   readonly #openSettings: () => void
   readonly #runFeature: (window: AppWindow, command: FeatureCommand) => void
+  readonly #runPrivacy: (window: AppWindow, command: PrivacyCommand) => void
 
   constructor(deps: Deps) {
     this.#store = deps.store
@@ -45,6 +49,7 @@ export class CommandRunner {
     this.#windows = deps.windows
     this.#openSettings = deps.openSettings
     this.#runFeature = deps.runFeature
+    this.#runPrivacy = deps.runPrivacy
   }
 
   get #data() {
@@ -91,6 +96,10 @@ export class CommandRunner {
     }
     this.#store.dispatch({ type: 'tab/create', tab, to, index })
     return tab.id
+  }
+
+  toast(window: AppWindow, message: string): void {
+    this.#sendUi(window, { type: 'toast', message })
   }
 
   #sendUi(window: AppWindow, event: UiEvent): void {
@@ -265,6 +274,7 @@ export class CommandRunner {
   }
 
   #selectSpace(window: AppWindow, spaceId: Id): void {
+    if (!samePrivacy(this.#data, this.#windowData(window).spaceId, spaceId)) return
     this.#store.dispatch({ type: 'window/selectSpace', id: window.id, spaceId })
     this.#windows.syncNow()
     window.focusContent(activeTabId(this.#data, this.#windowData(window)))
@@ -648,6 +658,16 @@ export class CommandRunner {
       case 'browser/setDefault':
       case 'browser/checkDefault':
         this.#runFeature(window, command)
+        return
+      case 'find/open':
+      case 'find/query':
+      case 'find/step':
+      case 'find/close':
+      case 'permission/respond':
+      case 'privacy/siteMenu':
+      case 'privacy/clearData':
+      case 'window/newPrivate':
+        this.#runPrivacy(window, command)
         return
     }
   }

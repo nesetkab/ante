@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
-import { app, Menu, session } from 'electron'
+import { app, Menu, nativeTheme, session } from 'electron'
 import type { Command } from '@shared/commands'
 import type { Id } from '@shared/schema'
 import { createAppState, createInitialData, DEFAULT_PROFILE_ID } from '@shared/state/initial'
@@ -20,6 +20,8 @@ import { HistoryStore, recordHistory } from './history'
 import { registerLibraryIpc } from './libraryIpc'
 import { buildAppMenu } from './menu'
 import { PanelManager } from './panels'
+import { Privacy } from './privacy'
+import { AdBlocker } from './privacy/adblock'
 import { Persistence } from './persistence'
 import { Sessions } from './sessions'
 import { Store } from './store'
@@ -92,12 +94,31 @@ async function start(): Promise<void> {
     store,
     tabs,
     windows,
-    openSettings: () => undefined,
+    openSettings: () => {
+      const parent = windows.lastFocused('main') ?? windows.focused()
+      if (parent) panels.show(parent, 'settings')
+    },
     runFeature: (window, command) => features.run(window, command),
+    runPrivacy: (window, command) => privacy.run(window, command),
   })
+  const privacy = new Privacy({
+    store,
+    tabs,
+    sessions,
+    windows,
+    toast: (window, message) => runner.toast(window, message),
+  })
+  const adblock = new AdBlocker(store, tabs, join(app.getPath('userData'), 'adblock'))
+  sessions.onCreate((profileSession) => adblock.attach(profileSession))
+  void adblock.load()
+  const applyTheme = () => {
+    nativeTheme.themeSource = store.state.data.settings.theme
+  }
+  applyTheme()
   const runInFocused = (command: Command) => runner.run(windows.focused()?.id ?? null, command)
 
   store.subscribe((change) => {
+    if (change.prev.data.settings.theme !== change.state.data.settings.theme) applyTheme()
     windows.scheduleSync()
     if (change.patches.some((patch) => patch.path[0] === 'data'))
       persistence.schedule(store.state.data)

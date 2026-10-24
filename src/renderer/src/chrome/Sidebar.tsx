@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, PanelLeft, Plus, RotateCw, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, PanelLeft, Plus, RotateCw, X, Shield } from 'lucide-react'
 import { useRef, type WheelEvent } from 'react'
 import { activeTabId, getTab } from '@shared/state/tree'
 import { displayUrl } from '@shared/url'
@@ -94,8 +94,21 @@ export function Sidebar({ floating = false }: { floating?: boolean }) {
             ante.command({ type: 'commandBar/open', mode: activeTab ? 'edit' : 'new' })
           }
         >
-          {activeTab ? displayUrl(activeTab.url) : 'Search or enter address'}
+          <span className={styles.addressText}>
+            {activeTab ? displayUrl(activeTab.url) : 'Search or enter address'}
+          </span>
         </button>
+        {activeTab && /^https?:/.test(activeTab.url) && (
+          <button
+            type="button"
+            className={styles.shield}
+            title="Site privacy"
+            onClick={() => ante.command({ type: 'privacy/siteMenu', tabId: activeTab.id })}
+          >
+            <Shield size={13} />
+            {(activeRuntime?.blocked ?? 0) > 0 && <span>{activeRuntime?.blocked}</span>}
+          </button>
+        )}
         {space && (data.favorites[space.profileId] ?? []).length === 0 && (
           <FavoritesDrop profileId={space.profileId} />
         )}

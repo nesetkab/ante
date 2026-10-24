@@ -4,13 +4,20 @@ import type { Store } from './store'
 import { loadSurface, preloadPath, type SurfaceRegistry } from './surfaces'
 import type { AppWindow } from './windows'
 
-export type PanelKind = 'boost' | 'routes'
+export type PanelKind = 'boost' | 'routes' | 'settings'
 
 const isMac = process.platform === 'darwin'
 
 const panelSizes: Record<PanelKind, { width: number; height: number }> = {
   boost: { width: 360, height: 660 },
   routes: { width: 520, height: 560 },
+  settings: { width: 640, height: 680 },
+}
+
+const panelTitles: Record<PanelKind, string> = {
+  boost: 'Boost',
+  routes: 'Air Traffic Control',
+  settings: 'Settings',
 }
 
 interface OpenPanel {
@@ -79,7 +86,7 @@ export class PanelManager {
       minWidth: 320,
       minHeight: 360,
       show: false,
-      title: kind === 'boost' ? 'Boost' : 'Air Traffic Control',
+      title: panelTitles[kind],
       backgroundColor: this.#background(),
       titleBarStyle: 'hidden',
       trafficLightPosition: { x: 14, y: 16 },

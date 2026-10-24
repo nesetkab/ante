@@ -19,6 +19,7 @@ interface WindowContext {
   keepOnClose(id: Id): boolean
   requestSync(): void
   onFocus(id: Id): void
+  onClosing(id: Id): void
   onClosed(id: Id): void
 }
 
@@ -104,6 +105,7 @@ export class AppWindow {
       ctx.store.dispatch({ type: 'runtime/window', id: this.id, patch: { fullscreen: false } })
     })
     this.win.on('close', () => {
+      ctx.onClosing(this.id)
       if (!ctx.keepOnClose(this.id)) ctx.store.dispatch({ type: 'window/remove', id: this.id })
     })
     this.win.on('closed', () => {
@@ -250,7 +252,10 @@ export class WindowManager {
   #syncScheduled = false
 
   constructor(
-    ctx: Omit<WindowContext, 'onFocus' | 'onClosed' | 'requestSync' | 'keepOnClose'> & {
+    ctx: Omit<
+      WindowContext,
+      'onFocus' | 'onClosing' | 'onClosed' | 'requestSync' | 'keepOnClose'
+    > & {
       isQuitting: () => boolean
     },
   ) {
@@ -265,6 +270,9 @@ export class WindowManager {
       requestSync: () => this.scheduleSync(),
       onFocus: (id) => {
         this.#focusOrder = [id, ...this.#focusOrder.filter((other) => other !== id)]
+      },
+      onClosing: (id) => {
+        this.#focusOrder = this.#focusOrder.filter((other) => other !== id)
       },
       onClosed: (id) => {
         this.#windows.delete(id)
