@@ -247,14 +247,21 @@ async function start(): Promise<void> {
     if (windows.all().length === 0 && spaceId) windows.createMain(spaceId)
   })
   app.on('before-quit', () => {
-    if (!quitting) writeTabHistoriesSync(historiesPath, tabs.histories(keepsHistory))
+    if (!quitting) {
+      const keep = !store.state.data.settings.clearHistoryOnQuit
+      writeTabHistoriesSync(historiesPath, keep ? tabs.histories(keepsHistory) : {})
+    }
     quitting = true
     updates.stop()
     sync.flush()
     persistence.schedule(store.state.data)
     persistence.flush()
   })
-  app.on('will-quit', () => history.close())
+  app.on('will-quit', () => {
+    if (store.state.data.settings.clearHistoryOnQuit)
+      for (const profileId of Object.keys(store.state.data.profiles)) history.clear(profileId)
+    history.close()
+  })
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit()
   })

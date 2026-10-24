@@ -481,6 +481,13 @@ export function SettingsPanel() {
             onChange={(globalPrivacyControl) => update({ globalPrivacyControl })}
           />
         </Row>
+        <Row label="Clear history when Ante quits" hint="Cookies and logins stay">
+          <Toggle
+            label="Clear history on quit"
+            checked={settings.clearHistoryOnQuit}
+            onChange={(clearHistoryOnQuit) => update({ clearHistoryOnQuit })}
+          />
+        </Row>
         {settings.adblockAllowlist.length > 0 && (
           <div className={styles.list}>
             {settings.adblockAllowlist.map((host) => (

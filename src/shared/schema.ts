@@ -193,6 +193,7 @@ export const settingsSchema = z.object({
   globalPrivacyControl: z.boolean().default(true),
   downloadFolder: z.string().min(1).max(4096).nullable().default(null),
   askWhereToSave: z.boolean().default(false),
+  clearHistoryOnQuit: z.boolean().default(false),
   peekExternalLinks: z.boolean().default(true),
   externalLinks: z.enum(['little', 'space']).default('little'),
   adblockAllowlist: z.array(z.string().min(1).max(253)).max(10000).default([]),
