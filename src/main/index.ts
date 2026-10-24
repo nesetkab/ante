@@ -7,7 +7,7 @@ import { createAppState, createInitialData, DEFAULT_PROFILE_ID } from '@shared/s
 import { isPrivateProfile } from '@shared/state/private'
 import { sanitize } from '@shared/state/sanitize'
 import { referencedAssets } from '@shared/easels'
-import { rootOf } from '@shared/state/tree'
+import { profileIndex } from '@shared/state/tree'
 import { startArchiveSweeper } from './archive'
 import { runAutomation } from './automation'
 import { BoostManager } from './boosts'
@@ -61,15 +61,8 @@ async function start(): Promise<void> {
   const surfaces = new SurfaceRegistry()
   let quitting = false
 
-  const profileFor = (tabId: Id): Id => {
-    const state = store.state.data
-    const root = rootOf(state, tabId)
-    if (root?.profileId) return root.profileId
-    const owner = Object.values(state.windows).find(
-      (window) => window.peekTabId === tabId || window.littleTabId === tabId,
-    )
-    return (owner && state.spaces[owner.spaceId]?.profileId) ?? DEFAULT_PROFILE_ID
-  }
+  const profileFor = (tabId: Id): Id =>
+    profileIndex(store.state.data).get(tabId) ?? DEFAULT_PROFILE_ID
 
   const tabs: TabManager = new TabManager(store, sessions, {
     profileFor,

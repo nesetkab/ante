@@ -159,3 +159,29 @@ export function sameContainer(a: Container, b: Container): boolean {
 export function displayTitle(tab: Tab): string {
   return tab.customTitle ?? (tab.title || tab.url)
 }
+
+const profileIndexes = new WeakMap<Data, Map<Id, Id>>()
+
+export function profileIndex(data: Data): Map<Id, Id> {
+  const cached = profileIndexes.get(data)
+  if (cached) return cached
+  const index = new Map<Id, Id>()
+  const assign = (ids: readonly Id[], profileId: Id) => {
+    for (const id of ids)
+      for (const descendant of descendantIds(data, id)) index.set(descendant, profileId)
+  }
+  for (const space of Object.values(data.spaces)) {
+    assign(space.pinned, space.profileId)
+    assign(space.today, space.profileId)
+  }
+  for (const [profileId, list] of Object.entries(data.favorites)) assign(list, profileId)
+  for (const window of Object.values(data.windows)) {
+    const profileId = data.spaces[window.spaceId]?.profileId
+    if (!profileId) continue
+    for (const loose of [window.peekTabId, window.littleTabId]) {
+      if (loose && !index.has(loose)) index.set(loose, profileId)
+    }
+  }
+  if (Object.isFrozen(data)) profileIndexes.set(data, index)
+  return index
+}

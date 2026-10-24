@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import { isInternalPage } from './pages'
+import { isWebUrl } from './url'
 import { noteIdOf } from './notes'
 import {
   boostSchema,
@@ -62,22 +64,45 @@ const syncedSettingKeys = Object.keys(syncedSettingsSchema.shape) as (keyof Sync
 const syncedSpaceSchema = spaceSchema.omit({ today: true })
 type SyncedSpace = z.infer<typeof syncedSpaceSchema>
 
+const safeSavedUrl = z
+  .string()
+  .nullable()
+  .refine((url) => url === null || isWebUrl(url) || isInternalPage(url))
+
+const safeFeedUrl = z
+  .string()
+  .nullable()
+  .refine((url) => url === null || /^https?:\/\//i.test(url))
+
 const syncedItemSchema = z.discriminatedUnion('kind', [
-  tabSchema.pick({
-    kind: true,
-    id: true,
-    savedUrl: true,
-    savedTitle: true,
-    customTitle: true,
-    createdAt: true,
-  }),
-  folderSchema.omit({ open: true }),
+  tabSchema
+    .pick({
+      kind: true,
+      id: true,
+      savedTitle: true,
+      customTitle: true,
+      createdAt: true,
+    })
+    .extend({ savedUrl: safeSavedUrl }),
+  folderSchema.omit({ open: true }).extend({ feedUrl: safeFeedUrl }),
   splitSchema,
 ])
 type SyncedItem = z.infer<typeof syncedItemSchema>
 
 const idListSchema = z.array(idSchema).max(100_000)
-const routesSchema = z.array(routeSchema).max(500)
+const MAX_SYNCED_REGEX = 200
+const NESTED_QUANTIFIER = /\([^)]*[+*][^)]*\)[+*{]/
+
+export function isSafeSyncedRoute(route: Route): boolean {
+  if (route.match.kind !== 'regex') return true
+  const { value } = route.match
+  return value.length <= MAX_SYNCED_REGEX && !NESTED_QUANTIFIER.test(value)
+}
+
+const routesSchema = z
+  .array(routeSchema)
+  .max(500)
+  .transform((routes) => routes.filter(isSafeSyncedRoute))
 
 const unsafeIds = new Set(['__proto__', 'constructor', 'prototype'])
 
@@ -186,7 +211,8 @@ export function syncSnapshot(data: Data, options: SnapshotOptions = {}): Record<
     if (note) snapshot[`note:${id}`] = { ...note }
   }
   for (const boost of Object.values(data.boosts)) {
-    snapshot[`boost:${boost.id}`] = { ...boost, zaps: [...boost.zaps] }
+    const { js: _script, ...shared } = boost
+    snapshot[`boost:${boost.id}`] = { ...shared, zaps: [...boost.zaps] }
   }
   snapshot.routes = data.routes
     .filter((route) => !isPrivateSpace(data, route.spaceId))
@@ -542,7 +568,10 @@ export function applySyncInPlace(
   for (const [id, value] of incoming.boosts) {
     if (value === null) {
       if (data.boosts[id]) Reflect.deleteProperty(data.boosts, id)
-    } else if (!sameValue(data.boosts[id], value)) data.boosts[id] = value
+    } else {
+      const merged = { ...value, js: data.boosts[id]?.js ?? '' }
+      if (!sameValue(data.boosts[id], merged)) data.boosts[id] = merged
+    }
   }
 
   if (incoming.routes) {
@@ -579,7 +608,7 @@ export function applySyncInPlace(
   for (const [id, value] of incoming.spaces) {
     if (isPrivateSpace(data, id)) continue
     if (value === null) {
-      if (data.spaces[id] && publicSpaceIds(data).length > 1) removeSpace(data, id)
+      if (data.spaces[id] && publicSpaceIds(data).length > 1) dropSpace(data, id)
       continue
     }
     if (isPrivateProfile(value.profileId)) continue
@@ -618,9 +647,38 @@ export interface SyncCycleResult {
   merged: SyncEntities
 }
 
+const SYNCED_ROOTS = new Set([
+  'profiles',
+  'spaces',
+  'spaceOrder',
+  'favorites',
+  'items',
+  'notes',
+  'boosts',
+  'routes',
+  'settings',
+])
+const LOCAL_ITEM_FIELDS = new Set(['url', 'title', 'favicon', 'lastActiveAt'])
+
+export function touchesSyncedData(path: readonly (string | number)[]): boolean {
+  if (path[0] !== 'data') return false
+  const root = path[1]
+  if (typeof root !== 'string' || !SYNCED_ROOTS.has(root)) return false
+  if (root === 'items' && typeof path[3] === 'string' && LOCAL_ITEM_FIELDS.has(path[3]))
+    return false
+  if (root === 'spaces' && path[3] === 'today') return false
+  return true
+}
+
+export function isFreshDevice(file: Pick<DeviceFile, 'writtenAt'>, now: number): boolean {
+  return now - file.writtenAt <= TOMBSTONE_TTL_MS
+}
+
 export function syncCycle(input: SyncCycleInput): SyncCycleResult {
   const { data, deviceId, baseline, now } = input
-  const remotes = input.remotes.filter((file) => file.deviceId !== deviceId)
+  const remotes = input.remotes.filter(
+    (file) => file.deviceId !== deviceId && isFreshDevice(file, now),
+  )
   const remoteMerged = mergeEntities(remotes, now)
   const dropSpaces = baseline === null ? adoptableSpaces(data, remoteMerged) : []
   const snapshot = syncSnapshot(data, { skipSpaces: new Set(dropSpaces) })

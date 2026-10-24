@@ -1,4 +1,6 @@
 import type { AppState, Container, Data, Id } from '../schema'
+import { referencedEaselIds } from '../easels'
+import { referencedNoteIds } from '../notes'
 import { descendantIds } from './tree'
 
 export const PRIVATE_PREFIX = 'private-'
@@ -116,6 +118,13 @@ export function removePrivateProfile(
   Reflect.deleteProperty(data.profiles, profileId)
   Reflect.deleteProperty(data.favorites, profileId)
   Reflect.deleteProperty(data.sitePermissions, profileId)
+  const notes = referencedNoteIds(data)
+  for (const id of Object.keys(data.notes))
+    if (!notes.has(id)) Reflect.deleteProperty(data.notes, id)
+  const easels = referencedEaselIds(data)
+  for (const id of Object.keys(data.easels)) {
+    if (!easels.has(id)) Reflect.deleteProperty(data.easels, id)
+  }
   return true
 }
 

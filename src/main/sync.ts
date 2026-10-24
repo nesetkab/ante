@@ -13,6 +13,8 @@ import {
   syncCycle,
   syncSnapshot,
   type SyncEntities,
+  isFreshDevice,
+  touchesSyncedData,
 } from '@shared/sync'
 import type { Store } from './store'
 import {
@@ -22,6 +24,7 @@ import {
   readDeviceFiles,
   writeDeviceFile,
   writeDeviceFileSync,
+  removeDeviceFile,
 } from './syncFiles'
 
 const PUBLISH_DELAY_MS = 2000
@@ -51,6 +54,7 @@ export class SyncManager {
   #baselineLoaded = false
   #written: SyncEntities | null = null
   #watcher: FSWatcher | null = null
+  #watchedFolder: string | null = null
   #publishTimer: NodeJS.Timeout | null = null
   #pullTimer: NodeJS.Timeout | null = null
   #pollTimer: NodeJS.Timeout | null = null
@@ -86,7 +90,7 @@ export class SyncManager {
         return
       }
       if (change.action.type === 'sync/apply') return
-      if (change.patches.some((patch) => patch.path[0] === 'data')) this.#schedulePublish()
+      if (change.patches.some((patch) => touchesSyncedData(patch.path))) this.#schedulePublish()
     })
     this.#pollTimer = setInterval(() => this.#schedulePull(0), POLL_MS)
     this.#configure()
@@ -125,9 +129,17 @@ export class SyncManager {
         if (!result.canceled && folder) this.#setFolder(folder)
         return
       }
-      case 'sync/stop':
+      case 'sync/stop': {
+        const folder = this.#folder
+        const { deviceId } = this.#settings
         this.#setFolder(null)
+        if (folder && deviceId) {
+          removeDeviceFile(folder, deviceId).catch((error: unknown) => {
+            console.warn('[sync] could not remove device file', error)
+          })
+        }
         return
+      }
       case 'sync/now':
         this.#schedulePull(0)
         return
@@ -228,7 +240,8 @@ export class SyncManager {
     const { files } = await readDeviceFiles(folder)
     if (folder !== this.#folder) return
     if (!this.#baselineLoaded) {
-      const own = files.find((file) => file.deviceId === deviceId)
+      const found = files.find((file) => file.deviceId === deviceId)
+      const own = found && isFreshDevice(found, Date.now()) ? found : undefined
       this.#baseline = own?.entities ?? null
       this.#written = own?.entities ?? null
       this.#baselineLoaded = true
@@ -250,8 +263,11 @@ export class SyncManager {
       },
     })
     this.#baseline = result.entities
-    this.#devices = files.filter((file) => file.deviceId !== deviceId).length
+    this.#devices = files.filter(
+      (file) => file.deviceId !== deviceId && isFreshDevice(file, now),
+    ).length
     await this.#write(folder, deviceId, deviceName, result.entities, now)
+    if (folder !== this.#folder) return
     this.#watch(folder, deviceId)
     this.#succeed(now)
   }
@@ -273,6 +289,7 @@ export class SyncManager {
       return
     }
     await this.#write(folder, deviceId, deviceName, entities, now)
+    if (folder !== this.#folder) return
     this.#succeed(now)
   }
 
@@ -289,7 +306,9 @@ export class SyncManager {
   }
 
   #watch(folder: string, deviceId: string): void {
-    if (this.#watcher) return
+    if (this.#watcher && this.#watchedFolder === folder) return
+    this.#closeWatcher()
+    this.#watchedFolder = folder
     const own = deviceFileName(deviceId)
     try {
       this.#watcher = watch(devicesDir(folder), (_event, name) => {
@@ -305,6 +324,7 @@ export class SyncManager {
   #closeWatcher(): void {
     this.#watcher?.close()
     this.#watcher = null
+    this.#watchedFolder = null
   }
 
   #clearTimers(): void {

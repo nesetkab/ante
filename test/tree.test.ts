@@ -10,6 +10,7 @@ import {
   isPersistent,
   locate,
   parentSplit,
+  profileIndex,
   rootOf,
   sameContainer,
   sectionOf,
@@ -216,5 +217,18 @@ describe('displayTitle', () => {
     expect(displayTitle(makeTab('a', { customTitle: 'Custom' }))).toBe('Custom')
     expect(displayTitle(makeTab('a', { title: 'Title' }))).toBe('Title')
     expect(displayTitle(makeTab('a', { title: '' }))).toBe('https://a.test/')
+  })
+})
+
+describe('profileIndex', () => {
+  it('maps every tab to the profile of its space or favorites', () => {
+    const index = profileIndex(data)
+    expect(index.get('p')).toBe(data.spaces.s1?.profileId)
+    expect(index.get('wfav')).toBeDefined()
+  })
+
+  it('caches frozen data and rebuilds for drafts', () => {
+    const frozen = Object.freeze({ ...data })
+    expect(profileIndex(frozen)).toBe(profileIndex(frozen))
   })
 })

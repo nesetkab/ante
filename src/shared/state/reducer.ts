@@ -103,8 +103,11 @@ export function canPlace(data: Data, item: Item, container: Container): boolean 
         (split.children.length < MAX_SPLIT || split.children.includes(item.id))
       )
     }
-    case 'folder':
+    case 'folder': {
+      const folder = data.items[container.id]
+      if (folder?.kind === 'folder' && folder.feedUrl) return false
       return !isAncestor(data, item.id, container.id)
+    }
     case 'today':
       return item.kind !== 'folder'
     case 'pinned':
@@ -345,6 +348,13 @@ function syncFeed(
       lastActiveAt: 0,
     }
     next.push(entry.id)
+  }
+  const inUse = new Set(Object.keys(state.runtime.tabs))
+  for (const window of Object.values(data.windows)) {
+    for (const active of Object.values(window.activeBySpace)) if (active) inUse.add(active)
+  }
+  for (const child of folder.children) {
+    if (!next.includes(child) && inUse.has(child) && getTab(data, child)) next.push(child)
   }
   const kept = new Set(next)
   for (const child of [...folder.children]) {

@@ -15,6 +15,7 @@ import { ElectronChromeExtensions } from 'electron-chrome-extensions'
 import { installChromeWebStore } from 'electron-chrome-web-store'
 import { describeExtensionAccess, WEB_STORE_ORIGIN } from '@shared/extensions'
 import { originOf } from '@shared/permissions'
+import { isWebUrl } from '@shared/url'
 import type { Id } from '@shared/schema'
 import { isPrivateProfile } from '@shared/state/private'
 import { activeTabId, visibleTabIds } from '@shared/state/tree'
@@ -154,7 +155,8 @@ export class Extensions {
     const spaceId = window.data?.spaceId
     if (!spaceId) throw new Error('No space to open a tab in')
     const runner = this.#deps.runner()
-    const tabId = runner.createTab(details.url ?? 'about:blank', { type: 'today', spaceId })
+    const url = details.url && isWebUrl(details.url) ? details.url : 'about:blank'
+    const tabId = runner.createTab(url, { type: 'today', spaceId })
     if (details.active === false) this.#deps.tabs.ensure(tabId)
     else runner.activate(window, tabId)
     const contents = this.#deps.tabs.contents(tabId)

@@ -10,14 +10,31 @@ const REFRESH_MS = 30 * 60 * 1000
 const TIMEOUT_MS = 15_000
 const MAX_BYTES = 5 * 1024 * 1024
 
+async function readCapped(response: Response): Promise<string> {
+  const reader = response.body?.getReader()
+  if (!reader) return ''
+  const chunks: Uint8Array[] = []
+  let size = 0
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    size += value.byteLength
+    if (size > MAX_BYTES) {
+      await reader.cancel()
+      throw new Error('Response too large')
+    }
+    chunks.push(value)
+  }
+  return Buffer.concat(chunks).toString('utf8')
+}
+
 async function fetchText(url: string): Promise<{ text: string; type: string }> {
+  if (!/^https?:\/\//i.test(url)) throw new Error('Only web feeds can be fetched')
   const response = await net.fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) })
   if (!response.ok) throw new Error(`Request failed with ${response.status}`)
   const length = Number(response.headers.get('content-length') ?? 0)
   if (length > MAX_BYTES) throw new Error('Response too large')
-  const text = await response.text()
-  if (text.length > MAX_BYTES) throw new Error('Response too large')
-  return { text, type: response.headers.get('content-type') ?? '' }
+  return { text: await readCapped(response), type: response.headers.get('content-type') ?? '' }
 }
 
 export type FollowResult = { ok: true; name: string } | { ok: false; message: string }

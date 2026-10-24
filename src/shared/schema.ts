@@ -14,7 +14,13 @@ export function withoutDefaults<Shape extends DefaultedShape>(
   return z.object(Object.fromEntries(entries) as UnwrappedShape<Shape>)
 }
 
-export const idSchema = z.string().min(1).max(200)
+const RESERVED_IDS = new Set(['__proto__', 'constructor', 'prototype'])
+
+export const idSchema = z
+  .string()
+  .min(1)
+  .max(200)
+  .refine((id) => !RESERVED_IDS.has(id))
 export type Id = z.infer<typeof idSchema>
 
 export const tabSchema = z.object({

@@ -72,6 +72,10 @@ export async function writeDeviceFile(folder: string, file: DeviceFile): Promise
   }
 }
 
+export async function removeDeviceFile(folder: string, deviceId: string): Promise<void> {
+  await rm(join(devicesDir(folder), deviceFileName(deviceId)), { force: true })
+}
+
 export function writeDeviceFileSync(folder: string, file: DeviceFile): void {
   const dir = devicesDir(folder)
   const temp = tempPath(dir, file.deviceId)
