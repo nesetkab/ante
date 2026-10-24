@@ -4,6 +4,7 @@ import { app, Menu, nativeTheme, session } from 'electron'
 import type { Command } from '@shared/commands'
 import type { Id } from '@shared/schema'
 import { createAppState, createInitialData, DEFAULT_PROFILE_ID } from '@shared/state/initial'
+import { isPrivateProfile } from '@shared/state/private'
 import { sanitize } from '@shared/state/sanitize'
 import { referencedAssets } from '@shared/easels'
 import { rootOf } from '@shared/state/tree'
@@ -144,6 +145,9 @@ async function start(): Promise<void> {
   sessions.onCreate((profileSession) => adblock.attach(profileSession))
   const extensions = new Extensions({ store, tabs, windows, runner: () => runner })
   sessions.onCreate((profileSession, profileId) => extensions.attach(profileSession, profileId))
+  for (const profileId of Object.keys(store.state.data.profiles)) {
+    if (!isPrivateProfile(profileId)) sessions.forProfile(profileId)
+  }
   windows.onSync(() => extensions.sync())
   void adblock.load()
   const applyTheme = () => {

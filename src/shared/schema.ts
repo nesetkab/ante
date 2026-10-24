@@ -342,7 +342,7 @@ export interface DownloadRuntime {
 }
 
 export interface SyncStatus {
-  state: 'off' | 'ok' | 'error'
+  state: 'off' | 'syncing' | 'ok' | 'error'
   lastSyncedAt: number | null
   error: string | null
   devices: number

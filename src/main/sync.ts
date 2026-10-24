@@ -328,7 +328,13 @@ export class SyncManager {
 
   #report(): void {
     const status: SyncStatus = {
-      state: !this.#folder ? 'off' : this.#error ? 'error' : 'ok',
+      state: !this.#folder
+        ? 'off'
+        : this.#error
+          ? 'error'
+          : this.#lastSyncedAt === null
+            ? 'syncing'
+            : 'ok',
       lastSyncedAt: this.#lastSyncedAt,
       error: this.#error,
       devices: this.#devices,
