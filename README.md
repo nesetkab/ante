@@ -19,6 +19,9 @@ Arc is being discontinued. Ante keeps the parts that made it good: a vertical si
 - **Chrome extensions.** Install from the Chrome Web Store. Extensions get their own button in the sidebar.
 - **Built-in ad and tracker blocking**, per-site permission prompts, private windows and per-profile data clearing.
 - **Media mini player** for tabs playing in the background, with automatic picture in picture.
+- **Notes and Easels.** Write notes or build freeform boards with text, drawings, links, images and page captures. Both live in the sidebar like tabs.
+- **Live folders.** Follow any site with a feed and keep its latest posts in a pinned folder.
+- **Capture** (`⌘⇧2`). Drag over any part of a page to copy and save it.
 - **Library** with history, downloads and archived tabs (`⌘Y`).
 - **Developer tools** docked next to the page.
 

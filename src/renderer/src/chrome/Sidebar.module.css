@@ -474,3 +474,20 @@
   border-radius: 50%;
   background: var(--accent);
 }
+
+.spaceContent {
+  animation: space-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes space-in {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spaceContent {
+    animation: none;
+  }
+}

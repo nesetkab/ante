@@ -33,6 +33,7 @@ export const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('tab/copyUrl'), ...optionalTab.shape }),
   z.object({ type: z.literal('tab/togglePin'), ...optionalTab.shape }),
   z.object({ type: z.literal('tab/next') }),
+  z.object({ type: z.literal('tab/recent') }),
   z.object({ type: z.literal('tab/previous') }),
   z.object({ type: z.literal('tab/nth'), index: z.number().int().min(0).max(8) }),
   z.object({ type: z.literal('tab/last') }),

@@ -140,7 +140,7 @@ export function Sidebar({ floating = false }: { floating?: boolean }) {
 
       <div className={styles.scroll} data-drag-scroll>
         {space && (
-          <>
+          <div key={space.id} className={styles.spaceContent}>
             <SpaceHeader space={space} />
             <ItemList
               ids={space.pinned}
@@ -189,7 +189,7 @@ export function Sidebar({ floating = false }: { floating?: boolean }) {
               activeId={activeId}
               persistent={false}
             />
-          </>
+          </div>
         )}
       </div>
 

@@ -4,6 +4,7 @@ import type { Container, Id, Tab, WindowData, Rect } from '@shared/schema'
 import { nextSpaceColor } from '@shared/state/initial'
 import { samePrivacy } from '@shared/state/private'
 import { MAX_SPLIT } from '@shared/state/reducer'
+import { recentTab } from '@shared/state/recent'
 import {
   activeTabId,
   getTab,
@@ -450,6 +451,12 @@ export class CommandRunner {
       }
       case 'tab/previous': {
         this.#cycle(window, -1)
+        return
+      }
+      case 'tab/recent': {
+        const data = this.#windowData(window)
+        const id = recentTab(this.#data, data.spaceId, activeTabId(this.#data, data))
+        if (id) this.activate(window, id)
         return
       }
       case 'tab/nth': {

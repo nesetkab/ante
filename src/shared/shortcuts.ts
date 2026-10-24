@@ -199,11 +199,11 @@ export function shortcuts(platform: Platform): Shortcut[] {
       command: { type: 'tab/previous' },
     },
     {
-      id: 'next-tab-ctrl',
-      label: 'Next Tab',
+      id: 'recent-tab',
+      label: 'Switch to Last Tab',
       section: 'tab',
       accelerator: 'Ctrl+Tab',
-      command: { type: 'tab/next' },
+      command: { type: 'tab/recent' },
       hidden: true,
     },
     {
