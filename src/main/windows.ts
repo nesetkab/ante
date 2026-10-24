@@ -55,6 +55,7 @@ export class AppWindow {
   #boundsTimer: NodeJS.Timeout | null = null
   #htmlFullscreen = false
   #fullscreenBeforeHtml = false
+  #layout: Layout | null = null
 
   constructor(data: WindowData, ctx: WindowContext) {
     this.id = data.id
@@ -120,6 +121,10 @@ export class AppWindow {
     return this.#ctx.store.state.data.windows[this.id]
   }
 
+  get layout(): Layout | null {
+    return this.#layout
+  }
+
   owns(contents: WebContents): boolean {
     return contents === this.win.webContents || contents === this.overlay.webContents
   }
@@ -147,6 +152,7 @@ export class AppWindow {
       visibleTabIds(data, window).find((id) => runtime.tabs[id]?.fullscreen) ?? null
     const devtoolsTabId = fullscreenTabId ? null : dockedDevtoolsTabId(data, runtime, window)
     const layout = computeLayout({ width, height, window, data, fullscreenTabId, devtoolsTabId })
+    this.#layout = layout
     const overlayState = runtime.windows[this.id]?.overlay ?? null
     const views: View[] = []
 

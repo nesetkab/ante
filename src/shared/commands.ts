@@ -98,6 +98,14 @@ export const commandSchema = z.discriminatedUnion('type', [
     storage: z.boolean(),
   }),
   z.object({ type: z.literal('window/newPrivate') }),
+  z.object({ type: z.literal('capture/start') }),
+  z.object({
+    type: z.literal('capture/region'),
+    x: z.number(),
+    y: z.number(),
+    width: z.number().positive(),
+    height: z.number().positive(),
+  }),
   z.object({ type: z.literal('media/toggle'), tabId: idSchema }),
   z.object({ type: z.literal('media/pip'), tabId: idSchema }),
   z.object({

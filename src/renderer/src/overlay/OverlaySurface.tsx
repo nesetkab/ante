@@ -5,6 +5,7 @@ import { LibraryPanel } from '../library/LibraryPanel'
 import { useWindowData, useWindowRuntime } from '../store'
 import { CommandBar } from './CommandBar'
 import styles from './OverlaySurface.module.css'
+import { CaptureOverlay } from './CaptureOverlay'
 import { PeekFrame } from './PeekFrame'
 import { Popover } from './Popover'
 
@@ -40,6 +41,7 @@ export function OverlaySurface() {
     <div className={styles.surface}>
       {window?.peekTabId && <PeekFrame />}
       {overlay?.kind === 'commandBar' && <CommandBar key={overlay.mode} mode={overlay.mode} />}
+      {overlay?.kind === 'capture' && <CaptureOverlay />}
       {overlay?.kind === 'library' && (
         <LibraryPanel key={overlay.section} section={overlay.section} />
       )}

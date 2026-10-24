@@ -250,6 +250,7 @@ export type Overlay =
   | { kind: 'commandBar'; mode: 'new' | 'edit' }
   | { kind: 'sidebar' }
   | { kind: 'library'; section: LibrarySection }
+  | { kind: 'capture' }
 
 export interface WindowRuntime {
   overlay: Overlay | null

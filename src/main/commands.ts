@@ -15,6 +15,7 @@ import {
 import { hostOf, isWebUrl, resolveInput } from '@shared/url'
 import { nextZoom } from '@shared/zoom'
 import { IPC, type UiEvent } from '@shared/ipc'
+import { captureRegion } from './capture'
 import { copyText } from './clipboard'
 import { describeArcImport, importFromArc } from './importers/arc'
 import type { FeatureCommand } from './features'
@@ -690,6 +691,27 @@ export class CommandRunner {
       case 'privacy/clearData':
       case 'window/newPrivate':
         this.#runPrivacy(window, command)
+        return
+      case 'capture/start':
+        this.#store.dispatch({
+          type: 'runtime/window',
+          id: window.id,
+          patch: { overlay: { kind: 'capture' } },
+        })
+        this.#windows.syncNow()
+        window.focusOverlay()
+        return
+      case 'capture/region':
+        this.#store.dispatch({ type: 'runtime/window', id: window.id, patch: { overlay: null } })
+        this.#windows.syncNow()
+        captureRegion(window, this.#tabs, command)
+          .then((file) => {
+            this.toast(window, file ? 'Capture copied and saved' : 'Nothing to capture there')
+          })
+          .catch((error: unknown) => {
+            console.error('[capture] failed', error)
+            this.toast(window, 'Capture failed')
+          })
         return
     }
   }

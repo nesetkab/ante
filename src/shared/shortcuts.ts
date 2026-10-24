@@ -301,6 +301,13 @@ export function shortcuts(platform: Platform): Shortcut[] {
       command: { type: 'routes/open' },
     },
     {
+      id: 'capture',
+      label: 'Capture',
+      section: 'tab',
+      accelerator: 'CmdOrCtrl+Shift+2',
+      command: { type: 'capture/start' },
+    },
+    {
       id: 'web-store',
       label: 'Chrome Web Store',
       section: 'file',
