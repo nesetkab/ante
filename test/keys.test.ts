@@ -4,12 +4,14 @@ import {
   canonicalAccelerator,
   conflictFor,
   isAccelerator,
+  reservedShortcuts,
   withOverrides,
   type KeyPress,
 } from '@shared/keys'
 import { shortcuts } from '@shared/shortcuts'
 
 const press = (code: string, modifiers: Partial<KeyPress> = {}): KeyPress => ({
+  key: '',
   code,
   metaKey: false,
   ctrlKey: false,
@@ -86,5 +88,26 @@ describe('overrides and conflicts', () => {
   it('treats Ctrl and CmdOrCtrl as the same off mac', () => {
     expect(canonicalAccelerator('Ctrl+Shift+t', 'win32')).toBe('CmdOrCtrl+Shift+T')
     expect(canonicalAccelerator('Ctrl+Shift+t', 'darwin')).toBe('Ctrl+Shift+T')
+  })
+})
+
+describe('keyboard layouts and reserved keys', () => {
+  it('records the letter the layout types, not the physical key', () => {
+    expect(acceleratorFor(press('KeyQ', { key: 'a', metaKey: true }), 'darwin')).toBe('CmdOrCtrl+A')
+    expect(
+      acceleratorFor(press('Digit1', { key: '!', metaKey: true, shiftKey: true }), 'darwin'),
+    ).toBe('CmdOrCtrl+Shift+1')
+    expect(acceleratorFor(press('KeyK', { key: '˚', metaKey: true, altKey: true }), 'darwin')).toBe(
+      'CmdOrCtrl+Alt+K',
+    )
+  })
+
+  it('refuses keys the edit and app menus already use', () => {
+    const list = [...shortcuts('darwin'), ...reservedShortcuts('darwin')]
+    expect(conflictFor(list, 'new-tab', 'CmdOrCtrl+V', 'darwin')?.label).toBe('Paste')
+    expect(conflictFor(list, 'new-tab', 'CmdOrCtrl+Q', 'darwin')?.label).toBe('Quit')
+    for (const platform of ['darwin', 'win32', 'linux'] as const)
+      for (const item of reservedShortcuts(platform))
+        expect(isAccelerator(item.accelerator ?? '')).toBe(true)
   })
 })

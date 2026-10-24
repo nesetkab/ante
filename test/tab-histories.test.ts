@@ -17,6 +17,7 @@ afterEach(() => {
 })
 
 const history = {
+  profileId: 'default',
   entries: [
     { url: 'https://a.test/', title: 'A' },
     { url: 'https://b.test/', title: 'B', pageState: 'c3RhdGU=' },
@@ -35,9 +36,22 @@ describe('tab histories on disk', () => {
     expect(readTabHistories(file)).toEqual({})
     writeFileSync(file, '{oops')
     expect(readTabHistories(file)).toEqual({})
-    writeFileSync(file, JSON.stringify({ tab1: { ...history, index: 5 } }))
+    writeFileSync(file, '[1, 2]')
     expect(readTabHistories(file)).toEqual({})
-    writeFileSync(file, JSON.stringify({ __proto__x: history, constructor: history }))
-    expect(readTabHistories(file)).toEqual({})
+  })
+
+  it('drops only the tabs whose saved history is invalid', () => {
+    const huge = {
+      ...history,
+      entries: [{ url: `data:,${'x'.repeat(20_000)}`, title: '' }],
+      index: 0,
+    }
+    writeFileSync(
+      file,
+      JSON.stringify({ good: history, bad: { ...history, index: 5 }, huge, constructor: history }),
+    )
+    expect(readTabHistories(file)).toEqual({ good: history })
+    writeTabHistoriesSync(file, { good: history, huge })
+    expect(readTabHistories(file)).toEqual({ good: history })
   })
 })

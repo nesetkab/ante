@@ -1,6 +1,7 @@
 import type { Platform, Shortcut } from './shortcuts'
 
 export interface KeyPress {
+  key: string
   code: string
   metaKey: boolean
   ctrlKey: boolean
@@ -49,6 +50,15 @@ function keyFor(code: string): string | null {
   return NAMED_CODES[code] ?? null
 }
 
+const TYPED_KEYS = new Set(['[', ']', '=', '-', ',', '.', '/', '\\', ';', "'", '`'])
+
+function typedKey(press: KeyPress): string | null {
+  if (press.altKey || press.key.length !== 1) return null
+  const upper = press.key.toUpperCase()
+  if (/^[A-Z0-9]$/.test(upper)) return upper
+  return TYPED_KEYS.has(press.key) ? press.key : null
+}
+
 function isKey(key: string): boolean {
   return /^[A-Z0-9]$/.test(key) || FUNCTION_KEY.test(key) || KEYS.has(key)
 }
@@ -63,7 +73,7 @@ export function isAccelerator(accelerator: string): boolean {
 }
 
 export function acceleratorFor(press: KeyPress, platform: Platform): string | null {
-  const key = keyFor(press.code)
+  const key = typedKey(press) ?? keyFor(press.code)
   if (!key) return null
   const mac = platform === 'darwin'
   const parts: string[] = []
@@ -96,12 +106,48 @@ export function withOverrides(list: Shortcut[], overrides: ShortcutOverrides): S
   })
 }
 
+export interface ReservedShortcut {
+  id: string
+  label: string
+  accelerator?: string
+}
+
+export function reservedShortcuts(platform: Platform): ReservedShortcut[] {
+  const mac = platform === 'darwin'
+  const reserved: [string, string][] = [
+    ['Undo', 'CmdOrCtrl+Z'],
+    ['Redo', 'CmdOrCtrl+Shift+Z'],
+    ['Cut', 'CmdOrCtrl+X'],
+    ['Copy', 'CmdOrCtrl+C'],
+    ['Paste', 'CmdOrCtrl+V'],
+    ['Paste and Match Style', mac ? 'CmdOrCtrl+Alt+Shift+V' : 'CmdOrCtrl+Shift+V'],
+    ['Select All', 'CmdOrCtrl+A'],
+    ['Minimize', 'CmdOrCtrl+M'],
+    ['Full Screen', mac ? 'Ctrl+CmdOrCtrl+F' : 'F11'],
+    ...(mac
+      ? ([
+          ['Settings', 'CmdOrCtrl+,'],
+          ['Quit', 'CmdOrCtrl+Q'],
+          ['Hide Ante', 'CmdOrCtrl+H'],
+          ['Hide Others', 'CmdOrCtrl+Alt+H'],
+        ] as [string, string][])
+      : []),
+    ...(platform === 'win32' ? ([['Redo', 'CmdOrCtrl+Y']] as [string, string][]) : []),
+    ...(platform === 'linux' ? ([['Quit', 'CmdOrCtrl+Q']] as [string, string][]) : []),
+  ]
+  return reserved.map(([label, accelerator]) => ({
+    id: `reserved:${label}:${accelerator}`,
+    label,
+    accelerator,
+  }))
+}
+
 export function conflictFor(
-  list: Shortcut[],
+  list: readonly ReservedShortcut[],
   id: string,
   accelerator: string,
   platform: Platform,
-): Shortcut | null {
+): ReservedShortcut | null {
   const wanted = canonicalAccelerator(accelerator, platform)
   return (
     list.find(

@@ -9,6 +9,10 @@ export interface SavedHistory {
   index: number
 }
 
+export interface SavedTabHistory extends SavedHistory {
+  profileId: string
+}
+
 export const MAX_SAVED_ENTRIES = 30
 
 export function trimHistory(

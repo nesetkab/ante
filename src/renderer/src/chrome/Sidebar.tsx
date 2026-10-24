@@ -56,7 +56,7 @@ export function Sidebar({ floating = false }: { floating?: boolean }) {
     space ? (state.data.favorites[space.profileId] ?? []).length > 0 : false,
   )
   const underControls = useAppState(
-    (state) => !isMac && !floating && state.data.settings.sidebarSide === 'right',
+    (state) => !isMac && state.data.settings.sidebarSide === 'right',
   )
   const onWheel = useSpaceSwipe()
   const zoom = activeRuntime?.zoom ?? 1

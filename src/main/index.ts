@@ -66,8 +66,10 @@ async function start(): Promise<void> {
     profileIndex(store.state.data).get(tabId) ?? DEFAULT_PROFILE_ID
 
   const historiesPath = join(app.getPath('userData'), 'tab-histories.json')
-  const keepsHistory = (tabId: Id) =>
-    getTab(store.state.data, tabId) !== null && !isPrivateProfile(profileFor(tabId))
+  const keepsHistory = (tabId: Id, profileId: Id) =>
+    getTab(store.state.data, tabId) !== null &&
+    !isPrivateProfile(profileId) &&
+    profileFor(tabId) === profileId
   const tabs: TabManager = new TabManager(store, sessions, {
     profileFor,
     onOpen: (openerId, url, disposition) => runner.openFromTab(openerId, url, disposition),
@@ -87,7 +89,9 @@ async function start(): Promise<void> {
   const devtools = new DevtoolsDock(store, tabs, () => windows.scheduleSync())
   tabs.restoreHistories(
     Object.fromEntries(
-      Object.entries(readTabHistories(historiesPath)).filter(([tabId]) => keepsHistory(tabId)),
+      Object.entries(readTabHistories(historiesPath)).filter(([tabId, saved]) =>
+        keepsHistory(tabId, saved.profileId),
+      ),
     ),
   )
   const windows = new WindowManager({
@@ -182,7 +186,10 @@ async function start(): Promise<void> {
     nativeTheme.themeSource = store.state.data.settings.theme
   }
   applyTheme()
-  nativeTheme.on('updated', () => windows.applyTheme())
+  nativeTheme.on('updated', () => {
+    windows.applyTheme()
+    panels.applyTheme()
+  })
   const runInFocused = (command: Command) => runner.run(windows.focused()?.id ?? null, command)
 
   store.subscribe((change) => {
@@ -204,7 +211,13 @@ async function start(): Promise<void> {
     isRecording: (tabId) => tabs.contents(tabId)?.session.isPersistent() ?? false,
   })
   const downloads = new DownloadManager(store, sessions)
-  registerLibraryIpc({ store, surfaces, history, downloads })
+  registerLibraryIpc({
+    store,
+    surfaces,
+    history,
+    downloads,
+    onHistoryCleared: (profileId) => tabs.clearHistories(profileId),
+  })
   let menuShortcuts = store.state.data.settings.shortcuts
   Menu.setApplicationMenu(buildAppMenu(runInFocused, menuShortcuts))
   store.subscribe(() => {

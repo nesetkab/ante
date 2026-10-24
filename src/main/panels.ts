@@ -58,6 +58,14 @@ export class PanelManager {
     return win
   }
 
+  applyTheme(): void {
+    for (const { win } of this.#open.values()) {
+      if (win.isDestroyed()) continue
+      win.setBackgroundColor(this.#background())
+      if (!isMac) win.setTitleBarOverlay({ symbolColor: this.#symbols() })
+    }
+  }
+
   get(parentId: Id, kind: PanelKind): BrowserWindow | undefined {
     const win = this.#open.get(`${parentId}:${kind}`)?.win
     return win && !win.isDestroyed() ? win : undefined
@@ -70,6 +78,10 @@ export class PanelManager {
 
   #background(): string {
     return this.#dark() ? '#232326' : '#ffffff'
+  }
+
+  #symbols(): string {
+    return this.#dark() ? '#d8d8dc' : '#555559'
   }
 
   #create(parent: AppWindow, kind: PanelKind): BrowserWindow {
@@ -101,7 +113,7 @@ export class PanelManager {
         : {
             titleBarOverlay: {
               color: '#00000000',
-              symbolColor: this.#dark() ? '#d8d8dc' : '#555559',
+              symbolColor: this.#symbols(),
               height: 44,
             },
           }),

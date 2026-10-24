@@ -96,7 +96,8 @@ export class DownloadManager {
       }
       if (ask) this.#followChosenPath(id, item)
       this.#update(id, item, state, Date.now())
-      if (state === 'completed' && process.platform === 'darwin') app.dock?.downloadFinished(path)
+      if (state === 'completed' && process.platform === 'darwin')
+        app.dock?.downloadFinished(item.getSavePath() || path)
     })
   }
 

@@ -58,6 +58,7 @@ export function loadSurface(
   const query = { ...extra, surface, window: windowId }
   const devUrl = process.env.ELECTRON_RENDERER_URL
   const load = () => {
+    contents.setIgnoreMenuShortcuts(false)
     const loading = devUrl
       ? contents.loadURL(`${devUrl}?${new URLSearchParams(query).toString()}`)
       : contents.loadFile(rendererFile, { query })

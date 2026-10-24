@@ -17,9 +17,16 @@ interface LibraryIpcDeps {
   surfaces: SurfaceRegistry
   history: HistoryStore
   downloads: DownloadManager
+  onHistoryCleared: (profileId: Id) => void
 }
 
-export function registerLibraryIpc({ store, surfaces, history, downloads }: LibraryIpcDeps) {
+export function registerLibraryIpc({
+  store,
+  surfaces,
+  history,
+  downloads,
+  onHistoryCleared,
+}: LibraryIpcDeps) {
   const pendingSuggestions = new Map<number, AbortController>()
   const userAgent = chromeUserAgent(app.userAgentFallback)
 
@@ -42,7 +49,9 @@ export function registerLibraryIpc({ store, surfaces, history, downloads }: Libr
   })
 
   ipcMain.handle(LIBRARY_IPC.historyClear, (event) => {
-    history.clear(profileOf(event))
+    const profileId = profileOf(event)
+    history.clear(profileId)
+    onHistoryCleared(profileId)
   })
 
   ipcMain.handle(LIBRARY_IPC.suggest, async (event, raw: unknown): Promise<string[]> => {

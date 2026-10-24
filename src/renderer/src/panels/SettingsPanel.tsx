@@ -12,7 +12,7 @@ import {
   type SyncStatus,
   type UpdateStatus,
 } from '@shared/schema'
-import { acceleratorFor, conflictFor, withOverrides } from '@shared/keys'
+import { acceleratorFor, conflictFor, reservedShortcuts, withOverrides } from '@shared/keys'
 import { shortcuts, type Platform } from '@shared/shortcuts'
 import { isPrivateProfile } from '@shared/state/private'
 import { ante } from '../ante'
@@ -218,7 +218,12 @@ function ShortcutsSection() {
     }
     const accelerator = acceleratorFor(event, platform)
     if (!accelerator) return
-    const conflict = conflictFor(all, id, accelerator, platform)
+    const conflict = conflictFor(
+      [...all, ...reservedShortcuts(platform)],
+      id,
+      accelerator,
+      platform,
+    )
     if (conflict) {
       setProblem({ id, message: `${formatAccelerator(accelerator)} is used by ${conflict.label}` })
       return

@@ -1,7 +1,7 @@
 import { dialog, WebContentsView, type ContextMenuParams, type WebContents } from 'electron'
 import type { Id, TabRuntime } from '@shared/schema'
 import { IGNORED_LOAD_ERRORS } from '@shared/loadErrors'
-import { restorableHistory, trimHistory, type SavedHistory } from '@shared/navigation'
+import { restorableHistory, trimHistory, type SavedTabHistory } from '@shared/navigation'
 import { isInternalPage } from '@shared/pages'
 import { getTab } from '@shared/state/tree'
 import type { Sessions } from './sessions'
@@ -20,7 +20,7 @@ export interface TabHooks {
 export class TabManager {
   readonly #views = new Map<Id, WebContentsView>()
   readonly #hung = new Map<Id, AbortController>()
-  readonly #histories = new Map<Id, SavedHistory>()
+  readonly #histories = new Map<Id, SavedTabHistory>()
   readonly #discard = new Set<Id>()
   readonly #profiles = new Map<Id, Id>()
   readonly #store: Store
@@ -70,34 +70,52 @@ export class TabManager {
     this.#runtime(id, { loading: true })
     const saved = this.#histories.get(id)
     this.#histories.delete(id)
-    if (saved && restorableHistory(saved, tab.url)) {
-      view.webContents.navigationHistory.restore(saved).catch((error: unknown) => {
-        console.warn('[tabs] could not restore history', error)
-        this.load(id, tab.url)
-      })
+    if (saved?.profileId === profileId && restorableHistory(saved, tab.url)) {
+      const contents = view.webContents
+      contents.navigationHistory
+        .restore({ entries: saved.entries, index: saved.index })
+        .catch((error: unknown) => {
+          if (isAbort(error) || contents.isDestroyed() || this.#views.get(id) !== view) return
+          console.warn('[tabs] could not restore history', error)
+          if (!contents.getURL()) this.load(id, tab.url)
+        })
     } else this.load(id, tab.url)
     return view
   }
 
-  histories(include: (id: Id) => boolean): Record<Id, SavedHistory> {
-    const result: Record<Id, SavedHistory> = {}
-    for (const [id, saved] of this.#histories) if (include(id)) result[id] = saved
+  histories(include: (id: Id, profileId: Id) => boolean): Record<Id, SavedTabHistory> {
+    const result: Record<Id, SavedTabHistory> = {}
+    for (const [id, saved] of this.#histories) if (include(id, saved.profileId)) result[id] = saved
     for (const [id, view] of this.#views) {
       const contents = view.webContents
-      if (contents.isDestroyed() || !include(id)) continue
-      const saved = trimHistory(
-        contents.navigationHistory.getAllEntries(),
-        contents.navigationHistory.getActiveIndex(),
-      )
+      const profileId = this.#profiles.get(id)
+      if (contents.isDestroyed() || !profileId || !include(id, profileId)) continue
+      const saved = this.#capture(contents, profileId)
       if (saved) result[id] = saved
     }
     return result
   }
 
-  restoreHistories(histories: Record<Id, SavedHistory>): void {
+  restoreHistories(histories: Record<Id, SavedTabHistory>): void {
     for (const [id, saved] of Object.entries(histories)) {
       if (!this.#views.has(id)) this.#histories.set(id, saved)
     }
+  }
+
+  clearHistories(profileId: Id): void {
+    for (const [id, saved] of this.#histories)
+      if (saved.profileId === profileId) this.#histories.delete(id)
+    for (const [id, view] of this.#views) {
+      const contents = view.webContents
+      if (this.#profiles.get(id) === profileId && !contents.isDestroyed())
+        contents.navigationHistory.clear()
+    }
+  }
+
+  #capture(contents: WebContents, profileId: Id): SavedTabHistory | null {
+    const history = contents.navigationHistory
+    const saved = trimHistory(history.getAllEntries(), history.getActiveIndex())
+    return saved ? { ...saved, profileId } : null
   }
 
   discardHistory(id: Id): void {
@@ -106,8 +124,8 @@ export class TabManager {
   }
 
   #remember(id: Id, contents: WebContents): void {
-    const history = contents.navigationHistory
-    const saved = trimHistory(history.getAllEntries(), history.getActiveIndex())
+    const profileId = this.#profiles.get(id)
+    const saved = profileId ? this.#capture(contents, profileId) : null
     this.#histories.delete(id)
     if (!saved) return
     this.#histories.set(id, saved)
@@ -134,12 +152,11 @@ export class TabManager {
     const keep = !this.#discard.delete(id)
     const view = this.#views.get(id)
     if (!view) return
+    const contents = view.webContents
+    if (keep && !contents.isDestroyed()) this.#remember(id, contents)
     this.#views.delete(id)
     this.#profiles.delete(id)
-    const contents = view.webContents
-    if (contents.isDestroyed()) return
-    if (keep) this.#remember(id, contents)
-    contents.close()
+    if (!contents.isDestroyed()) contents.close()
   }
 
   reconcile(): void {
