@@ -1,11 +1,11 @@
 import { ChevronDown, ChevronUp, Monitor, X } from 'lucide-react'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { describeRequest, type FindState, type Prompt } from '@shared/permissions'
-import { popoverFor } from '@shared/popover'
+import { popoverFor, type Popover as PopoverState } from '@shared/popover'
 import type { Id } from '@shared/schema'
-import { ante } from '../ante'
+import { ante, windowId } from '../ante'
 import { IconButton } from '../components/IconButton'
-import { useAppState, useWindowData } from '../store'
+import { useAppSelector } from '../store'
 import styles from './Popover.module.css'
 
 function FindBar({ tabId, find }: { tabId: Id; find: FindState }) {
@@ -184,11 +184,16 @@ function ScreenCard({ tabId, prompt }: { tabId: Id; prompt: Extract<Prompt, { ki
   )
 }
 
+function samePopover(a: PopoverState | null, b: PopoverState | null): boolean {
+  if (a === null || b === null) return a === b
+  return a.tabId === b.tabId && a.find === b.find && a.prompt === b.prompt
+}
+
 export function Popover() {
-  const window = useWindowData()
-  const data = useAppState((state) => state.data)
-  const runtime = useAppState((state) => state.runtime)
-  const popover = window ? popoverFor(data, runtime, window) : null
+  const popover = useAppSelector((state) => {
+    const window = state.data.windows[windowId]
+    return window ? popoverFor(state.data, state.runtime, window) : null
+  }, samePopover)
   if (!popover) return null
   return (
     <div className={styles.popover}>

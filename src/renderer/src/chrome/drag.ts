@@ -63,8 +63,7 @@ class DragController {
   start(source: DragSource, event: ReactPointerEvent<HTMLElement>): void {
     if (event.button !== 0 || this.#pending || this.#session) return
     const target = event.target instanceof Element ? event.target : null
-    const interactive = target?.closest('button, input')
-    if (interactive && interactive !== event.currentTarget) return
+    if (target?.closest('[data-no-drag], input, textarea')) return
     this.#pending = {
       source,
       startX: event.clientX,

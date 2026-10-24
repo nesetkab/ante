@@ -1,35 +1,61 @@
 import { CornerUpLeft, Volume2, VolumeX, X, Shapes, StickyNote } from 'lucide-react'
-import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react'
-import type { Tab, TabRuntime } from '@shared/schema'
+import { memo, useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react'
+import type { Id, Tab, TabRuntime } from '@shared/schema'
 import { internalPage } from '@shared/pages'
-import { displayTitle } from '@shared/state/tree'
+import { displayTitle, getTab } from '@shared/state/tree'
 import { ante } from '../ante'
 import { Favicon } from '../components/Favicon'
 import { IconButton } from '../components/IconButton'
+import { useAppState } from '../store'
 import { onUiEvent } from '../uiEvents'
+import { selectActiveId } from './selectors'
 import { useDragSource } from './drag'
 import { dropRow } from './dropTargets'
 import styles from './Sidebar.module.css'
 
 interface TabRowProps {
+  id: Id
+  depth: number
+  persistent: boolean
+  feed?: boolean
+  compact?: boolean
+}
+
+export const TabRow = memo(function TabRow({
+  id,
+  depth,
+  persistent,
+  feed = false,
+  compact = false,
+}: TabRowProps) {
+  const tab = useAppState((state) => getTab(state.data, id))
+  const runtime = useAppState((state) => state.runtime.tabs[id])
+  const active = useAppState((state) => selectActiveId(state) === id)
+  if (!tab) return null
+  return (
+    <TabRowView
+      tab={tab}
+      runtime={runtime}
+      active={active}
+      depth={depth}
+      persistent={persistent}
+      unread={feed && tab.lastActiveAt === 0}
+      compact={compact}
+    />
+  )
+})
+
+interface TabRowViewProps {
   tab: Tab
   runtime: TabRuntime | undefined
   active: boolean
   depth: number
   persistent: boolean
-  compact?: boolean
-  unread?: boolean
+  unread: boolean
+  compact: boolean
 }
 
-export function TabRow({
-  tab,
-  runtime,
-  active,
-  depth,
-  persistent,
-  compact = false,
-  unread = false,
-}: TabRowProps) {
+function TabRowView({ tab, runtime, active, depth, persistent, unread, compact }: TabRowViewProps) {
   const [editing, setEditing] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const title = displayTitle(tab)
@@ -56,6 +82,7 @@ export function TabRow({
   }
 
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.nativeEvent.isComposing) return
     if (event.key === 'Enter') commitRename(event.currentTarget.value)
     if (event.key === 'Escape') setEditing(false)
   }
@@ -86,7 +113,10 @@ export function TabRow({
         if (!editing) ante.command({ type: 'tab/activate', tabId: tab.id })
       }}
       onAuxClick={onAuxClick}
-      onDoubleClick={() => setEditing(true)}
+      onDoubleClick={(event) => {
+        if (event.target instanceof Element && event.target.closest('button')) return
+        setEditing(true)
+      }}
       onContextMenu={(event) => {
         event.preventDefault()
         ante.command({ type: 'tab/contextMenu', tabId: tab.id })
@@ -97,6 +127,7 @@ export function TabRow({
         <button
           type="button"
           className={styles.resetButton}
+          data-no-drag
           title="Back to pinned page"
           onMouseDown={stop}
           onClick={(event) => {
@@ -136,6 +167,7 @@ export function TabRow({
         <IconButton
           size="sm"
           label={runtime.muted ? 'Unmute tab' : 'Mute tab'}
+          data-no-drag
           onMouseDown={stop}
           onClick={(event) => {
             event.stopPropagation()
@@ -150,6 +182,7 @@ export function TabRow({
           size="sm"
           label={persistent ? 'Unload tab' : 'Close tab'}
           className={styles.close}
+          data-no-drag
           onMouseDown={stop}
           onClick={(event) => {
             event.stopPropagation()

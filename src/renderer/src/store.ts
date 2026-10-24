@@ -1,5 +1,5 @@
 import { applyPatches, enablePatches } from 'immer'
-import { useSyncExternalStore } from 'react'
+import { useRef, useSyncExternalStore } from 'react'
 import type { PatchBatch } from '@shared/ipc'
 import type { AppState, WindowData, WindowRuntime } from '@shared/schema'
 import { ante, windowId } from './ante'
@@ -70,6 +70,28 @@ export function useAppState<T>(selector: (state: AppState) => T): T {
     const state = store.state
     if (!state) throw new Error('State not loaded')
     return selector(state)
+  })
+}
+
+export function shallowEqual<T>(a: T, b: T): boolean {
+  if (Object.is(a, b)) return true
+  if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false
+  return a.every((value, index) => Object.is(value, b[index]))
+}
+
+export function useAppSelector<T>(
+  selector: (state: AppState) => T,
+  equal: (a: T, b: T) => boolean = shallowEqual,
+): T {
+  const cache = useRef<{ value: T } | null>(null)
+  return useSyncExternalStore(store.subscribe, () => {
+    const state = store.state
+    if (!state) throw new Error('State not loaded')
+    const next = selector(state)
+    const previous = cache.current
+    if (previous && equal(previous.value, next)) return previous.value
+    cache.current = { value: next }
+    return next
   })
 }
 

@@ -56,8 +56,12 @@ function SpaceGhost({ session, data }: { session: DragSession; data: Data }) {
 
 export function DragLayer() {
   const session = useDragSession()
-  const data = useAppState((state) => state.data)
   if (!session) return null
+  return <ActiveDragLayer session={session} />
+}
+
+function ActiveDragLayer({ session }: { session: DragSession }) {
+  const data = useAppState((state) => state.data)
   const visual = session.target?.visual ?? null
   const ghostStyle = {
     left: session.x - session.offsetX,

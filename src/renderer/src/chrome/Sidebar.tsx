@@ -1,6 +1,6 @@
 import { ArrowLeft, ArrowRight, PanelLeft, Plus, RotateCw, X, Shield } from 'lucide-react'
 import { useRef, type WheelEvent } from 'react'
-import { activeTabId, getTab } from '@shared/state/tree'
+import { getTab } from '@shared/state/tree'
 import { displayUrl } from '@shared/url'
 import { profilePartition } from '@shared/extensions'
 import { internalPage } from '@shared/pages'
@@ -12,6 +12,7 @@ import { DragLayer } from './DragLayer'
 import { dropZone } from './dropTargets'
 import { Favorites, FavoritesDrop } from './Favorites'
 import { ItemList } from './ItemList'
+import { selectActiveId } from './selectors'
 import { MiniPlayer } from './MiniPlayer'
 import styles from './Sidebar.module.css'
 import { SpaceBar } from './SpaceBar'
@@ -44,15 +45,17 @@ function useSpaceSwipe() {
 
 export function Sidebar({ floating = false }: { floating?: boolean }) {
   const window = useWindowData()
-  const data = useAppState((state) => state.data)
-  const runtime = useAppState((state) => state.runtime)
+  const space = useAppState((state) => (window ? state.data.spaces[window.spaceId] : undefined))
+  const activeTab = useAppState((state) => getTab(state.data, selectActiveId(state)))
+  const activeRuntime = useAppState((state) => {
+    const id = selectActiveId(state)
+    return id ? state.runtime.tabs[id] : undefined
+  })
+  const hasFavorites = useAppState((state) =>
+    space ? (state.data.favorites[space.profileId] ?? []).length > 0 : false,
+  )
   const onWheel = useSpaceSwipe()
   if (!window) return null
-
-  const space = data.spaces[window.spaceId]
-  const activeId = activeTabId(data, window)
-  const activeTab = getTab(data, activeId)
-  const activeRuntime = activeId ? runtime.tabs[activeId] : undefined
 
   return (
     <aside
@@ -129,26 +132,16 @@ export function Sidebar({ floating = false }: { floating?: boolean }) {
             {(activeRuntime?.blocked ?? 0) > 0 && <span>{activeRuntime?.blocked}</span>}
           </button>
         )}
-        {space && (data.favorites[space.profileId] ?? []).length === 0 && (
-          <FavoritesDrop profileId={space.profileId} />
-        )}
+        {space && !hasFavorites && <FavoritesDrop profileId={space.profileId} />}
       </div>
 
-      {space && (
-        <Favorites data={data} runtime={runtime} profileId={space.profileId} activeId={activeId} />
-      )}
+      {space && <Favorites profileId={space.profileId} />}
 
       <div className={styles.scroll} data-drag-scroll>
         {space && (
           <div key={space.id} className={styles.spaceContent}>
             <SpaceHeader space={space} />
-            <ItemList
-              ids={space.pinned}
-              data={data}
-              runtime={runtime}
-              activeId={activeId}
-              persistent
-            />
+            <ItemList ids={space.pinned} persistent />
             <div
               className={styles.todayDivider}
               {...dropZone({
@@ -182,13 +175,7 @@ export function Sidebar({ floating = false }: { floating?: boolean }) {
               <Plus size={15} />
               <span className={styles.title}>New Tab</span>
             </button>
-            <ItemList
-              ids={space.today}
-              data={data}
-              runtime={runtime}
-              activeId={activeId}
-              persistent={false}
-            />
+            <ItemList ids={space.today} persistent={false} />
           </div>
         )}
       </div>

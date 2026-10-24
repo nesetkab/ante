@@ -39,9 +39,11 @@ export function SpaceBar() {
   const window = useWindowData()
   const spaces = useAppState((state) => state.data.spaces)
   const order = useAppState((state) => state.data.spaceOrder)
-  const data = useAppState((state) => state.data)
+  const isPrivate = useAppState((state) =>
+    window ? isPrivateSpace(state.data, window.spaceId) : false,
+  )
 
-  if (window && isPrivateSpace(data, window.spaceId)) {
+  if (isPrivate) {
     return (
       <footer className={styles.spaceBar}>
         <span className={styles.privateLabel}>Private window</span>

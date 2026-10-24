@@ -1,14 +1,11 @@
 import { useRef, type PointerEvent as ReactPointerEvent } from 'react'
-import { computeLayout, SPLIT_GAP } from '@shared/layout'
-import { getTab, visibleTabIds } from '@shared/state/tree'
-import { dockedDevtoolsTabId } from '@shared/devtools'
-import { internalPage } from '@shared/pages'
+import { SPLIT_GAP } from '@shared/layout'
 import { ante, modKey } from '../ante'
-import { useViewportSize } from '../hooks'
 import { useAppState, useWindowData } from '../store'
 import { ArcImportPrompt } from './ArcImportPrompt'
 import styles from './ChromeSurface.module.css'
 import { LittleToolbar } from './LittleToolbar'
+import { useWindowLayout } from './useWindowLayout'
 import { EaselEditor } from './easel/EaselEditor'
 import { NoteEditor } from './NoteEditor'
 import { TabProblem } from './TabProblem'
@@ -46,15 +43,11 @@ function SidebarResizer({ side }: { side: 'left' | 'right' }) {
 }
 
 function SplitHandles() {
-  const window = useWindowData()
-  const data = useAppState((state) => state.data)
-  const { width, height } = useViewportSize()
+  const frame = useWindowLayout()
   const drag = useRef<{ index: number; origin: number; sizes: number[]; total: number } | null>(
     null,
   )
-  const layout = window
-    ? computeLayout({ width, height, window, data, fullscreenTabId: null })
-    : null
+  const layout = frame?.layout ?? null
   const split = layout?.split ?? null
 
   const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -123,21 +116,9 @@ function SplitHandles() {
 }
 
 function ContentFrames() {
-  const window = useWindowData()
-  const data = useAppState((state) => state.data)
-  const runtime = useAppState((state) => state.runtime)
-  const { width, height } = useViewportSize()
-  if (!window) return null
-  const devtoolsTabId = dockedDevtoolsTabId(data, runtime, window)
-  const layout = computeLayout({
-    width,
-    height,
-    window,
-    data,
-    fullscreenTabId: null,
-    devtoolsTabId,
-  })
-  const hasTabs = visibleTabIds(data, window).length > 0
+  const frame = useWindowLayout()
+  if (!frame) return null
+  const { layout, panes, hasTabs } = frame
 
   if (!hasTabs) {
     const { content } = layout
@@ -161,18 +142,26 @@ function ContentFrames() {
 
   return (
     <>
-      {layout.panes.map((pane) => {
-        const page = internalPage(getTab(data, pane.tabId)?.url ?? '')
-        if (page?.kind === 'note') {
-          return <NoteEditor key={pane.tabId} noteId={page.id} rect={pane.rect} />
+      {panes.map((pane) => {
+        if (pane.page?.kind === 'note') {
+          return (
+            <NoteEditor
+              key={`${pane.tabId}:${pane.page.id}`}
+              noteId={pane.page.id}
+              rect={pane.rect}
+            />
+          )
         }
-        if (page?.kind === 'easel') {
-          return <EaselEditor key={pane.tabId} easelId={page.id} rect={pane.rect} />
+        if (pane.page?.kind === 'easel') {
+          return (
+            <EaselEditor
+              key={`${pane.tabId}:${pane.page.id}`}
+              easelId={pane.page.id}
+              rect={pane.rect}
+            />
+          )
         }
-        const problem = runtime.tabs[pane.tabId]
-        if (problem?.error || problem?.crashed) {
-          return <TabProblem key={pane.tabId} tabId={pane.tabId} rect={pane.rect} />
-        }
+        if (pane.problem) return <TabProblem key={pane.tabId} tabId={pane.tabId} rect={pane.rect} />
         return (
           <div
             key={pane.tabId}

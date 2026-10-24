@@ -1,33 +1,38 @@
 import { ChevronRight, Folder as FolderIcon, FolderOpen, Rss } from 'lucide-react'
-import type { Data, Folder, Id, Runtime, Split } from '@shared/schema'
-import { getTab } from '@shared/state/tree'
+import { memo } from 'react'
+import type { Id } from '@shared/schema'
+import { displayTitle, getTab } from '@shared/state/tree'
 import { ante } from '../ante'
 import { Favicon } from '../components/Favicon'
 import { RenameInput, useRenameEvent } from '../components/RenameInput'
+import { useAppSelector, useAppState } from '../store'
 import styles from './Sidebar.module.css'
 import { TabRow } from './TabRow'
 import { useDragSource } from './drag'
 import { dropRow } from './dropTargets'
+import { selectActiveId } from './selectors'
 
-interface ListContext {
-  data: Data
-  runtime: Runtime
-  activeId: Id | null
+interface RowProps {
+  id: Id
+  depth: number
   persistent: boolean
-  feed?: boolean
+  feed: boolean
 }
 
-interface ItemListProps extends ListContext {
-  ids: readonly Id[]
-  depth?: number
-}
+const FolderRow = memo(function FolderRow({ id, depth, persistent }: Omit<RowProps, 'feed'>) {
+  const folder = useAppState((state) => {
+    const item = state.data.items[id]
+    return item?.kind === 'folder' ? item : null
+  })
+  const unread = useAppState((state) => {
+    const item = state.data.items[id]
+    if (item?.kind !== 'folder' || !item.feedUrl) return 0
+    return item.children.filter((child) => getTab(state.data, child)?.lastActiveAt === 0).length
+  })
+  const { dragging, onPointerDown } = useDragSource({ type: 'item', id, variant: 'row' })
+  const [editing, setEditing] = useRenameEvent(id)
+  if (!folder) return null
 
-function FolderRow({ folder, depth, ...context }: ListContext & { folder: Folder; depth: number }) {
-  const { dragging, onPointerDown } = useDragSource({ type: 'item', id: folder.id, variant: 'row' })
-  const [editing, setEditing] = useRenameEvent(folder.id)
-  const unread = folder.feedUrl
-    ? folder.children.filter((id) => getTab(context.data, id)?.lastActiveAt === 0).length
-    : 0
   return (
     <div className={styles.folder}>
       <div
@@ -35,13 +40,13 @@ function FolderRow({ folder, depth, ...context }: ListContext & { folder: Folder
         tabIndex={-1}
         className={[styles.row, dragging && styles.dragging].filter(Boolean).join(' ')}
         style={{ paddingLeft: 10 + depth * 14 }}
-        {...dropRow(folder.id, depth)}
+        {...dropRow(id, depth)}
         onPointerDown={editing ? undefined : onPointerDown}
-        onClick={() => ante.dispatch({ type: 'folder/toggle', id: folder.id })}
+        onClick={() => ante.dispatch({ type: 'folder/toggle', id })}
         onDoubleClick={() => setEditing(true)}
         onContextMenu={(event) => {
           event.preventDefault()
-          ante.command({ type: 'tab/contextMenu', tabId: folder.id })
+          ante.command({ type: 'tab/contextMenu', tabId: id })
         }}
       >
         <ChevronRight
@@ -62,7 +67,7 @@ function FolderRow({ folder, depth, ...context }: ListContext & { folder: Folder
             onCancel={() => setEditing(false)}
             onCommit={(name) => {
               setEditing(false)
-              if (name) ante.dispatch({ type: 'folder/rename', id: folder.id, name })
+              if (name) ante.dispatch({ type: 'folder/rename', id, name })
             }}
           />
         ) : (
@@ -72,87 +77,99 @@ function FolderRow({ folder, depth, ...context }: ListContext & { folder: Folder
       </div>
       {folder.open && (
         <ItemList
-          {...context}
-          feed={folder.feedUrl !== null}
           ids={folder.children}
           depth={depth + 1}
+          persistent={persistent}
+          feed={folder.feedUrl !== null}
         />
       )}
     </div>
   )
-}
+})
 
-function SplitRow({
-  split,
-  depth,
-  data,
-  runtime,
-  activeId,
-}: ListContext & { split: Split; depth: number }) {
-  const tabs = split.children.map((id) => getTab(data, id)).filter((tab) => tab !== null)
-  const containsActive = activeId !== null && split.children.includes(activeId)
-  const { dragging, onPointerDown } = useDragSource({ type: 'item', id: split.id, variant: 'row' })
+const SplitPane = memo(function SplitPane({ id }: { id: Id }) {
+  const tab = useAppState((state) => getTab(state.data, id))
+  const loading = useAppState((state) => state.runtime.tabs[id]?.loading ?? false)
+  const active = useAppState((state) => selectActiveId(state) === id)
+  if (!tab) return null
+  return (
+    <button
+      type="button"
+      className={[styles.splitPane, active && styles.splitPaneActive].filter(Boolean).join(' ')}
+      onClick={() => ante.command({ type: 'tab/activate', tabId: id })}
+      title={tab.title || tab.url}
+    >
+      <Favicon src={tab.favicon} pageUrl={tab.url} loading={loading} size={14} />
+      <span className={styles.title}>{displayTitle(tab)}</span>
+    </button>
+  )
+})
+
+const NO_CHILDREN: readonly Id[] = []
+
+const SplitRow = memo(function SplitRow({ id, depth }: Pick<RowProps, 'id' | 'depth'>) {
+  const children = useAppSelector((state) => {
+    const item = state.data.items[id]
+    return item?.kind === 'split' ? item.children : NO_CHILDREN
+  })
+  const containsActive = useAppState((state) => {
+    const active = selectActiveId(state)
+    return active !== null && children.includes(active)
+  })
+  const { dragging, onPointerDown } = useDragSource({ type: 'item', id, variant: 'row' })
+  if (children.length === 0) return null
   return (
     <div
       className={[styles.splitRow, containsActive && styles.active, dragging && styles.dragging]
         .filter(Boolean)
         .join(' ')}
       style={{ marginLeft: depth * 14 }}
-      {...dropRow(split.id, depth)}
+      {...dropRow(id, depth)}
       onPointerDown={onPointerDown}
       onContextMenu={(event) => {
         event.preventDefault()
-        ante.command({ type: 'tab/contextMenu', tabId: split.id })
+        ante.command({ type: 'tab/contextMenu', tabId: id })
       }}
     >
-      {tabs.map((tab) => (
-        <button
-          key={tab.id}
-          type="button"
-          className={[styles.splitPane, tab.id === activeId && styles.splitPaneActive]
-            .filter(Boolean)
-            .join(' ')}
-          onClick={() => ante.command({ type: 'tab/activate', tabId: tab.id })}
-          title={tab.title || tab.url}
-        >
-          <Favicon
-            src={tab.favicon}
-            pageUrl={tab.url}
-            loading={runtime.tabs[tab.id]?.loading}
-            size={14}
-          />
-          <span className={styles.title}>{tab.customTitle ?? (tab.title || tab.url)}</span>
-        </button>
+      {children.map((child) => (
+        <SplitPane key={child} id={child} />
       ))}
     </div>
   )
+})
+
+const ItemRow = memo(function ItemRow({ id, depth, persistent, feed }: RowProps) {
+  const kind = useAppState((state) => state.data.items[id]?.kind ?? null)
+  switch (kind) {
+    case 'tab':
+      return <TabRow id={id} depth={depth} persistent={persistent} feed={feed} />
+    case 'folder':
+      return <FolderRow id={id} depth={depth} persistent={persistent} />
+    case 'split':
+      return <SplitRow id={id} depth={depth} />
+    case null:
+      return null
+  }
+})
+
+interface ItemListProps {
+  ids: readonly Id[]
+  depth?: number
+  persistent: boolean
+  feed?: boolean
 }
 
-export function ItemList({ ids, depth = 0, ...context }: ItemListProps) {
+export const ItemList = memo(function ItemList({
+  ids,
+  depth = 0,
+  persistent,
+  feed = false,
+}: ItemListProps) {
   return (
     <>
-      {ids.map((id) => {
-        const item = context.data.items[id]
-        if (!item) return null
-        switch (item.kind) {
-          case 'tab':
-            return (
-              <TabRow
-                key={id}
-                tab={item}
-                runtime={context.runtime.tabs[id]}
-                active={id === context.activeId}
-                depth={depth}
-                persistent={context.persistent}
-                unread={context.feed === true && item.lastActiveAt === 0}
-              />
-            )
-          case 'folder':
-            return <FolderRow key={id} folder={item} depth={depth} {...context} />
-          case 'split':
-            return <SplitRow key={id} split={item} depth={depth} {...context} />
-        }
-      })}
+      {ids.map((id) => (
+        <ItemRow key={id} id={id} depth={depth} persistent={persistent} feed={feed} />
+      ))}
     </>
   )
-}
+})
