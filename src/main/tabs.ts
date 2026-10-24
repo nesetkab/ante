@@ -1,4 +1,4 @@
-import { WebContentsView, type ContextMenuParams, type WebContents } from 'electron'
+import { dialog, WebContentsView, type ContextMenuParams, type WebContents } from 'electron'
 import type { Id, TabRuntime } from '@shared/schema'
 import { IGNORED_LOAD_ERRORS } from '@shared/loadErrors'
 import { isInternalPage } from '@shared/pages'
@@ -16,6 +16,7 @@ export interface TabHooks {
 
 export class TabManager {
   readonly #views = new Map<Id, WebContentsView>()
+  readonly #hung = new Map<Id, AbortController>()
   readonly #profiles = new Map<Id, Id>()
   readonly #store: Store
   readonly #sessions: Sessions
@@ -78,6 +79,8 @@ export class TabManager {
   }
 
   destroy(id: Id): void {
+    this.#hung.get(id)?.abort()
+    this.#hung.delete(id)
     const view = this.#views.get(id)
     if (!view) return
     this.#views.delete(id)
@@ -96,6 +99,28 @@ export class TabManager {
 
   destroyAll(): void {
     for (const id of [...this.#views.keys()]) this.destroy(id)
+  }
+
+  async #askAboutHang(id: Id, contents: WebContents): Promise<void> {
+    if (this.#hung.has(id)) return
+    const controller = new AbortController()
+    this.#hung.set(id, controller)
+    const title = getTab(this.#store.state.data, id)?.title ?? 'This page'
+    const { response } = await dialog.showMessageBox({
+      type: 'warning',
+      message: `${title || 'This page'} isn't responding`,
+      detail: 'You can wait for it to respond or reload the page.',
+      buttons: ['Wait', 'Reload'],
+      defaultId: 0,
+      cancelId: 0,
+      signal: controller.signal,
+    })
+    if (this.#hung.get(id) !== controller || contents.isDestroyed()) return
+    this.#hung.delete(id)
+    if (response === 1) {
+      contents.forcefullyCrashRenderer()
+      contents.reload()
+    }
   }
 
   #runtime(id: Id, patch: Partial<TabRuntime>): void {
@@ -152,6 +177,11 @@ export class TabManager {
     contents.on('leave-html-full-screen', () => this.#runtime(id, { fullscreen: false }))
     contents.on('render-process-gone', (_event, details) => {
       if (details.reason !== 'clean-exit') this.#runtime(id, { crashed: true, loading: false })
+    })
+    contents.on('unresponsive', () => void this.#askAboutHang(id, contents))
+    contents.on('responsive', () => {
+      this.#hung.get(id)?.abort()
+      this.#hung.delete(id)
     })
     contents.on('zoom-changed', () => this.#runtime(id, { zoom: contents.getZoomFactor() }))
     contents.on('context-menu', (_event, params) => this.#hooks.onContextMenu(id, params))

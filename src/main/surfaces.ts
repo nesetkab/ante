@@ -24,6 +24,31 @@ export function isTrustedSurfaceUrl(url: string): boolean {
   }
 }
 
+const RESTART_WINDOW_MS = 60_000
+const MAX_RESTARTS = 3
+const RESTART_DELAY_MS = 250
+
+export function restartBudget(recent: readonly number[], now: number): number[] | null {
+  const kept = recent.filter((time) => now - time < RESTART_WINDOW_MS)
+  return kept.length < MAX_RESTARTS ? [...kept, now] : null
+}
+
+const lastLoad = new WeakMap<WebContents, () => void>()
+
+function recoverFromCrashes(contents: WebContents, surface: Surface): void {
+  let restarts: number[] = []
+  contents.on('render-process-gone', (_event, details) => {
+    if (details.reason === 'clean-exit') return
+    const next = restartBudget(restarts, Date.now())
+    console.error('[surfaces] renderer gone', surface, details.reason)
+    if (!next) return
+    restarts = next
+    setTimeout(() => {
+      if (!contents.isDestroyed()) lastLoad.get(contents)?.()
+    }, RESTART_DELAY_MS)
+  })
+}
+
 export function loadSurface(
   contents: WebContents,
   surface: Surface,
@@ -32,12 +57,17 @@ export function loadSurface(
 ): void {
   const query = { ...extra, surface, window: windowId }
   const devUrl = process.env.ELECTRON_RENDERER_URL
-  const loading = devUrl
-    ? contents.loadURL(`${devUrl}?${new URLSearchParams(query).toString()}`)
-    : contents.loadFile(rendererFile, { query })
-  loading.catch((error: unknown) => {
-    console.error('[surfaces] failed to load', surface, error)
-  })
+  const load = () => {
+    const loading = devUrl
+      ? contents.loadURL(`${devUrl}?${new URLSearchParams(query).toString()}`)
+      : contents.loadFile(rendererFile, { query })
+    loading.catch((error: unknown) => {
+      console.error('[surfaces] failed to load', surface, error)
+    })
+  }
+  if (!lastLoad.has(contents)) recoverFromCrashes(contents, surface)
+  lastLoad.set(contents, load)
+  load()
 }
 
 export class SurfaceRegistry {
