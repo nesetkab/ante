@@ -6,6 +6,7 @@ import {
   type ArchiveAfter,
   type SearchEngine,
   type Settings,
+  type SleepAfter,
   type SyncStatus,
   type UpdateStatus,
 } from '@shared/schema'
@@ -32,6 +33,13 @@ const archiveOptions: readonly { value: ArchiveAfter; label: string }[] = [
   { value: '24h', label: '24 hours' },
   { value: '7d', label: '7 days' },
   { value: '30d', label: '30 days' },
+  { value: 'never', label: 'Never' },
+]
+
+const sleepChoices: readonly { value: SleepAfter; label: string }[] = [
+  { value: '15m', label: '15 minutes' },
+  { value: '1h', label: '1 hour' },
+  { value: '4h', label: '4 hours' },
   { value: 'never', label: 'Never' },
 ]
 
@@ -220,6 +228,17 @@ export function SettingsPanel() {
             value={settings.archiveAfter}
             options={archiveOptions}
             onChange={(archiveAfter) => update({ archiveAfter })}
+          />
+        </Row>
+        <Row
+          label="Put tabs to sleep after"
+          hint="Idle tabs free their memory and reload when you open them"
+        >
+          <Select
+            label="Sleep after"
+            value={settings.sleepAfter}
+            options={sleepChoices}
+            onChange={(sleepAfter) => update({ sleepAfter })}
           />
         </Row>
         <Row label="Appearance">

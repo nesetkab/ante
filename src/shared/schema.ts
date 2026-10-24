@@ -138,6 +138,9 @@ export const searchEngines = ['google', 'duckduckgo', 'bing', 'brave', 'kagi', '
 export const searchEngineSchema = z.enum(searchEngines)
 export type SearchEngine = z.infer<typeof searchEngineSchema>
 
+export const sleepOptions = ['15m', '1h', '4h', 'never'] as const
+export type SleepAfter = (typeof sleepOptions)[number]
+
 export const archiveAfterSchema = z.enum(['12h', '24h', '7d', '30d', 'never'])
 export type ArchiveAfter = z.infer<typeof archiveAfterSchema>
 
@@ -165,6 +168,7 @@ export const settingsSchema = z.object({
   adblockAllowlist: z.array(z.string().min(1).max(253)).max(10000).default([]),
   autoPip: z.boolean().default(true),
   checkUpdates: z.boolean().default(true),
+  sleepAfter: z.enum(sleepOptions).default('1h'),
   devtoolsWidth: z.number().min(280).max(1600).default(480),
   sync: syncSettingsSchema.prefault({}),
 })
