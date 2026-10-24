@@ -36,6 +36,7 @@ export const folderSchema = z.object({
   name: z.string(),
   children: z.array(idSchema),
   open: z.boolean().default(true),
+  feedUrl: z.string().max(4096).nullable().default(null),
 })
 export type Folder = z.infer<typeof folderSchema>
 

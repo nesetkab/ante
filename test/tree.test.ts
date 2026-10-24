@@ -94,8 +94,8 @@ describe('rootOf and sections', () => {
       ...data,
       items: {
         ...data.items,
-        l1: { kind: 'folder', id: 'l1', name: 'l1', children: ['l2'], open: true },
-        l2: { kind: 'folder', id: 'l2', name: 'l2', children: ['l1'], open: true },
+        l1: { kind: 'folder', id: 'l1', name: 'l1', children: ['l2'], open: true, feedUrl: null },
+        l2: { kind: 'folder', id: 'l2', name: 'l2', children: ['l1'], open: true, feedUrl: null },
       },
     }
     expect(rootOf(cyclic, 'l1')).toBeNull()
@@ -138,7 +138,16 @@ describe('item helpers', () => {
   it('stops at absurd depths instead of looping', () => {
     const cyclic: Data = {
       ...data,
-      items: { loop: { kind: 'folder', id: 'loop', name: 'loop', children: ['loop'], open: true } },
+      items: {
+        loop: {
+          kind: 'folder',
+          id: 'loop',
+          name: 'loop',
+          children: ['loop'],
+          open: true,
+          feedUrl: null,
+        },
+      },
     }
     expect(flattenTabs(cyclic, ['loop'])).toEqual([])
     expect(descendantIds(cyclic, 'loop')).toHaveLength(33)

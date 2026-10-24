@@ -120,6 +120,7 @@ export function TabRow({ tab, runtime, active, depth, persistent, compact = fals
           {title || 'New Tab'}
         </span>
       )}
+      {tab.lastActiveAt === 0 && <span className={styles.unreadDot} aria-label="Unread" />}
       {runtime?.audible || runtime?.muted ? (
         <IconButton
           size="sm"

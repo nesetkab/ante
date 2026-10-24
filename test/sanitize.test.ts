@@ -89,7 +89,7 @@ describe('sanitize', () => {
   it('removes a container that lists itself', () => {
     const input = withItems(
       buildData(),
-      { kind: 'folder', id: 'f', name: 'f', children: ['f', 'p'], open: true },
+      { kind: 'folder', id: 'f', name: 'f', children: ['f', 'p'], open: true, feedUrl: null },
       makeTab('p'),
     )
     input.spaces.s1?.pinned.push('f')
@@ -100,7 +100,7 @@ describe('sanitize', () => {
   it('drops orphaned items', () => {
     const input = withItems(
       buildData({ spaces: { s1: { today: ['a'] } }, loose: ['peek'] }),
-      { kind: 'folder', id: 'lost', name: 'lost', children: ['inside'], open: true },
+      { kind: 'folder', id: 'lost', name: 'lost', children: ['inside'], open: true, feedUrl: null },
       makeTab('inside'),
     )
     const result = sanitize(input, 'x')
@@ -115,6 +115,7 @@ describe('sanitize', () => {
       name: 'orphan',
       children: ['p'],
       open: true,
+      feedUrl: null,
     })
     const result = sanitize(input, 'x')
     expect(result.items.f).toMatchObject({ children: ['p'] })

@@ -124,6 +124,7 @@ export function buildData(fixture: Fixture = {}): Data {
         name: node.name ?? node.id,
         children,
         open: node.open ?? true,
+        feedUrl: null,
       }
       items[node.id] = item
     } else {

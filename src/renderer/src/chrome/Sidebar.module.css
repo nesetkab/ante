@@ -456,3 +456,21 @@
   flex: none;
   color: var(--fg-muted);
 }
+
+.unreadCount {
+  margin-left: auto;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-muted);
+  background: color-mix(in oklab, var(--fg) 8%, transparent);
+}
+
+.unreadDot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}

@@ -1,4 +1,4 @@
-import { ChevronRight, Folder as FolderIcon, FolderOpen } from 'lucide-react'
+import { ChevronRight, Folder as FolderIcon, FolderOpen, Rss } from 'lucide-react'
 import type { Data, Folder, Id, Runtime, Split } from '@shared/schema'
 import { getTab } from '@shared/state/tree'
 import { ante } from '../ante'
@@ -24,6 +24,9 @@ interface ItemListProps extends ListContext {
 function FolderRow({ folder, depth, ...context }: ListContext & { folder: Folder; depth: number }) {
   const { dragging, onPointerDown } = useDragSource({ type: 'item', id: folder.id, variant: 'row' })
   const [editing, setEditing] = useRenameEvent(folder.id)
+  const unread = folder.feedUrl
+    ? folder.children.filter((id) => getTab(context.data, id)?.lastActiveAt === 0).length
+    : 0
   return (
     <div className={styles.folder}>
       <div
@@ -44,7 +47,9 @@ function FolderRow({ folder, depth, ...context }: ListContext & { folder: Folder
           size={12}
           className={[styles.chevron, folder.open && styles.chevronOpen].filter(Boolean).join(' ')}
         />
-        {folder.open ? (
+        {folder.feedUrl ? (
+          <Rss size={14} className={styles.folderIcon} />
+        ) : folder.open ? (
           <FolderOpen size={15} className={styles.folderIcon} />
         ) : (
           <FolderIcon size={15} className={styles.folderIcon} />
@@ -62,6 +67,7 @@ function FolderRow({ folder, depth, ...context }: ListContext & { folder: Folder
         ) : (
           <span className={styles.title}>{folder.name || 'Untitled'}</span>
         )}
+        {unread > 0 && <span className={styles.unreadCount}>{unread}</span>}
       </div>
       {folder.open && <ItemList {...context} ids={folder.children} depth={depth + 1} />}
     </div>

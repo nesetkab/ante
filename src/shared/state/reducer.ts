@@ -294,6 +294,52 @@ function createSplit(state: AppState, id: Id, tabIds: Id[], direction: 'horizont
   normalizeSplit(state, id)
 }
 
+function syncFeed(
+  state: AppState,
+  folderId: Id,
+  entries: readonly { id: Id; url: string; title: string }[],
+  now: number,
+): void {
+  const { data } = state
+  const folder = data.items[folderId]
+  if (folder?.kind !== 'folder' || !folder.feedUrl) return
+  const existing = new Map<string, Tab>()
+  for (const child of folder.children) {
+    const tab = getTab(data, child)
+    if (tab) existing.set(tab.savedUrl ?? tab.url, tab)
+  }
+  const next: Id[] = []
+  for (const entry of entries) {
+    const tab = existing.get(entry.url)
+    if (tab) {
+      if (tab.savedTitle !== entry.title) tab.savedTitle = entry.title
+      if (tab.url === tab.savedUrl) tab.title = entry.title
+      next.push(tab.id)
+      continue
+    }
+    if (data.items[entry.id]) continue
+    data.items[entry.id] = {
+      kind: 'tab',
+      id: entry.id,
+      url: entry.url,
+      title: entry.title,
+      favicon: null,
+      savedUrl: entry.url,
+      savedTitle: entry.title,
+      customTitle: null,
+      createdAt: now,
+      lastActiveAt: 0,
+    }
+    next.push(entry.id)
+  }
+  const kept = new Set(next)
+  for (const child of [...folder.children]) {
+    if (!kept.has(child) && data.items[child]?.kind === 'tab') deleteItems(state, child)
+  }
+  const current = data.items[folderId]
+  if (current?.kind === 'folder') current.children = next
+}
+
 export function reduce(state: AppState, action: Action): void {
   const { data, runtime } = state
   switch (action.type) {
@@ -456,6 +502,7 @@ export function reduce(state: AppState, action: Action): void {
         name: action.name,
         children: [],
         open: true,
+        feedUrl: null,
       }
       const first = action.children[0]
       const anchor = first ? locate(data, first) : null
@@ -678,6 +725,26 @@ export function reduce(state: AppState, action: Action): void {
       return
     case 'private/remove':
       removePrivateProfile(state, action.profileId, { closeWindows: false })
+      return
+    case 'feed/create': {
+      const space = data.spaces[action.spaceId]
+      if (!space || data.items[action.id]) return
+      data.items[action.id] = {
+        kind: 'folder',
+        id: action.id,
+        name: action.name,
+        children: [],
+        open: true,
+        feedUrl: action.feedUrl,
+      }
+      space.pinned.push(action.id)
+      return
+    }
+    case 'folder/delete':
+      if (data.items[action.id]?.kind === 'folder') deleteItems(state, action.id)
+      return
+    case 'feed/sync':
+      syncFeed(state, action.id, action.entries, action.now)
       return
     case 'note/update': {
       const note = (data.notes[action.id] ??= {

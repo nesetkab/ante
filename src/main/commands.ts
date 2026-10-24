@@ -21,6 +21,7 @@ import { copyText } from './clipboard'
 import { describeArcImport, importFromArc } from './importers/arc'
 import type { FeatureCommand } from './features'
 import type { DevtoolsDock } from './devtools'
+import type { FeedManager } from './feeds'
 import type { MediaController } from './media'
 import type { PrivacyCommand } from './privacy'
 import { showSidebarMenu } from './sidebarMenu'
@@ -39,6 +40,7 @@ interface Deps {
   runPrivacy: (window: AppWindow, command: PrivacyCommand) => void
   media: Pick<MediaController, 'toggle' | 'togglePip'>
   devtools: Pick<DevtoolsDock, 'toggle' | 'setMode' | 'inspect'>
+  feeds: Pick<FeedManager, 'follow' | 'refresh'>
 }
 
 export class CommandRunner {
@@ -50,6 +52,7 @@ export class CommandRunner {
   readonly #runPrivacy: (window: AppWindow, command: PrivacyCommand) => void
   readonly #media: Deps['media']
   readonly #devtools: Deps['devtools']
+  readonly #feeds: Deps['feeds']
 
   constructor(deps: Deps) {
     this.#store = deps.store
@@ -60,6 +63,7 @@ export class CommandRunner {
     this.#runPrivacy = deps.runPrivacy
     this.#media = deps.media
     this.#devtools = deps.devtools
+    this.#feeds = deps.feeds
   }
 
   get #data() {
@@ -703,6 +707,17 @@ export class CommandRunner {
         this.activate(this.#mainWindowFor(window), tabId)
         return
       }
+      case 'feed/follow': {
+        const tabId = tabFor(command.tabId)
+        if (!tabId) return
+        void this.#feeds.follow(tabId).then((result) => {
+          this.toast(window, result.ok ? `Following ${result.name}` : result.message)
+        })
+        return
+      }
+      case 'feed/refresh':
+        void this.#feeds.refresh(command.folderId)
+        return
       case 'capture/start':
         this.#store.dispatch({
           type: 'runtime/window',

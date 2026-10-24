@@ -75,6 +75,8 @@ function tabMenu(id: Id, deps: SidebarMenuDeps): MenuItemConstructorOptions[] {
   }
   if (section !== 'favorites')
     items.push({ label: 'Add Split View', click: () => run({ type: 'split/add', tabId: id }) })
+  if (/^https?:/.test(tab.url))
+    items.push({ label: 'Follow This Site', click: () => run({ type: 'feed/follow', tabId: id }) })
   if (spaces.length > 0 && section !== 'favorites') {
     items.push({
       label: 'Move to Space',
@@ -110,6 +112,15 @@ function tabMenu(id: Id, deps: SidebarMenuDeps): MenuItemConstructorOptions[] {
 }
 
 function folderMenu(id: Id, deps: SidebarMenuDeps): MenuItemConstructorOptions[] {
+  const folder = deps.state.data.items[id]
+  if (folder?.kind === 'folder' && folder.feedUrl) {
+    return [
+      { label: 'Rename…', click: () => deps.ui({ type: 'rename', id }) },
+      { label: 'Refresh', click: () => deps.run({ type: 'feed/refresh', folderId: id }) },
+      { type: 'separator' },
+      { label: 'Unfollow', click: () => deps.dispatch({ type: 'folder/delete', id }) },
+    ]
+  }
   return [
     { label: 'Rename…', click: () => deps.ui({ type: 'rename', id }) },
     { label: 'Ungroup', click: () => deps.dispatch({ type: 'folder/ungroup', id }) },

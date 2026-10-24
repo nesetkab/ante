@@ -21,6 +21,7 @@ import { registerLibraryIpc } from './libraryIpc'
 import { buildAppMenu } from './menu'
 import { DevtoolsDock } from './devtools'
 import { Extensions } from './extensions'
+import { FeedManager } from './feeds'
 import { MediaController } from './media'
 import { PanelManager } from './panels'
 import { Privacy } from './privacy'
@@ -90,6 +91,7 @@ async function start(): Promise<void> {
     devtoolsView: (tabId) => devtools.viewFor(tabId),
   })
   const media = new MediaController(store, tabs)
+  const feeds = new FeedManager(store)
   windows.onSync(() => media.sync())
   const boosts = new BoostManager(store, tabs)
   boosts.start()
@@ -115,6 +117,7 @@ async function start(): Promise<void> {
     runPrivacy: (window, command) => privacy.run(window, command),
     media,
     devtools,
+    feeds,
   })
   const privacy = new Privacy({
     store,
@@ -169,6 +172,7 @@ async function start(): Promise<void> {
   for (const url of urlArguments(process.argv)) externalLinks.push(url)
 
   startArchiveSweeper(store)
+  feeds.start()
 
   const automation = process.env.ANTE_AUTOMATION
   if (automation) void runAutomation(automation, { store, tabs, windows, runner })

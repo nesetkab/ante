@@ -111,6 +111,7 @@ export const uiActionSchema = z.discriminatedUnion('type', [
     body: z.string().max(1_000_000).optional(),
     now: z.number(),
   }),
+  z.object({ type: z.literal('folder/delete'), id: idSchema }),
 ])
 export type UiAction = z.infer<typeof uiActionSchema>
 
@@ -135,6 +136,13 @@ export type InternalAction =
   | { type: 'window/selectSpace'; id: Id; spaceId: Id }
   | { type: 'window/activate'; id: Id; tabId: Id; now: number }
   | { type: 'window/deactivate'; id: Id }
+  | { type: 'feed/create'; id: Id; spaceId: Id; name: string; feedUrl: string }
+  | {
+      type: 'feed/sync'
+      id: Id
+      entries: { id: Id; url: string; title: string }[]
+      now: number
+    }
   | { type: 'runtime/tab'; id: Id; patch: Partial<TabRuntime> }
   | { type: 'runtime/unload'; id: Id }
   | { type: 'runtime/window'; id: Id; patch: Partial<WindowRuntime> }

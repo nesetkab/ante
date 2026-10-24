@@ -308,6 +308,12 @@ export function shortcuts(platform: Platform): Shortcut[] {
       command: { type: 'note/new' },
     },
     {
+      id: 'follow-site',
+      label: 'Follow This Site',
+      section: 'tab',
+      command: { type: 'feed/follow' },
+    },
+    {
       id: 'capture',
       label: 'Capture',
       section: 'tab',

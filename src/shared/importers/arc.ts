@@ -341,7 +341,14 @@ export function arcImportToBundle(arc: ArcImport, options: ArcConvertOptions): I
           if (section !== 'pinned') return addNodes(node.children, section)
           const id = newId()
           const children = addNodes(node.children, section)
-          items[id] = { kind: 'folder', id, name: node.name || 'Folder', children, open: true }
+          items[id] = {
+            kind: 'folder',
+            id,
+            name: node.name || 'Folder',
+            children,
+            open: true,
+            feedUrl: null,
+          }
           return [id]
         }
         case 'split': {
