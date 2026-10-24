@@ -21,4 +21,21 @@ export default async function notes({ store, run, waitFor, windows, delay }) {
   )
   assert(tab, 'the note should live in the sidebar as a tab')
   assert(!store.state.runtime.tabs[tab.id], 'notes should not create a web view')
+
+  run({ type: 'tab/close', tabId: tab.id }, window.id)
+  await waitFor((state) => !state.data.items[tab.id])
+  assert(
+    store.state.data.notes[noteId]?.body === 'Buy milk',
+    'closing the tab should keep the note',
+  )
+  run({ type: 'page/open', kind: 'note', id: noteId }, window.id)
+  await waitFor((state) =>
+    Object.values(state.data.items).some((item) => item.url === `ante:note/${noteId}`),
+  )
+  run({ type: 'page/delete', kind: 'note', id: noteId }, window.id)
+  await waitFor((state) => !state.data.notes[noteId])
+  assert(
+    !Object.values(store.state.data.items).some((item) => item.url === `ante:note/${noteId}`),
+    'deleting a note should close its tabs',
+  )
 }
