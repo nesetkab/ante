@@ -1,5 +1,6 @@
 import {
   Menu,
+  MenuItem,
   type ContextMenuParams,
   type MenuItemConstructorOptions,
   type WebContents,
@@ -14,6 +15,7 @@ interface ContextMenuDeps {
   tabId: Id
   run: (command: Command) => void
   searchEngine: SearchEngine
+  extensionItems?: MenuItem[]
 }
 
 export function buildContextMenu(
@@ -144,5 +146,11 @@ export function buildContextMenu(
 }
 
 export function showContextMenu(params: ContextMenuParams, deps: ContextMenuDeps): void {
-  Menu.buildFromTemplate(buildContextMenu(params, deps)).popup()
+  const menu = Menu.buildFromTemplate(buildContextMenu(params, deps))
+  const extensionItems = deps.extensionItems ?? []
+  if (extensionItems.length > 0) {
+    menu.append(new MenuItem({ type: 'separator' }))
+    for (const item of extensionItems) menu.append(item)
+  }
+  menu.popup()
 }

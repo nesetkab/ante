@@ -8,14 +8,19 @@ Arc is being discontinued. Ante keeps the parts that made it good: a vertical si
 
 ## Features
 
-- **Sidebar with spaces.** Each space has its own pinned tabs, today tabs, color and icon. Swipe sideways on the sidebar or press `Ctrl+1…9` to switch.
-- **Favorites, pinned and today tabs.** Favorites stay at the top for every space. Pinned tabs remember their home URL and can always jump back to it. Today tabs archive themselves after 12 hours (configurable).
+- **Bring your Arc sidebar with you.** Ante finds Arc on your Mac and imports your spaces, pinned tabs, folders and favorites in one click.
+- **Sidebar with spaces.** Each space has its own pinned tabs, today tabs, color, icon and profile. Swipe sideways or press `Ctrl+1…9` to switch.
+- **Favorites, pinned and today tabs.** Pinned tabs remember their home URL. Today tabs archive themselves after 12 hours (configurable). Drag anything anywhere.
 - **Folders and split view.** Group pinned tabs into folders. Put up to four tabs side by side.
-- **Command bar.** `⌘T` to open anything, `⌘L` to edit the current address. Search tabs, spaces and actions from one place.
-- **Peek.** Links from pinned tabs to other sites open in a floating preview you can expand or dismiss.
-- **Little windows.** `⌘⌥N` opens a quick window for a one-off link. Move it into a space when you want to keep it.
-- **Hide the sidebar.** `⌘S` hides it, hover the edge to bring it back.
-- **Profiles.** Spaces can use separate profiles with their own cookies and logins.
+- **Command bar.** `⌘T` searches open tabs, history, spaces and actions, with inline autocomplete and search suggestions.
+- **Peek and little windows.** Links from pinned tabs open in a floating preview. `⌘⌥N` opens a quick window for one-off links.
+- **Boosts.** Restyle any site with CSS, JavaScript, fonts and colors, or zap away parts of a page.
+- **Air Traffic Control.** Route links from other apps into the right space.
+- **Chrome extensions.** Install from the Chrome Web Store. Extensions get their own button in the sidebar.
+- **Built-in ad and tracker blocking**, per-site permission prompts, private windows and per-profile data clearing.
+- **Media mini player** for tabs playing in the background, with automatic picture in picture.
+- **Library** with history, downloads and archived tabs (`⌘Y`).
+- **Developer tools** docked next to the page.
 
 ## Getting started
 
@@ -42,4 +47,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for how the code is organized.
 
 ## License
 
-MIT
+GPL-3.0-or-later. See [LICENSE](LICENSE).

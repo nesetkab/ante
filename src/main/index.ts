@@ -20,6 +20,7 @@ import { HistoryStore, recordHistory } from './history'
 import { registerLibraryIpc } from './libraryIpc'
 import { buildAppMenu } from './menu'
 import { DevtoolsDock } from './devtools'
+import { Extensions } from './extensions'
 import { MediaController } from './media'
 import { PanelManager } from './panels'
 import { Privacy } from './privacy'
@@ -73,6 +74,7 @@ async function start(): Promise<void> {
       const windowId = windows.windowFor(contents)?.id ?? null
       showContextMenu(params, {
         contents,
+        extensionItems: extensions.contextMenuItems(contents, params),
         tabId,
         searchEngine: store.state.data.settings.searchEngine,
         run: (command) => runner.run(windowId, command),
@@ -123,6 +125,9 @@ async function start(): Promise<void> {
   })
   const adblock = new AdBlocker(store, tabs, join(app.getPath('userData'), 'adblock'))
   sessions.onCreate((profileSession) => adblock.attach(profileSession))
+  const extensions = new Extensions({ store, tabs, windows, runner: () => runner })
+  sessions.onCreate((profileSession, profileId) => extensions.attach(profileSession, profileId))
+  windows.onSync(() => extensions.sync())
   void adblock.load()
   const applyTheme = () => {
     nativeTheme.themeSource = store.state.data.settings.theme

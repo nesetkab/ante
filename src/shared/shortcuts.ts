@@ -1,3 +1,4 @@
+import { CHROME_WEB_STORE_URL } from './extensions'
 import type { Command } from './commands'
 
 export type MenuSection = 'file' | 'edit' | 'view' | 'go' | 'tab' | 'space'
@@ -298,6 +299,12 @@ export function shortcuts(platform: Platform): Shortcut[] {
       label: 'Air Traffic Control',
       section: 'space',
       command: { type: 'routes/open' },
+    },
+    {
+      id: 'web-store',
+      label: 'Chrome Web Store',
+      section: 'file',
+      command: { type: 'open', input: CHROME_WEB_STORE_URL, disposition: 'newTab' },
     },
     {
       id: 'default-browser',

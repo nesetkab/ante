@@ -3,7 +3,7 @@
   "productName": "Ante",
   "version": "0.1.0",
   "description": "An open source browser that picks up where Arc left off",
-  "license": "MIT",
+  "license": "GPL-3.0-or-later",
   "type": "module",
   "main": "out/main/index.js",
   "engines": {

@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
+import { injectBrowserAction } from 'electron-chrome-extensions/browser-action'
 import { IPC, type AnteApi, type PatchBatch, type Snapshot, type UiEvent } from '@shared/ipc'
 import { libraryApi } from './library'
 
@@ -20,4 +21,6 @@ const api: AnteApi = {
 }
 
 contextBridge.exposeInMainWorld('ante', api)
+
+injectBrowserAction()
 contextBridge.exposeInMainWorld('anteLibrary', libraryApi)

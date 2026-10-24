@@ -33,7 +33,33 @@
 }
 
 .toolbarSpacer {
+  display: flex;
+  justify-content: flex-end;
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.extensions {
+  display: flex;
+  gap: 2px;
+  -webkit-app-region: no-drag;
+}
+
+.extensions::part(action) {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background-color: transparent;
+  background-size: 16px;
+}
+
+.extensions::part(action):hover {
+  background-color: var(--item-hover);
+}
+
+.extensions::part(badge) {
+  font-size: 9px;
 }
 
 .address {

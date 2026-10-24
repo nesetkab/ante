@@ -2,6 +2,8 @@ import { ArrowLeft, ArrowRight, PanelLeft, Plus, RotateCw, X, Shield } from 'luc
 import { useRef, type WheelEvent } from 'react'
 import { activeTabId, getTab } from '@shared/state/tree'
 import { displayUrl } from '@shared/url'
+import { profilePartition } from '@shared/extensions'
+import { isPrivateProfile } from '@shared/state/private'
 import { ante, isMac } from '../ante'
 import { IconButton } from '../components/IconButton'
 import { useAppState, useWindowData } from '../store'
@@ -57,7 +59,15 @@ export function Sidebar({ floating = false }: { floating?: boolean }) {
         >
           <PanelLeft size={16} />
         </IconButton>
-        <div className={styles.toolbarSpacer} />
+        <div className={styles.toolbarSpacer}>
+          {space && !isPrivateProfile(space.profileId) && (
+            <browser-action-list
+              className={styles.extensions}
+              partition={profilePartition(space.profileId)}
+              alignment="bottom left"
+            />
+          )}
+        </div>
         <IconButton
           label="Back"
           disabled={!activeRuntime?.canGoBack}

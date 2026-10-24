@@ -33,6 +33,10 @@ export default tseslint.config(
     languageOptions: { globals: globals.node },
   },
   {
+    files: ['test/fixtures/extension/*.js'],
+    languageOptions: { globals: { ...globals.browser, chrome: 'readonly' } },
+  },
+  {
     files: ['**/*.{js,mjs}'],
     ...tseslint.configs.disableTypeChecked,
   },
