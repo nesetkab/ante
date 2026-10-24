@@ -9,6 +9,7 @@ Arc is being discontinued. Ante keeps the parts that made it good: a vertical si
 ## Features
 
 - **Bring your Arc sidebar with you.** Ante finds Arc on your Mac and imports your spaces, pinned tabs, folders and favorites in one click.
+- **Coming from Chrome, Brave or Edge?** Import your bookmarks as a space and bring your history along.
 - **Sidebar with spaces.** Each space has its own pinned tabs, today tabs, color, icon and profile. Swipe sideways or press `Ctrl+1…9` to switch.
 - **Favorites, pinned and today tabs.** Pinned tabs remember their home URL. Today tabs archive themselves after 12 hours (configurable). Drag anything anywhere.
 - **Folders and split view.** Group pinned tabs into folders. Put up to four tabs side by side.
