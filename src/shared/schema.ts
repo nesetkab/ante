@@ -333,6 +333,7 @@ export interface TabRuntime {
   media: TabMedia | null
   devtools: DevtoolsMode | null
   error: LoadError | null
+  capturing: boolean
 }
 
 export interface TabMedia {

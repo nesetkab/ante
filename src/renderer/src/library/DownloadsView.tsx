@@ -8,7 +8,6 @@ import { IconButton } from '../components/IconButton'
 import { library } from '../libraryApi'
 import { useAppState, useWindowData } from '../store'
 import styles from './Library.module.css'
-import { rowProps } from './rowProps'
 
 function statusLine(download: DownloadRuntime): string {
   const host = hostOf(download.url)
@@ -42,11 +41,13 @@ function DownloadRow({ download }: { download: DownloadRuntime }) {
         .filter(Boolean)
         .join(' ')}
       title={download.path}
-      {...rowProps(() => run(download.state === 'completed' ? 'open' : 'show'))}
+      onClick={() => run(download.state === 'completed' ? 'open' : 'show')}
     >
       <FileDown size={18} strokeWidth={1.75} className={styles.fileIcon} />
       <span className={styles.downloadText}>
-        <span className={styles.title}>{download.filename}</span>
+        <button type="button" className={styles.title}>
+          {download.filename}
+        </button>
         <span className={styles.status}>{statusLine(download)}</span>
         {active && (
           <span className={styles.progress}>

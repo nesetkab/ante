@@ -303,7 +303,7 @@ export class CommandRunner {
 
   #selectSpace(window: AppWindow, spaceId: Id): void {
     if (!samePrivacy(this.#data, this.#windowData(window).spaceId, spaceId)) return
-    this.#store.dispatch({ type: 'window/selectSpace', id: window.id, spaceId })
+    this.#store.dispatch({ type: 'window/selectSpace', id: window.id, spaceId, now: this.#now() })
     this.#windows.syncNow()
     window.focusContent(activeTabId(this.#data, this.#windowData(window)))
   }

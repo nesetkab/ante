@@ -8,7 +8,6 @@ import { IconButton } from '../components/IconButton'
 import { useAppState } from '../store'
 import { dayLabel, timeLabel } from './format'
 import styles from './Library.module.css'
-import { rowProps } from './rowProps'
 import { useConfirm } from './useConfirm'
 
 export function ArchiveView({ query }: { query: string }) {
@@ -62,11 +61,13 @@ export function ArchiveView({ query }: { query: string }) {
                 key={entry.id}
                 className={styles.row}
                 title={`Restore ${entry.url}`}
-                {...rowProps(() => ante.command({ type: 'archive/restore', id: entry.id }))}
+                onClick={() => ante.command({ type: 'archive/restore', id: entry.id })}
               >
                 <span className={styles.time}>{timeLabel(entry.archivedAt)}</span>
                 <Favicon src={entry.favicon} size={16} />
-                <span className={styles.title}>{entry.title || displayUrl(entry.url)}</span>
+                <button type="button" className={styles.title}>
+                  {entry.title || displayUrl(entry.url)}
+                </button>
                 <span className={styles.meta}>
                   {space && (
                     <span className={styles.spaceTag}>

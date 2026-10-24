@@ -137,3 +137,15 @@ describe('runtime', () => {
     expect(next.runtime.windows.w1).toBeDefined()
   })
 })
+
+describe('leaving a tab', () => {
+  it('stamps the tabs that were on screen so they count as recently used', () => {
+    const state = buildState({
+      spaces: { s1: { today: ['a', 'b'] } },
+      windows: { w: { spaceId: 's1', active: 'a' } },
+    })
+    const next = apply(state, { type: 'window/activate', id: 'w', tabId: 'b', now: 500 })
+    expect(tabOf(next, 'a').lastActiveAt).toBe(500)
+    expect(tabOf(next, 'b').lastActiveAt).toBe(500)
+  })
+})

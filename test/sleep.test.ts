@@ -9,10 +9,13 @@ const NOW = 10 * HOUR
 
 function stateWith(runtime: Record<string, Partial<TabRuntime>>): AppState {
   const base = buildState({
-    spaces: { s1: { pinned: ['old', 'fresh'], today: ['active', 'peek', 'busy'] } },
+    spaces: { s1: { pinned: ['kept'], today: ['old', 'fresh', 'active', 'peek', 'busy'] } },
+    favorites: { default: ['fav'] },
     windows: { w: { spaceId: 's1', active: 'active', peekTabId: 'peek' } },
     tabs: {
       old: { lastActiveAt: NOW - 2 * HOUR },
+      kept: { lastActiveAt: 0 },
+      fav: { lastActiveAt: 0 },
       fresh: { lastActiveAt: NOW - HOUR / 2 },
       active: { lastActiveAt: 0 },
       peek: { lastActiveAt: 0 },
@@ -31,6 +34,10 @@ describe('sleepyTabs', () => {
     expect(sleepyTabs(state, NOW, HOUR)).toEqual(['old'])
   })
 
+  it('keeps pinned tabs and favorites awake', () => {
+    expect(sleepyTabs(stateWith({ kept: {}, fav: {} }), NOW, HOUR)).toEqual([])
+  })
+
   it('never sleeps when turned off', () => {
     expect(sleepyTabs(stateWith({ old: {} }), NOW, sleepThresholds.never)).toEqual([])
   })
@@ -39,6 +46,7 @@ describe('sleepyTabs', () => {
     { audible: true },
     { loading: true },
     { devtools: 'docked' },
+    { capturing: true },
     {
       media: {
         playing: false,

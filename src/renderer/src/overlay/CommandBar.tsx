@@ -12,7 +12,12 @@ import type { Command, Disposition } from '@shared/commands'
 import { fuzzyMatch, rank } from '@shared/fuzzy'
 import type { Data, Id } from '@shared/schema'
 import { shortcuts, type Platform } from '@shared/shortcuts'
-import { matchSiteSearch, siteSearchUrl, type SiteSearch } from '@shared/siteSearch'
+import {
+  exactSiteSearch,
+  matchSiteSearch,
+  siteSearchUrl,
+  type SiteSearch,
+} from '@shared/siteSearch'
 import { isPrivateSpace } from '@shared/state/private'
 import { activeTabId, displayTitle, getTab, spaceTabOrder } from '@shared/state/tree'
 import { displayUrl, resolveInput, searchName, searchTemplate, searchUrl } from '@shared/url'
@@ -293,7 +298,7 @@ export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
         return
       case 'Tab':
         if (event.shiftKey) return
-        if (siteMatch) {
+        if (siteMatch && (exactSiteSearch(typed) || !completion)) {
           event.preventDefault()
           enterSite(siteMatch)
           return

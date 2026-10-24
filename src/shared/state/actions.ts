@@ -157,7 +157,7 @@ export type InternalAction =
       id: Id
       patch: Partial<Pick<WindowData, 'sidebarHidden' | 'bounds' | 'peekTabId' | 'littleTabId'>>
     }
-  | { type: 'window/selectSpace'; id: Id; spaceId: Id }
+  | { type: 'window/selectSpace'; id: Id; spaceId: Id; now?: number }
   | { type: 'window/activate'; id: Id; tabId: Id; now: number }
   | { type: 'window/deactivate'; id: Id }
   | { type: 'easel/create'; id: Id; now: number }

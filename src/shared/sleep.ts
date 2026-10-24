@@ -1,5 +1,5 @@
 import type { AppState, Id, SleepAfter } from './schema'
-import { getTab, visibleTabIds } from './state/tree'
+import { getTab, sectionOf, visibleTabIds } from './state/tree'
 
 export const sleepThresholds: Record<SleepAfter, number> = {
   '15m': 15 * 60 * 1000,
@@ -8,7 +8,7 @@ export const sleepThresholds: Record<SleepAfter, number> = {
   never: 0,
 }
 
-function inUse(state: AppState): Set<Id> {
+export function tabsInUse(state: AppState): Set<Id> {
   const keep = new Set<Id>()
   for (const window of Object.values(state.data.windows)) {
     for (const id of visibleTabIds(state.data, window)) keep.add(id)
@@ -21,12 +21,13 @@ function inUse(state: AppState): Set<Id> {
 
 export function sleepyTabs(state: AppState, now: number, thresholdMs: number): Id[] {
   if (thresholdMs <= 0) return []
-  const keep = inUse(state)
+  const keep = tabsInUse(state)
   const cutoff = now - thresholdMs
   return Object.entries(state.runtime.tabs)
     .filter(([id, runtime]) => {
       const tab = getTab(state.data, id)
       if (!tab || keep.has(id) || tab.lastActiveAt >= cutoff) return false
+      if (sectionOf(state.data, id) !== 'today') return false
       const busy = [
         runtime.audible,
         runtime.loading,
@@ -34,6 +35,7 @@ export function sleepyTabs(state: AppState, now: number, thresholdMs: number): I
         runtime.media?.pip === true,
         runtime.devtools !== null,
         runtime.prompt !== null,
+        runtime.capturing,
       ]
       return !busy.includes(true)
     })

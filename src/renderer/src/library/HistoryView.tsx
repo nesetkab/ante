@@ -8,7 +8,6 @@ import { IconButton } from '../components/IconButton'
 import { library } from '../libraryApi'
 import { dayLabel, timeLabel } from './format'
 import styles from './Library.module.css'
-import { rowProps } from './rowProps'
 import { useConfirm } from './useConfirm'
 
 const PAGE = 150
@@ -126,11 +125,13 @@ export function HistoryView({ query }: { query: string }) {
               key={entry.id}
               className={styles.row}
               title={entry.url}
-              {...rowProps((event) => openFromLibrary(entry.url, event))}
+              onClick={(event) => openFromLibrary(entry.url, event)}
             >
               <span className={styles.time}>{timeLabel(entry.lastVisit)}</span>
               <Favicon src={entry.favicon} size={16} />
-              <span className={styles.title}>{entry.title || displayUrl(entry.url)}</span>
+              <button type="button" className={styles.title}>
+                {entry.title || displayUrl(entry.url)}
+              </button>
               <span className={styles.meta}>{hostOf(entry.url)}</span>
               <span className={styles.rowActions}>
                 <IconButton

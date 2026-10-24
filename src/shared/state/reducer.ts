@@ -37,8 +37,16 @@ import {
   rootOf,
   sameContainer,
   spaceTabOrder,
+  visibleTabIds,
   type Section,
 } from './tree'
+
+function stampVisible(data: Data, window: WindowData, now: number): void {
+  for (const id of visibleTabIds(data, window)) {
+    const tab = getTab(data, id)
+    if (tab) tab.lastActiveAt = now
+  }
+}
 
 export const MAX_CLOSED = 50
 export const MAX_ARCHIVE = 1000
@@ -59,6 +67,7 @@ export const defaultTabRuntime: TabRuntime = {
   media: null,
   devtools: null,
   error: null,
+  capturing: false,
 }
 
 export const defaultWindowRuntime: WindowRuntime = {
@@ -661,7 +670,9 @@ export function reduce(state: AppState, action: Action): void {
     case 'window/selectSpace': {
       const window = data.windows[action.id]
       if (!window || !data.spaces[action.spaceId]) return
-      if (samePrivacy(data, window.spaceId, action.spaceId)) window.spaceId = action.spaceId
+      if (!samePrivacy(data, window.spaceId, action.spaceId)) return
+      if (action.now !== undefined) stampVisible(data, window, action.now)
+      window.spaceId = action.spaceId
       return
     }
     case 'window/activate': {
@@ -670,6 +681,7 @@ export function reduce(state: AppState, action: Action): void {
       if (!window || !tab) return
       const spaceId = rootOf(data, action.tabId)?.spaceId
       if (spaceId && !samePrivacy(data, window.spaceId, spaceId)) return
+      stampVisible(data, window, action.now)
       if (spaceId && spaceId !== window.spaceId) window.spaceId = spaceId
       window.activeBySpace[window.spaceId] = action.tabId
       tab.lastActiveAt = action.now

@@ -160,6 +160,7 @@ export class TabManager {
     })
     contents.on('did-navigate', (_event, url) => {
       update({ url, favicon: null })
+      if (this.#store.state.runtime.tabs[id]?.capturing) this.#runtime(id, { capturing: false })
       this.#navigationState(id, contents)
     })
     contents.on('did-navigate-in-page', (_event, url, isMainFrame) => {

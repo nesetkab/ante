@@ -29,14 +29,14 @@ export const siteSearches: readonly SiteSearch[] = [
   {
     id: 'maps',
     name: 'Google Maps',
-    keywords: ['maps', 'google maps'],
+    keywords: ['maps'],
     url: 'https://www.google.com/maps/search/',
   },
   { id: 'x', name: 'X', keywords: ['twitter', 'x.com'], url: 'https://x.com/search?q=' },
   {
     id: 'stackoverflow',
     name: 'Stack Overflow',
-    keywords: ['stackoverflow', 'stack overflow', 'so'],
+    keywords: ['stackoverflow'],
     url: 'https://stackoverflow.com/search?q=',
   },
   {
@@ -57,10 +57,15 @@ export const siteSearches: readonly SiteSearch[] = [
 
 const MIN_PREFIX = 2
 
+export function exactSiteSearch(input: string): SiteSearch | null {
+  const typed = input.trim().toLowerCase()
+  return siteSearches.find((site) => site.keywords.includes(typed)) ?? null
+}
+
 export function matchSiteSearch(input: string): SiteSearch | null {
   const typed = input.trim().toLowerCase()
   if (typed.length < MIN_PREFIX) return null
-  const exact = siteSearches.find((site) => site.keywords.includes(typed))
+  const exact = exactSiteSearch(typed)
   if (exact) return exact
   if (typed.length < 3) return null
   return siteSearches.find((site) => site.keywords.some((word) => word.startsWith(typed))) ?? null

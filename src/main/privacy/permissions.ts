@@ -42,6 +42,8 @@ export interface PermissionAnswer {
   sourceId?: string
 }
 
+const CAPTURE_PERMISSIONS = new Set<SitePermission>(['camera', 'microphone'])
+
 export class PermissionPrompts {
   readonly #store: Store
   readonly #tabs: TabManager
@@ -67,9 +69,14 @@ export class PermissionPrompts {
         callback(false)
         return
       }
+      const capture = permissions.some((name) => CAPTURE_PERMISSIONS.has(name))
+      const grant = (allow: boolean) => {
+        if (allow && capture) patchLoadedTab(this.#store, tabId, { capturing: true })
+        callback(allow)
+      }
       const verdict = evaluate(decisionsFor(this.#store.state.data, profileId, origin), permissions)
       if (verdict.result !== 'ask') {
-        callback(verdict.result === 'allow')
+        grant(verdict.result === 'allow')
         return
       }
       this.#enqueue(contents, tabId, {
@@ -82,7 +89,7 @@ export class PermissionPrompts {
         },
         profileId,
         permissions: verdict.pending,
-        settle: (answer) => callback(answer.allow),
+        settle: (answer) => grant(answer.allow),
       })
     })
 
@@ -167,6 +174,7 @@ export class PermissionPrompts {
       permissions: [],
       settle: (answer) => {
         const source = answer.allow && answer.sourceId ? byId.get(answer.sourceId) : undefined
+        if (source) patchLoadedTab(this.#store, tabId, { capturing: true })
         callback(source ? { video: source } : {})
       },
     })

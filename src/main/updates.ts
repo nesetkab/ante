@@ -22,7 +22,8 @@ export class UpdateChecker {
   readonly #announce: (version: string) => void
   #timer: NodeJS.Timeout | null = null
   #announced: string | null = null
-  #checking = false
+  #known: Release | null = null
+  #inflight: Promise<UpdateStatus> | null = null
 
   constructor(store: Store, announce: (version: string) => void) {
     this.#store = store
@@ -49,16 +50,18 @@ export class UpdateChecker {
   }
 
   get release(): Release | null {
-    const status = this.#store.state.runtime.update
-    return status?.state === 'available' && status.version && status.url
-      ? { version: status.version, url: status.url }
-      : null
+    return this.#known
   }
 
-  async check(): Promise<UpdateStatus> {
+  check(): Promise<UpdateStatus> {
+    this.#inflight ??= this.#run().finally(() => {
+      this.#inflight = null
+    })
+    return this.#inflight
+  }
+
+  async #run(): Promise<UpdateStatus> {
     const previous = this.#store.state.runtime.update
-    if (this.#checking && previous) return previous
-    this.#checking = true
     const current = app.getVersion()
     this.#set({
       state: 'checking',
@@ -70,28 +73,33 @@ export class UpdateChecker {
     let status: UpdateStatus
     try {
       const release = await latestRelease()
-      const available = release !== null && isNewer(release.version, current)
-      status = {
-        state: available ? 'available' : 'current',
-        current,
-        version: available ? release.version : null,
-        url: available ? release.url : null,
-        checkedAt: Date.now(),
-      }
+      this.#known = release !== null && isNewer(release.version, current) ? release : null
+      status = this.#status(current, Date.now())
     } catch (error) {
       console.warn('[updates] check failed', error)
-      status = {
-        state: 'error',
-        current,
-        version: null,
-        url: null,
-        checkedAt: previous?.checkedAt ?? null,
-      }
-    } finally {
-      this.#checking = false
+      status = this.#known
+        ? this.#status(current, previous?.checkedAt ?? null)
+        : {
+            state: 'error',
+            current,
+            version: null,
+            url: null,
+            checkedAt: previous?.checkedAt ?? null,
+          }
     }
     this.#set(status)
     return status
+  }
+
+  #status(current: string, checkedAt: number | null): UpdateStatus {
+    const known = this.#known
+    return {
+      state: known ? 'available' : 'current',
+      current,
+      version: known?.version ?? null,
+      url: known?.url ?? null,
+      checkedAt,
+    }
   }
 
   async #automatic(): Promise<void> {

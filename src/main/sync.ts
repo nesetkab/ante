@@ -3,10 +3,11 @@ import { randomUUID } from 'node:crypto'
 import { existsSync, statSync, watch, type FSWatcher } from 'node:fs'
 import { mkdir } from 'node:fs/promises'
 import { homedir, hostname } from 'node:os'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { dialog, type BrowserWindow, type OpenDialogOptions } from 'electron'
 import type { SyncCommand } from '@shared/commands'
 import type { Id, SyncStatus } from '@shared/schema'
+import { tabsInUse } from '@shared/sleep'
 import {
   createDeviceFile,
   diffEntities,
@@ -23,6 +24,7 @@ import {
   deviceFileName,
   devicesDir,
   folderExists,
+  evictedName,
   readDeviceFiles,
   writeDeviceFile,
   writeDeviceFileSync,
@@ -31,10 +33,16 @@ import {
 
 const PUBLISH_DELAY_MS = 2000
 
+const DOWNLOAD_TIMEOUT_MS = 30_000
+const requested = new Set<string>()
+
 function requestDownloads(paths: string[]): void {
   if (process.platform !== 'darwin') return
   for (const path of paths) {
-    execFile('/usr/bin/brctl', ['download', path], (error) => {
+    if (requested.has(path)) continue
+    requested.add(path)
+    execFile('/usr/bin/brctl', ['download', path], { timeout: DOWNLOAD_TIMEOUT_MS }, (error) => {
+      requested.delete(path)
       if (error) console.warn('[sync] could not download from icloud', path, error.message)
     })
   }
@@ -257,6 +265,9 @@ export class SyncManager {
     const { files, evicted } = await readDeviceFiles(folder)
     if (folder !== this.#folder) return
     requestDownloads(evicted)
+    const ownName = deviceFileName(deviceId)
+    const ownEvicted = evicted.some((path) => evictedName(basename(path)) === ownName)
+    if (!this.#baselineLoaded && ownEvicted) return
     if (!this.#baselineLoaded) {
       const found = files.find((file) => file.deviceId === deviceId)
       const own = found && isFreshDevice(found, Date.now()) ? found : undefined
@@ -278,10 +289,13 @@ export class SyncManager {
           entities,
           dropSpaces: [...(options.dropSpaces ?? [])],
         })
-        const { data, runtime } = this.#store.state
-        for (const { id, url } of movedTabs(before, data, Object.keys(runtime.tabs)))
-          this.#navigate(id, url)
-        return data
+        const state = this.#store.state
+        const inUse = tabsInUse(state)
+        const idle = Object.entries(state.runtime.tabs)
+          .filter(([id, runtime]) => !inUse.has(id) && !runtime.loading)
+          .map(([id]) => id)
+        for (const { id, url } of movedTabs(before, state.data, idle)) this.#navigate(id, url)
+        return state.data
       },
     })
     this.#baseline = result.entities
