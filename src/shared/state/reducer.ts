@@ -799,8 +799,26 @@ export function reduce(state: AppState, action: Action): void {
       syncFeed(state, action.id, action.entries, action.now)
       return
     case 'easel/create':
-      data.easels[action.id] ??= { id: action.id, title: '', elements: [], updatedAt: action.now }
+      data.easels[action.id] ??= {
+        id: action.id,
+        title: '',
+        elements: [],
+        updatedAt: action.now,
+        private: action.private ?? false,
+      }
       return
+    case 'page/delete': {
+      const url = action.kind === 'note' ? noteUrl(action.id) : easelUrl(action.id)
+      if (action.kind === 'note') Reflect.deleteProperty(data.notes, action.id)
+      else Reflect.deleteProperty(data.easels, action.id)
+      const tabIds = Object.values(data.items)
+        .filter((item) => item.kind === 'tab' && (item.url === url || item.savedUrl === url))
+        .map((item) => item.id)
+      for (const id of tabIds) deleteItems(state, id)
+      data.closed = data.closed.filter((entry) => entry.tab.url !== url)
+      data.archive = data.archive.filter((entry) => entry.url !== url)
+      return
+    }
     case 'easel/rename': {
       const easel = data.easels[action.id]
       if (!easel) return
@@ -868,13 +886,18 @@ export function reduce(state: AppState, action: Action): void {
       runtime.sync = { ...next }
       return
     }
-    case 'note/update': {
-      const note = (data.notes[action.id] ??= {
+    case 'note/create':
+      data.notes[action.id] ??= {
         id: action.id,
         title: '',
         body: '',
         updatedAt: action.now,
-      })
+        private: action.private ?? false,
+      }
+      return
+    case 'note/update': {
+      const note = data.notes[action.id]
+      if (!note) return
       if (action.title !== undefined) note.title = action.title
       if (action.body !== undefined) note.body = action.body
       note.updatedAt = action.now

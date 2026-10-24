@@ -5,7 +5,7 @@ import type { Command, Disposition, SyncCommand } from '@shared/commands'
 import type { BrowserId } from '@shared/importers/chrome'
 import type { Container, Id, Rect, Tab, WindowData } from '@shared/schema'
 import { nextSpaceColor } from '@shared/state/initial'
-import { samePrivacy } from '@shared/state/private'
+import { isPrivateSpace, samePrivacy } from '@shared/state/private'
 import { MAX_SPLIT } from '@shared/state/reducer'
 import { recentTab } from '@shared/state/recent'
 import {
@@ -795,8 +795,13 @@ export class CommandRunner {
       case 'note/new': {
         const noteId = randomUUID()
         const now = this.#now()
-        this.#store.dispatch({ type: 'note/update', id: noteId, title: '', body: '', now })
         const spaceId = this.#windowData(window).spaceId
+        this.#store.dispatch({
+          type: 'note/create',
+          id: noteId,
+          now,
+          private: isPrivateSpace(this.#data, spaceId),
+        })
         const tabId = this.createTab(noteUrl(noteId), { type: 'today', spaceId })
         this.#store.dispatch({ type: 'tab/update', id: tabId, patch: { title: noteTabTitle('') } })
         this.activate(this.#mainWindowFor(window), tabId)
@@ -813,10 +818,46 @@ export class CommandRunner {
       case 'feed/refresh':
         void this.#feeds.refresh(command.folderId)
         return
+      case 'page/open': {
+        const page =
+          command.kind === 'note' ? this.#data.notes[command.id] : this.#data.easels[command.id]
+        if (!page) return
+        const url = command.kind === 'note' ? noteUrl(command.id) : easelUrl(command.id)
+        const target = this.#mainWindowFor(window)
+        const spaceId = this.#windowData(target).spaceId
+        const existing = spaceTabOrder(this.#data, spaceId).find(
+          (id) => getTab(this.#data, id)?.url === url,
+        )
+        const tabId = existing ?? this.createTab(url, { type: 'today', spaceId })
+        if (!existing) {
+          const title =
+            command.kind === 'note'
+              ? noteTabTitle(page.title)
+              : page.title.trim() || 'Untitled easel'
+          this.#store.dispatch({ type: 'tab/update', id: tabId, patch: { title } })
+        }
+        this.#store.dispatch({ type: 'runtime/window', id: window.id, patch: { overlay: null } })
+        this.activate(target, tabId)
+        return
+      }
+      case 'page/delete':
+        this.#store.dispatch({
+          type: 'page/delete',
+          kind: command.kind,
+          id: command.id,
+          now: this.#now(),
+        })
+        this.#windows.syncNow()
+        return
       case 'easel/new': {
         const easelId = randomUUID()
-        this.#store.dispatch({ type: 'easel/create', id: easelId, now: this.#now() })
         const spaceId = this.#windowData(window).spaceId
+        this.#store.dispatch({
+          type: 'easel/create',
+          id: easelId,
+          now: this.#now(),
+          private: isPrivateSpace(this.#data, spaceId),
+        })
         const tabId = this.createTab(easelUrl(easelId), { type: 'today', spaceId })
         this.#store.dispatch({ type: 'tab/update', id: tabId, patch: { title: 'Untitled easel' } })
         this.activate(this.#mainWindowFor(window), tabId)

@@ -119,12 +119,11 @@ export function removePrivateProfile(
   Reflect.deleteProperty(data.favorites, profileId)
   Reflect.deleteProperty(data.sitePermissions, profileId)
   const notes = referencedNoteIds(data)
-  for (const id of Object.keys(data.notes))
-    if (!notes.has(id)) Reflect.deleteProperty(data.notes, id)
+  for (const [id, note] of Object.entries(data.notes))
+    if (note.private && !notes.has(id)) Reflect.deleteProperty(data.notes, id)
   const easels = referencedEaselIds(data)
-  for (const id of Object.keys(data.easels)) {
-    if (!easels.has(id)) Reflect.deleteProperty(data.easels, id)
-  }
+  for (const [id, easel] of Object.entries(data.easels))
+    if (easel.private && !easels.has(id)) Reflect.deleteProperty(data.easels, id)
   return true
 }
 

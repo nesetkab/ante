@@ -264,6 +264,7 @@ export const noteSchema = z.object({
   title: z.string().max(500).default(''),
   body: z.string().max(1_000_000).default(''),
   updatedAt: z.number(),
+  private: z.boolean().default(false),
 })
 export type Note = z.infer<typeof noteSchema>
 
@@ -309,6 +310,7 @@ export const easelSchema = z.object({
   title: z.string().max(500).default(''),
   elements: z.array(easelElementSchema).max(5000).default([]),
   updatedAt: z.number(),
+  private: z.boolean().default(false),
 })
 export type Easel = z.infer<typeof easelSchema>
 
@@ -365,7 +367,7 @@ export interface TabMedia {
 
 export type DevtoolsMode = 'docked' | 'window'
 
-export const librarySectionSchema = z.enum(['history', 'archive', 'downloads'])
+export const librarySectionSchema = z.enum(['history', 'archive', 'downloads', 'pages'])
 export type LibrarySection = z.infer<typeof librarySectionSchema>
 
 export type Overlay =

@@ -161,7 +161,9 @@ export type InternalAction =
   | { type: 'window/selectSpace'; id: Id; spaceId: Id; now?: number }
   | { type: 'window/activate'; id: Id; tabId: Id; now: number }
   | { type: 'window/deactivate'; id: Id }
-  | { type: 'easel/create'; id: Id; now: number }
+  | { type: 'easel/create'; id: Id; now: number; private?: boolean }
+  | { type: 'note/create'; id: Id; now: number; private?: boolean }
+  | { type: 'page/delete'; kind: 'note' | 'easel'; id: Id; now: number }
   | { type: 'feed/create'; id: Id; spaceId: Id; name: string; feedUrl: string }
   | {
       type: 'feed/sync'

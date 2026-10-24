@@ -324,6 +324,12 @@ export function shortcuts(platform: Platform): Shortcut[] {
       section: 'view',
       command: { type: 'library/open', section: 'archive' },
     },
+    {
+      id: 'notes-library',
+      label: 'Notes & Easels',
+      section: 'view',
+      command: { type: 'library/open', section: 'pages' },
+    },
     { id: 'boost-site', label: 'Boost This Site', section: 'tab', command: { type: 'boost/open' } },
     {
       id: 'air-traffic-control',

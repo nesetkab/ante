@@ -1,7 +1,5 @@
 import { sameIds } from './tree'
 import type { Data, Id } from '../schema'
-import { referencedEaselIds } from '../easels'
-import { referencedNoteIds } from '../notes'
 import { createInitialData, DEFAULT_PROFILE_ID } from './initial'
 import { isPrivateSpace, stripPrivate } from './private'
 
@@ -68,14 +66,10 @@ function repairTree(data: Data, loose: ReadonlySet<Id>): void {
     if (!claimed.has(id)) Reflect.deleteProperty(data.items, id)
   }
 
-  const easels = referencedEaselIds(data)
-  for (const id of Object.keys(data.easels)) {
-    if (!easels.has(id)) Reflect.deleteProperty(data.easels, id)
-  }
-  const notes = referencedNoteIds(data)
-  for (const id of Object.keys(data.notes)) {
-    if (!notes.has(id)) Reflect.deleteProperty(data.notes, id)
-  }
+  for (const [id, easel] of Object.entries(data.easels))
+    if (easel.private) Reflect.deleteProperty(data.easels, id)
+  for (const [id, note] of Object.entries(data.notes))
+    if (note.private) Reflect.deleteProperty(data.notes, id)
 }
 
 function repairWindowSpaces(data: Data, fallbackSpaceId: Id): void {

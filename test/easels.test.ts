@@ -123,8 +123,12 @@ describe('easel reducer', () => {
     expect([...referencedAssets(state.data)]).toEqual(['a.png'])
   })
 
-  it('drops easels nothing points to', () => {
-    const state = apply(withEasel(), { type: 'easel/create', id: 'orphan', now: 2 })
-    expect(Object.keys(sanitize(state.data, 'x').easels)).toEqual(['e'])
+  it('keeps easels nothing points to but drops private ones', () => {
+    const state = apply(
+      withEasel(),
+      { type: 'easel/create', id: 'orphan', now: 2 },
+      { type: 'easel/create', id: 'secret', now: 2, private: true },
+    )
+    expect(Object.keys(sanitize(state.data, 'x').easels).sort()).toEqual(['e', 'orphan'])
   })
 })

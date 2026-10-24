@@ -183,8 +183,8 @@ describe('syncSnapshot', () => {
   it('includes notes only when a synced tab points at them', () => {
     const data = seeded()
     data.notes = {
-      shared: { id: 'shared', title: 'Plan', body: 'x', updatedAt: 1 },
-      local: { id: 'local', title: 'Scratch', body: 'y', updatedAt: 1 },
+      shared: { id: 'shared', title: 'Plan', body: 'x', updatedAt: 1, private: false },
+      local: { id: 'local', title: 'Scratch', body: 'y', updatedAt: 1, private: false },
     }
     data.items.p3 = makeTab('p3', { url: 'ante:note/shared', savedUrl: 'ante:note/shared' })
     data.items.t1 = makeTab('t1', { url: 'ante:note/local' })
@@ -537,6 +537,7 @@ describe('syncing two devices', () => {
     const { a, b } = pair()
     edit(
       a,
+      { type: 'note/create', id: 'n1', now: 10 },
       { type: 'note/update', id: 'n1', title: 'Plan', body: 'ship it', now: 10 },
       {
         type: 'tab/create',

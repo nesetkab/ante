@@ -123,6 +123,8 @@ export const commandSchema = z.discriminatedUnion('type', [
   }),
   z.object({ type: z.literal('easel/new') }),
   z.object({ type: z.literal('note/new') }),
+  z.object({ type: z.literal('page/open'), kind: z.enum(['note', 'easel']), id: idSchema }),
+  z.object({ type: z.literal('page/delete'), kind: z.enum(['note', 'easel']), id: idSchema }),
   z.object({ type: z.literal('feed/follow'), ...optionalTab.shape }),
   z.object({ type: z.literal('feed/refresh'), folderId: idSchema }),
   z.object({

@@ -6,18 +6,21 @@ import { IconButton } from '../components/IconButton'
 import { ArchiveView } from './ArchiveView'
 import { DownloadsView } from './DownloadsView'
 import { HistoryView } from './HistoryView'
+import { PagesView } from './PagesView'
 import styles from './Library.module.css'
 
 const sections: { id: LibrarySection; label: string }[] = [
   { id: 'history', label: 'History' },
   { id: 'archive', label: 'Archive' },
   { id: 'downloads', label: 'Downloads' },
+  { id: 'pages', label: 'Notes & Easels' },
 ]
 
 const placeholders: Record<LibrarySection, string> = {
   history: 'Search history',
   archive: 'Search archived tabs',
   downloads: '',
+  pages: 'Search notes and easels',
 }
 
 export function LibraryPanel({ section }: { section: LibrarySection }) {
@@ -72,6 +75,7 @@ export function LibraryPanel({ section }: { section: LibrarySection }) {
           {section === 'history' && <HistoryView query={query} />}
           {section === 'archive' && <ArchiveView query={query} />}
           {section === 'downloads' && <DownloadsView />}
+          {section === 'pages' && <PagesView query={query} />}
         </div>
       </div>
     </div>
