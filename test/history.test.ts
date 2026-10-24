@@ -159,7 +159,7 @@ describe('importVisits', () => {
     ]
     expect(imported.importVisits('default', visits)).toBe(1)
     expect(imported.importVisits('default', visits)).toBe(1)
-    const result = imported.search('default', { query: '', limit: 10 }, 3000)
+    const result = imported.search('default', { query: '', limit: 10, order: 'recent' }, 3000)
     expect(result.entries).toHaveLength(1)
     expect(result.entries[0]).toMatchObject({ url: 'https://a.test/', title: 'A', visitCount: 4 })
     imported.close()
