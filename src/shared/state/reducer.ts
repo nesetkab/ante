@@ -721,6 +721,9 @@ export function reduce(state: AppState, action: Action): void {
     case 'runtime/arcImport':
       runtime.arcImportAvailable = action.available
       return
+    case 'runtime/browsers':
+      runtime.browsers = [...action.browsers]
+      return
     case 'profile/create': {
       if (data.profiles[action.id]) return
       data.profiles[action.id] = { id: action.id, name: action.name.trim() || 'Profile' }

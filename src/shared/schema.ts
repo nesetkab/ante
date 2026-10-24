@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { BrowserId } from './importers/chrome'
 import { isAccelerator } from './keys'
 import type { LoadError } from './loadErrors'
 import { sitePermissionsSchema, type FindState, type Prompt } from './permissions'
@@ -414,6 +415,7 @@ export interface Runtime {
   windows: Record<Id, WindowRuntime>
   downloads: Record<Id, DownloadRuntime>
   arcImportAvailable?: boolean
+  browsers?: BrowserId[]
   sync?: SyncStatus
   update?: UpdateStatus
 }

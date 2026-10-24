@@ -149,3 +149,19 @@ describe('history paging', () => {
     rmSync(directory, { recursive: true, force: true })
   })
 })
+
+describe('importVisits', () => {
+  it('adds visits once, keeps titles and skips unrecordable urls', () => {
+    const imported = new HistoryStore(':memory:')
+    const visits = [
+      { url: 'https://a.test/', title: 'A', visitCount: 4, lastVisit: 2000 },
+      { url: 'javascript:alert(1)', title: 'x', visitCount: 1, lastVisit: 1000 },
+    ]
+    expect(imported.importVisits('default', visits)).toBe(1)
+    expect(imported.importVisits('default', visits)).toBe(1)
+    const result = imported.search('default', { query: '', limit: 10 }, 3000)
+    expect(result.entries).toHaveLength(1)
+    expect(result.entries[0]).toMatchObject({ url: 'https://a.test/', title: 'A', visitCount: 4 })
+    imported.close()
+  })
+})

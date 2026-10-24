@@ -1,3 +1,4 @@
+import type { BrowserId } from '../importers/chrome'
 import { z } from 'zod'
 import {
   originSchema,
@@ -173,6 +174,7 @@ export type InternalAction =
   | { type: 'runtime/window'; id: Id; patch: Partial<WindowRuntime> }
   | { type: 'data/import'; bundle: ImportBundle }
   | { type: 'runtime/arcImport'; available: boolean }
+  | { type: 'runtime/browsers'; browsers: BrowserId[] }
   | { type: 'download/add'; download: DownloadRuntime }
   | { type: 'download/update'; id: Id; patch: Partial<Omit<DownloadRuntime, 'id'>> }
   | { type: 'download/remove'; ids: Id[] }

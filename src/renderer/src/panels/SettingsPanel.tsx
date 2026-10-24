@@ -12,6 +12,7 @@ import {
   type SyncStatus,
   type UpdateStatus,
 } from '@shared/schema'
+import { browserNames, type BrowserId } from '@shared/importers/chrome'
 import { acceleratorFor, conflictFor, reservedShortcuts, withOverrides } from '@shared/keys'
 import { shortcuts, type Platform } from '@shared/shortcuts'
 import { isPrivateProfile } from '@shared/state/private'
@@ -46,6 +47,8 @@ const sleepChoices: readonly { value: SleepAfter; label: string }[] = [
   { value: '4h', label: '4 hours' },
   { value: 'never', label: 'Never' },
 ]
+
+const NO_BROWSERS: readonly BrowserId[] = []
 
 const update = (patch: Partial<Settings>) => ante.dispatch({ type: 'settings/update', patch })
 
@@ -363,6 +366,7 @@ export function SettingsPanel() {
   const settings = useAppState((state) => state.data.settings)
   const profiles = useAppState((state) => state.data.profiles)
   const sitePermissions = useAppState((state) => state.data.sitePermissions)
+  const browsers = useAppState((state) => state.runtime.browsers ?? NO_BROWSERS)
   const visibleProfiles = Object.values(profiles).filter((profile) => !isPrivateProfile(profile.id))
   const sites = Object.entries(sitePermissions).flatMap(([profileId, byOrigin]) =>
     Object.entries(byOrigin).map(([origin, decisions]) => ({ profileId, origin, decisions })),
@@ -446,6 +450,17 @@ export function SettingsPanel() {
         <Row label="Import from Arc" hint="Bring over spaces, pinned tabs and folders">
           <Button onClick={() => ante.command({ type: 'import/arc' })}>Import</Button>
         </Row>
+        {browsers.map((browser) => (
+          <Row
+            key={browser}
+            label={`Import from ${browserNames[browser]}`}
+            hint="Bookmarks become a space, and your history comes along"
+          >
+            <Button onClick={() => ante.command({ type: 'import/browser', browser })}>
+              Import
+            </Button>
+          </Row>
+        ))}
       </Section>
 
       <SyncSection />

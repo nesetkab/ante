@@ -84,6 +84,13 @@ function openDatabase(file: string): DatabaseSync {
   }
 }
 
+export interface ImportedVisit {
+  url: string
+  title: string
+  visitCount: number
+  lastVisit: number
+}
+
 export class HistoryStore {
   readonly #db: DatabaseSync
   readonly #visit: StatementSync
@@ -93,6 +100,7 @@ export class HistoryStore {
   readonly #delete: StatementSync
   readonly #clear: StatementSync
   readonly #prune: StatementSync
+  readonly #import: StatementSync
 
   constructor(file: string) {
     this.#db = openDatabase(file)
@@ -114,6 +122,38 @@ export class HistoryStore {
     this.#delete = this.#db.prepare('delete from visits where profile_id = ? and id = ?')
     this.#clear = this.#db.prepare('delete from visits where profile_id = ?')
     this.#prune = this.#db.prepare('delete from visits where last_visit < ?')
+    this.#import = this.#db.prepare(`
+      insert into visits (profile_id, url, host, title, visit_count, last_visit)
+      values (?, ?, ?, ?, ?, ?)
+      on conflict (profile_id, url) do update set
+        visit_count = max(visit_count, excluded.visit_count),
+        last_visit = max(last_visit, excluded.last_visit),
+        title = case when title = '' then excluded.title else title end
+    `)
+  }
+
+  importVisits(profileId: Id, visits: readonly ImportedVisit[]): number {
+    let count = 0
+    this.#db.exec('begin')
+    try {
+      for (const visit of visits) {
+        if (!isRecordable(visit.url)) continue
+        this.#import.run(
+          profileId,
+          visit.url,
+          hostOf(visit.url),
+          visit.title.slice(0, MAX_TITLE),
+          Math.max(1, Math.floor(visit.visitCount)),
+          visit.lastVisit,
+        )
+        count += 1
+      }
+      this.#db.exec('commit')
+    } catch (error) {
+      this.#db.exec('rollback')
+      throw error
+    }
+    return count
   }
 
   visit(profileId: Id, url: string, now = Date.now()): void {

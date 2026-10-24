@@ -34,6 +34,7 @@ import { Persistence } from './persistence'
 import { Sessions } from './sessions'
 import { Store } from './store'
 import { PrivacySignals } from './privacy/signals'
+import { detectBrowsers, importFromBrowser } from './importers/chrome'
 import { SyncManager } from './sync'
 import { readTabHistories, writeTabHistoriesSync } from './tabHistories'
 import { UpdateChecker } from './updates'
@@ -58,6 +59,7 @@ async function start(): Promise<void> {
   const data = loaded ? sanitize(loaded, fallbackSpaceId) : createInitialData(fallbackSpaceId)
   const store = new Store(createAppState(data))
   detectArcImport(store)
+  store.dispatch({ type: 'runtime/browsers', browsers: detectBrowsers() })
   const sessions = new Sessions()
   const surfaces = new SurfaceRegistry()
   let quitting = false
@@ -131,6 +133,7 @@ async function start(): Promise<void> {
       const parent = windows.lastFocused('main') ?? windows.focused()
       if (parent) panels.show(parent, 'settings')
     },
+    importBrowser: (browser) => importFromBrowser(store, history, browser),
     chooseDownloadFolder: (window) => {
       const parent = panels.get(window.id, 'settings') ?? window.win
       void dialog

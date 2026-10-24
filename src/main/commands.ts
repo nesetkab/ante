@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { Command, Disposition, SyncCommand } from '@shared/commands'
+import type { BrowserId } from '@shared/importers/chrome'
 import type { Container, Id, Rect, Tab, WindowData } from '@shared/schema'
 import { nextSpaceColor } from '@shared/state/initial'
 import { samePrivacy } from '@shared/state/private'
@@ -33,6 +34,7 @@ import { deleteSpaceWithConfirm } from './spaceDelete'
 import { showSpaceMenu } from './spaceMenu'
 import type { OpenDisposition, TabManager } from './tabs'
 import { pickFiles, savePage, sharePage } from './pageActions'
+import type { BrowserImportResult } from './importers/chrome'
 import type { Store } from './store'
 import type { UpdateChecker } from './updates'
 import type { AppWindow, WindowManager } from './windows'
@@ -44,6 +46,7 @@ interface Deps {
   openSettings: () => void
   recordShortcuts: (window: AppWindow, recording: boolean) => void
   chooseDownloadFolder: (window: AppWindow) => void
+  importBrowser: (browser: BrowserId) => BrowserImportResult
   runFeature: (window: AppWindow, command: FeatureCommand) => void
   runPrivacy: (window: AppWindow, command: PrivacyCommand) => void
   runSync: (window: AppWindow, command: SyncCommand) => void
@@ -61,6 +64,7 @@ export class CommandRunner {
   readonly #openSettings: () => void
   readonly #recordShortcuts: (window: AppWindow, recording: boolean) => void
   readonly #chooseDownloadFolder: (window: AppWindow) => void
+  readonly #importBrowser: (browser: BrowserId) => BrowserImportResult
   readonly #runFeature: (window: AppWindow, command: FeatureCommand) => void
   readonly #runPrivacy: (window: AppWindow, command: PrivacyCommand) => void
   readonly #runSync: (window: AppWindow, command: SyncCommand) => void
@@ -77,6 +81,7 @@ export class CommandRunner {
     this.#openSettings = deps.openSettings
     this.#recordShortcuts = deps.recordShortcuts
     this.#chooseDownloadFolder = deps.chooseDownloadFolder
+    this.#importBrowser = deps.importBrowser
     this.#runFeature = deps.runFeature
     this.#runPrivacy = deps.runPrivacy
     this.#runSync = deps.runSync
@@ -704,6 +709,12 @@ export class CommandRunner {
         const first = result.ok ? result.spaceIds[0] : undefined
         if (first) this.#selectSpace(window, first)
         this.#sendUi(window, { type: 'toast', message: describeArcImport(result) })
+        return
+      }
+      case 'import/browser': {
+        const result = this.#importBrowser(command.browser)
+        if (result.spaceId) this.#selectSpace(window, result.spaceId)
+        this.toast(window, result.message)
         return
       }
       case 'space/delete':
