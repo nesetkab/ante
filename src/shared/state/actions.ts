@@ -9,6 +9,7 @@ import {
   boostPatchSchema,
   containerSchema,
   idSchema,
+  easelElementSchema,
   routeMatchSchema,
   withoutDefaults,
   zapSelectorSchema,
@@ -112,6 +113,25 @@ export const uiActionSchema = z.discriminatedUnion('type', [
     now: z.number(),
   }),
   z.object({ type: z.literal('folder/delete'), id: idSchema }),
+  z.object({
+    type: z.literal('easel/rename'),
+    id: idSchema,
+    title: z.string().max(500),
+    now: z.number(),
+  }),
+  z.object({
+    type: z.literal('easel/upsert'),
+    id: idSchema,
+    element: easelElementSchema,
+    now: z.number(),
+  }),
+  z.object({
+    type: z.literal('easel/remove'),
+    id: idSchema,
+    elementIds: z.array(idSchema).max(5000),
+    now: z.number(),
+  }),
+  z.object({ type: z.literal('easel/front'), id: idSchema, elementId: idSchema, now: z.number() }),
 ])
 export type UiAction = z.infer<typeof uiActionSchema>
 
@@ -136,6 +156,7 @@ export type InternalAction =
   | { type: 'window/selectSpace'; id: Id; spaceId: Id }
   | { type: 'window/activate'; id: Id; tabId: Id; now: number }
   | { type: 'window/deactivate'; id: Id }
+  | { type: 'easel/create'; id: Id; now: number }
   | { type: 'feed/create'; id: Id; spaceId: Id; name: string; feedUrl: string }
   | {
       type: 'feed/sync'

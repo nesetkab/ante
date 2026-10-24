@@ -13,6 +13,7 @@ const api: AnteApi = {
   },
   dispatch: (action) => ipcRenderer.send(IPC.dispatch, action),
   command: (command) => ipcRenderer.send(IPC.command, command),
+  saveAsset: (bytes) => ipcRenderer.invoke(IPC.saveAsset, bytes) as Promise<string | null>,
   onUiEvent: (listener) => {
     const handler = (_event: IpcRendererEvent, uiEvent: UiEvent) => listener(uiEvent)
     ipcRenderer.on(IPC.ui, handler)

@@ -11,6 +11,7 @@ import type {
   WindowRuntime,
 } from '../schema'
 import { applyImport } from '../importers/bundle'
+import { bringToFront, easelUrl } from '../easels'
 import { noteTabTitle, noteUrl } from '../notes'
 import { clearSitePermission, setSitePermissions } from '../permissions'
 import type { Action } from './actions'
@@ -760,6 +761,45 @@ export function reduce(state: AppState, action: Action): void {
     case 'feed/sync':
       syncFeed(state, action.id, action.entries, action.now)
       return
+    case 'easel/create':
+      data.easels[action.id] ??= { id: action.id, title: '', elements: [], updatedAt: action.now }
+      return
+    case 'easel/rename': {
+      const easel = data.easels[action.id]
+      if (!easel) return
+      easel.title = action.title
+      easel.updatedAt = action.now
+      const url = easelUrl(action.id)
+      for (const item of Object.values(data.items)) {
+        if (item.kind === 'tab' && item.url === url)
+          item.title = action.title.trim() || 'Untitled easel'
+      }
+      return
+    }
+    case 'easel/upsert': {
+      const easel = data.easels[action.id]
+      if (!easel) return
+      const index = easel.elements.findIndex((element) => element.id === action.element.id)
+      if (index >= 0) easel.elements[index] = action.element
+      else easel.elements.push(action.element)
+      easel.updatedAt = action.now
+      return
+    }
+    case 'easel/remove': {
+      const easel = data.easels[action.id]
+      if (!easel) return
+      const removed = new Set(action.elementIds)
+      easel.elements = easel.elements.filter((element) => !removed.has(element.id))
+      easel.updatedAt = action.now
+      return
+    }
+    case 'easel/front': {
+      const easel = data.easels[action.id]
+      if (!easel) return
+      easel.elements = bringToFront(easel.elements, action.elementId)
+      easel.updatedAt = action.now
+      return
+    }
     case 'note/update': {
       const note = (data.notes[action.id] ??= {
         id: action.id,

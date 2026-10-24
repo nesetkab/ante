@@ -2,13 +2,14 @@ import { useRef, type PointerEvent as ReactPointerEvent } from 'react'
 import { computeLayout, SPLIT_GAP } from '@shared/layout'
 import { getTab, visibleTabIds } from '@shared/state/tree'
 import { dockedDevtoolsTabId } from '@shared/devtools'
-import { noteIdOf } from '@shared/notes'
+import { internalPage } from '@shared/pages'
 import { ante, modKey } from '../ante'
 import { useViewportSize } from '../hooks'
 import { useAppState, useWindowData } from '../store'
 import { ArcImportPrompt } from './ArcImportPrompt'
 import styles from './ChromeSurface.module.css'
 import { LittleToolbar } from './LittleToolbar'
+import { EaselEditor } from './easel/EaselEditor'
 import { NoteEditor } from './NoteEditor'
 import { Sidebar } from './Sidebar'
 import { Toasts } from './Toasts'
@@ -160,8 +161,13 @@ function ContentFrames() {
   return (
     <>
       {layout.panes.map((pane) => {
-        const noteId = noteIdOf(getTab(data, pane.tabId)?.url ?? '')
-        if (noteId) return <NoteEditor key={pane.tabId} noteId={noteId} rect={pane.rect} />
+        const page = internalPage(getTab(data, pane.tabId)?.url ?? '')
+        if (page?.kind === 'note') {
+          return <NoteEditor key={pane.tabId} noteId={page.id} rect={pane.rect} />
+        }
+        if (page?.kind === 'easel') {
+          return <EaselEditor key={pane.tabId} easelId={page.id} rect={pane.rect} />
+        }
         return (
           <div
             key={pane.tabId}

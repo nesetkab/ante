@@ -1,4 +1,5 @@
 import type { Data, Id } from '../schema'
+import { referencedEaselIds } from '../easels'
 import { referencedNoteIds } from '../notes'
 import { createInitialData, DEFAULT_PROFILE_ID } from './initial'
 import { stripPrivate } from './private'
@@ -59,6 +60,10 @@ export function sanitize(input: Data, fallbackSpaceId: Id): Data {
     if (!claimed.has(id)) Reflect.deleteProperty(data.items, id)
   }
 
+  const easels = referencedEaselIds(data)
+  for (const id of Object.keys(data.easels)) {
+    if (!easels.has(id)) Reflect.deleteProperty(data.easels, id)
+  }
   const notes = referencedNoteIds(data)
   for (const id of Object.keys(data.notes)) {
     if (!notes.has(id)) Reflect.deleteProperty(data.notes, id)

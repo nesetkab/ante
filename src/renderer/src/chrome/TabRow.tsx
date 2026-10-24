@@ -1,7 +1,7 @@
-import { CornerUpLeft, Volume2, VolumeX, X, StickyNote } from 'lucide-react'
+import { CornerUpLeft, Volume2, VolumeX, X, Shapes, StickyNote } from 'lucide-react'
 import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react'
 import type { Tab, TabRuntime } from '@shared/schema'
-import { isNoteUrl } from '@shared/notes'
+import { internalPage } from '@shared/pages'
 import { displayTitle } from '@shared/state/tree'
 import { ante } from '../ante'
 import { Favicon } from '../components/Favicon'
@@ -25,8 +25,8 @@ export function TabRow({ tab, runtime, active, depth, persistent, compact = fals
   const inputRef = useRef<HTMLInputElement>(null)
   const title = displayTitle(tab)
   const drifted = persistent && tab.savedUrl !== null && tab.savedUrl !== tab.url
-  const note = isNoteUrl(tab.url)
-  const unloaded = persistent && !runtime && !note
+  const page = internalPage(tab.url)
+  const unloaded = persistent && !runtime && !page
   const { dragging, onPointerDown } = useDragSource({ type: 'item', id: tab.id, variant: 'row' })
 
   useEffect(
@@ -100,8 +100,10 @@ export function TabRow({ tab, runtime, active, depth, persistent, compact = fals
           </span>
           <CornerUpLeft className={styles.resetIcon} size={14} />
         </button>
-      ) : note ? (
+      ) : page?.kind === 'note' ? (
         <StickyNote size={15} className={styles.noteIcon} />
+      ) : page?.kind === 'easel' ? (
+        <Shapes size={15} className={styles.noteIcon} />
       ) : (
         <Favicon src={tab.favicon} pageUrl={tab.url} loading={runtime?.loading} />
       )}

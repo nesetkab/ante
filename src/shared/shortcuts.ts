@@ -314,6 +314,12 @@ export function shortcuts(platform: Platform): Shortcut[] {
       command: { type: 'feed/follow' },
     },
     {
+      id: 'new-easel',
+      label: 'New Easel',
+      section: 'file',
+      command: { type: 'easel/new' },
+    },
+    {
       id: 'capture',
       label: 'Capture',
       section: 'tab',

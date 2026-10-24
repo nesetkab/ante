@@ -5,6 +5,7 @@ import type { Command } from '@shared/commands'
 import type { Id } from '@shared/schema'
 import { createAppState, createInitialData, DEFAULT_PROFILE_ID } from '@shared/state/initial'
 import { sanitize } from '@shared/state/sanitize'
+import { referencedAssets } from '@shared/easels'
 import { rootOf } from '@shared/state/tree'
 import { startArchiveSweeper } from './archive'
 import { runAutomation } from './automation'
@@ -22,6 +23,7 @@ import { buildAppMenu } from './menu'
 import { DevtoolsDock } from './devtools'
 import { Extensions } from './extensions'
 import { FeedManager } from './feeds'
+import { EaselAssets, registerAssetScheme } from './easelAssets'
 import { MediaController } from './media'
 import { PanelManager } from './panels'
 import { Privacy } from './privacy'
@@ -34,6 +36,7 @@ import { TabManager } from './tabs'
 import { WindowManager } from './windows'
 
 app.setName('Ante')
+registerAssetScheme()
 if (process.env.ANTE_USER_DATA) app.setPath('userData', process.env.ANTE_USER_DATA)
 externalLinks.listen()
 
@@ -92,6 +95,9 @@ async function start(): Promise<void> {
   })
   const media = new MediaController(store, tabs)
   const feeds = new FeedManager(store)
+  const assets = new EaselAssets(join(app.getPath('userData'), 'easel-assets'))
+  assets.serve(surfaces)
+  void assets.collect(referencedAssets(store.state.data))
   windows.onSync(() => media.sync())
   const boosts = new BoostManager(store, tabs)
   boosts.start()
@@ -118,6 +124,7 @@ async function start(): Promise<void> {
     media,
     devtools,
     feeds,
+    assets,
   })
   const privacy = new Privacy({
     store,

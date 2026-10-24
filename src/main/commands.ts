@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { Command, Disposition } from '@shared/commands'
-import type { Container, Id, Tab, WindowData } from '@shared/schema'
+import type { Container, Id, Tab, WindowData, Rect } from '@shared/schema'
 import { nextSpaceColor } from '@shared/state/initial'
 import { samePrivacy } from '@shared/state/private'
 import { MAX_SPLIT } from '@shared/state/reducer'
@@ -15,12 +15,14 @@ import {
 import { hostOf, isWebUrl, resolveInput } from '@shared/url'
 import { nextZoom } from '@shared/zoom'
 import { noteTabTitle, noteUrl } from '@shared/notes'
+import { easelUrl, placeImage } from '@shared/easels'
 import { IPC, type UiEvent } from '@shared/ipc'
-import { captureRegion } from './capture'
+import { capturePng, captureRegion } from './capture'
 import { copyText } from './clipboard'
 import { describeArcImport, importFromArc } from './importers/arc'
 import type { FeatureCommand } from './features'
 import type { DevtoolsDock } from './devtools'
+import type { EaselAssets } from './easelAssets'
 import type { FeedManager } from './feeds'
 import type { MediaController } from './media'
 import type { PrivacyCommand } from './privacy'
@@ -41,6 +43,7 @@ interface Deps {
   media: Pick<MediaController, 'toggle' | 'togglePip'>
   devtools: Pick<DevtoolsDock, 'toggle' | 'setMode' | 'inspect'>
   feeds: Pick<FeedManager, 'follow' | 'refresh'>
+  assets: Pick<EaselAssets, 'save'>
 }
 
 export class CommandRunner {
@@ -53,6 +56,7 @@ export class CommandRunner {
   readonly #media: Deps['media']
   readonly #devtools: Deps['devtools']
   readonly #feeds: Deps['feeds']
+  readonly #assets: Deps['assets']
 
   constructor(deps: Deps) {
     this.#store = deps.store
@@ -64,6 +68,7 @@ export class CommandRunner {
     this.#media = deps.media
     this.#devtools = deps.devtools
     this.#feeds = deps.feeds
+    this.#assets = deps.assets
   }
 
   get #data() {
@@ -718,18 +723,38 @@ export class CommandRunner {
       case 'feed/refresh':
         void this.#feeds.refresh(command.folderId)
         return
+      case 'easel/new': {
+        const easelId = randomUUID()
+        this.#store.dispatch({ type: 'easel/create', id: easelId, now: this.#now() })
+        const spaceId = this.#windowData(window).spaceId
+        const tabId = this.createTab(easelUrl(easelId), { type: 'today', spaceId })
+        this.#store.dispatch({ type: 'tab/update', id: tabId, patch: { title: 'Untitled easel' } })
+        this.activate(this.#mainWindowFor(window), tabId)
+        return
+      }
       case 'capture/start':
         this.#store.dispatch({
           type: 'runtime/window',
           id: window.id,
-          patch: { overlay: { kind: 'capture' } },
+          patch: {
+            overlay: {
+              kind: 'capture',
+              ...(command.easelId ? { easelId: command.easelId } : {}),
+              ...(command.view ? { view: command.view } : {}),
+            },
+          },
         })
         this.#windows.syncNow()
         window.focusOverlay()
         return
-      case 'capture/region':
+      case 'capture/region': {
+        const overlay = this.#store.state.runtime.windows[window.id]?.overlay
         this.#store.dispatch({ type: 'runtime/window', id: window.id, patch: { overlay: null } })
         this.#windows.syncNow()
+        if (overlay?.kind === 'capture' && overlay.easelId) {
+          void this.#captureToEasel(window, overlay.easelId, overlay.view, command)
+          return
+        }
         captureRegion(window, this.#tabs, command)
           .then((file) => {
             this.toast(window, file ? 'Capture copied and saved' : 'Nothing to capture there')
@@ -739,6 +764,33 @@ export class CommandRunner {
             this.toast(window, 'Capture failed')
           })
         return
+      }
+    }
+  }
+
+  async #captureToEasel(
+    window: AppWindow,
+    easelId: Id,
+    view: Rect | undefined,
+    region: Rect,
+  ): Promise<void> {
+    try {
+      const captured = await capturePng(window, this.#tabs, region)
+      const asset = captured ? await this.#assets.save(captured.png) : null
+      if (!captured || !asset) {
+        this.toast(window, 'Nothing to capture there')
+        return
+      }
+      const box = placeImage(view ?? { x: 0, y: 0, width: 1200, height: 800 }, captured)
+      this.#store.dispatch({
+        type: 'easel/upsert',
+        id: easelId,
+        element: { kind: 'image', id: randomUUID(), ...box, asset, sourceUrl: captured.sourceUrl },
+        now: this.#now(),
+      })
+    } catch (error) {
+      console.error('[capture] easel capture failed', error)
+      this.toast(window, 'Capture failed')
     }
   }
 }

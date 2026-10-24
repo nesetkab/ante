@@ -98,7 +98,14 @@ export const commandSchema = z.discriminatedUnion('type', [
     storage: z.boolean(),
   }),
   z.object({ type: z.literal('window/newPrivate') }),
-  z.object({ type: z.literal('capture/start') }),
+  z.object({
+    type: z.literal('capture/start'),
+    easelId: idSchema.optional(),
+    view: z
+      .object({ x: z.number(), y: z.number(), width: z.number(), height: z.number() })
+      .optional(),
+  }),
+  z.object({ type: z.literal('easel/new') }),
   z.object({ type: z.literal('note/new') }),
   z.object({ type: z.literal('feed/follow'), ...optionalTab.shape }),
   z.object({ type: z.literal('feed/refresh'), folderId: idSchema }),

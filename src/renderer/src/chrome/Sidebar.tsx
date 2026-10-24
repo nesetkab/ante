@@ -3,7 +3,7 @@ import { useRef, type WheelEvent } from 'react'
 import { activeTabId, getTab } from '@shared/state/tree'
 import { displayUrl } from '@shared/url'
 import { profilePartition } from '@shared/extensions'
-import { isNoteUrl } from '@shared/notes'
+import { internalPage } from '@shared/pages'
 import { isPrivateProfile } from '@shared/state/private'
 import { ante, isMac } from '../ante'
 import { IconButton } from '../components/IconButton'
@@ -18,6 +18,12 @@ import { SpaceBar } from './SpaceBar'
 import { SpaceHeader } from './SpaceHeader'
 
 const SWIPE_THRESHOLD = 90
+
+function pageLabel(url: string): string | null {
+  const page = internalPage(url)
+  if (!page) return null
+  return page.kind === 'note' ? 'Note' : 'Easel'
+}
 
 function useSpaceSwipe() {
   const accumulated = useRef(0)
@@ -108,9 +114,7 @@ export function Sidebar({ floating = false }: { floating?: boolean }) {
         >
           <span className={styles.addressText}>
             {activeTab
-              ? isNoteUrl(activeTab.url)
-                ? 'Note'
-                : displayUrl(activeTab.url)
+              ? (pageLabel(activeTab.url) ?? displayUrl(activeTab.url))
               : 'Search or enter address'}
           </span>
         </button>

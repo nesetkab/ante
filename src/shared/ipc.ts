@@ -9,6 +9,7 @@ export const IPC = {
   dispatch: 'ante:dispatch',
   command: 'ante:command',
   ui: 'ante:ui',
+  saveAsset: 'ante:saveAsset',
 } as const
 
 export type UiEvent =
@@ -35,4 +36,5 @@ export interface AnteApi {
   dispatch(action: UiAction): void
   command(command: Command): void
   onUiEvent(listener: (event: UiEvent) => void): () => void
+  saveAsset(bytes: Uint8Array): Promise<string | null>
 }

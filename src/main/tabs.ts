@@ -1,6 +1,6 @@
 import { WebContentsView, type ContextMenuParams, type WebContents } from 'electron'
 import type { Id, TabRuntime } from '@shared/schema'
-import { isNoteUrl } from '@shared/notes'
+import { isInternalPage } from '@shared/pages'
 import { getTab } from '@shared/state/tree'
 import type { Sessions } from './sessions'
 import type { Store } from './store'
@@ -45,7 +45,7 @@ export class TabManager {
     const existing = this.#views.get(id)
     if (existing) return existing
     const tab = getTab(this.#store.state.data, id)
-    if (!tab || isNoteUrl(tab.url)) return null
+    if (!tab || isInternalPage(tab.url)) return null
     const profileId = this.#hooks.profileFor(id)
     const view = new WebContentsView({
       webPreferences: {

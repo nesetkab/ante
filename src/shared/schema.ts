@@ -204,6 +204,51 @@ export const noteSchema = z.object({
 })
 export type Note = z.infer<typeof noteSchema>
 
+const boxSchema = {
+  id: idSchema,
+  x: z.number(),
+  y: z.number(),
+  w: z.number().positive(),
+  h: z.number().positive(),
+}
+
+export const easelElementSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('text'),
+    ...boxSchema,
+    text: z.string().max(100_000),
+    size: z.number().min(8).max(160),
+  }),
+  z.object({
+    kind: z.literal('image'),
+    ...boxSchema,
+    asset: z.string().max(200),
+    sourceUrl: z.string().max(4096).nullable(),
+  }),
+  z.object({
+    kind: z.literal('stroke'),
+    id: idSchema,
+    points: z.array(z.number()).max(20_000),
+    color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    width: z.number().min(1).max(40),
+  }),
+  z.object({
+    kind: z.literal('link'),
+    ...boxSchema,
+    url: z.string().max(4096),
+    title: z.string().max(500),
+  }),
+])
+export type EaselElement = z.infer<typeof easelElementSchema>
+
+export const easelSchema = z.object({
+  id: idSchema,
+  title: z.string().max(500).default(''),
+  elements: z.array(easelElementSchema).max(5000).default([]),
+  updatedAt: z.number(),
+})
+export type Easel = z.infer<typeof easelSchema>
+
 export const DATA_VERSION = 1
 
 export const dataSchema = z.object({
@@ -221,6 +266,7 @@ export const dataSchema = z.object({
   routes: z.array(routeSchema).max(500).default([]),
   sitePermissions: sitePermissionsSchema.default({}),
   notes: z.record(idSchema, noteSchema).default({}),
+  easels: z.record(idSchema, easelSchema).default({}),
 })
 export type Data = z.infer<typeof dataSchema>
 
@@ -260,7 +306,7 @@ export type Overlay =
   | { kind: 'commandBar'; mode: 'new' | 'edit' }
   | { kind: 'sidebar' }
   | { kind: 'library'; section: LibrarySection }
-  | { kind: 'capture' }
+  | { kind: 'capture'; easelId?: Id; view?: Rect }
 
 export interface WindowRuntime {
   overlay: Overlay | null
