@@ -1,6 +1,13 @@
 import { X } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { permissionLabels, sitePermissionSchema } from '@shared/permissions'
-import { searchEngines, type ArchiveAfter, type SearchEngine, type Settings } from '@shared/schema'
+import {
+  searchEngines,
+  type ArchiveAfter,
+  type SearchEngine,
+  type Settings,
+  type SyncStatus,
+} from '@shared/schema'
 import { shortcuts, type Platform } from '@shared/shortcuts'
 import { isPrivateProfile } from '@shared/state/private'
 import { ante } from '../ante'
@@ -37,6 +44,83 @@ function formatAccelerator(accelerator: string): string {
     .replace('Alt', '⌥')
     .replace('Shift', '⇧')
     .replaceAll('+', '')
+}
+
+function syncedAgo(lastSyncedAt: number, now: number): string {
+  const minutes = Math.floor(Math.max(0, now - lastSyncedAt) / 60_000)
+  if (minutes < 1) return 'Last synced just now'
+  if (minutes < 60) return `Last synced ${minutes} minute${minutes === 1 ? '' : 's'} ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `Last synced ${hours} hour${hours === 1 ? '' : 's'} ago`
+  return `Last synced ${new Date(lastSyncedAt).toLocaleDateString()}`
+}
+
+function syncHeadline(status: SyncStatus | undefined, now: number): string {
+  if (status?.error) return status.error
+  if (status?.lastSyncedAt) return syncedAgo(status.lastSyncedAt, now)
+  return 'Syncing…'
+}
+
+function syncPeers(status: SyncStatus | undefined, deviceName: string): string {
+  const devices = status?.devices ?? 0
+  const peers =
+    devices === 0
+      ? 'No other devices yet'
+      : `Shared with ${devices} other device${devices === 1 ? '' : 's'}`
+  return deviceName ? `${peers}. This device is ${deviceName}.` : `${peers}.`
+}
+
+function useNow(intervalMs: number): number {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), intervalMs)
+    return () => clearInterval(timer)
+  }, [intervalMs])
+  return now
+}
+
+function SyncSection() {
+  const sync = useAppState((state) => state.data.settings.sync)
+  const status = useAppState((state) => state.runtime.sync)
+  const now = useNow(30_000)
+  const iCloudFolder = status?.iCloudFolder ?? null
+  const usingICloud = iCloudFolder !== null && sync.folder === iCloudFolder
+  const customFolder = sync.folder !== null && !usingICloud
+
+  return (
+    <Section title="Sync">
+      {iCloudFolder && (
+        <Row
+          label="Sync with iCloud Drive"
+          hint="Spaces, pinned tabs, favorites and notes stay the same on every Mac"
+        >
+          <Toggle
+            label="Sync with iCloud Drive"
+            checked={usingICloud}
+            onChange={(on) => ante.command({ type: on ? 'sync/useICloud' : 'sync/stop' })}
+          />
+        </Row>
+      )}
+      <Row
+        label={customFolder ? 'Sync folder' : 'Sync with a folder'}
+        hint={
+          customFolder && sync.folder
+            ? sync.folder
+            : 'Use a folder you already sync with Dropbox, OneDrive or Syncthing'
+        }
+      >
+        <Button onClick={() => ante.command({ type: 'sync/chooseFolder' })}>Choose Folder…</Button>
+      </Row>
+      {sync.folder && (
+        <Row label={syncHeadline(status, now)} hint={syncPeers(status, sync.deviceName)}>
+          <Button onClick={() => ante.command({ type: 'sync/now' })}>Sync Now</Button>
+          <Button tone="danger" onClick={() => ante.command({ type: 'sync/stop' })}>
+            Stop Syncing
+          </Button>
+        </Row>
+      )}
+    </Section>
+  )
 }
 
 export function SettingsPanel() {
@@ -105,6 +189,8 @@ export function SettingsPanel() {
           <Button onClick={() => ante.command({ type: 'import/arc' })}>Import</Button>
         </Row>
       </Section>
+
+      <SyncSection />
 
       <Section title="Privacy">
         <Row label="Block ads and trackers">
