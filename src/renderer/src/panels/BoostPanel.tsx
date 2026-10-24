@@ -5,6 +5,7 @@ import type { BoostPatch } from '@shared/schema'
 import { ante } from '../ante'
 import { Button, Row, Section, Select, Toggle } from '../components/Form'
 import { IconButton } from '../components/IconButton'
+import { useConfirm } from '../library/useConfirm'
 import { useAppState } from '../store'
 import { onUiEvent } from '../uiEvents'
 import styles from './Panel.module.css'
@@ -15,6 +16,9 @@ const DEFAULT_FONT = '__default'
 export function BoostPanel({ boostId }: { boostId: string }) {
   const boost = useAppState((state) => state.data.boosts[boostId])
   const [zapping, setZapping] = useState(false)
+  const [confirmingDelete, removeBoost] = useConfirm(() =>
+    ante.dispatch({ type: 'boost/delete', id: boostId }),
+  )
   const update = (patch: BoostPatch) => ante.dispatch({ type: 'boost/update', id: boostId, patch })
   const updateCss = useDebouncedCallback((css: string) => update({ css }), 300)
   const updateJs = useDebouncedCallback((js: string) => update({ js }), 500)
@@ -136,7 +140,13 @@ export function BoostPanel({ boostId }: { boostId: string }) {
 
       <Section title="JavaScript">
         <Row label="Runs on every page load" hint="Isolated from the site's own scripts">
-          <Button onClick={() => ante.command({ type: 'boost/reloadTabs', boostId })}>
+          <Button
+            onClick={() => {
+              updateJs.flush()
+              updateCss.flush()
+              ante.command({ type: 'boost/reloadTabs', boostId })
+            }}
+          >
             Reload site
           </Button>
         </Row>
@@ -151,8 +161,8 @@ export function BoostPanel({ boostId }: { boostId: string }) {
 
       <div className={styles.actions}>
         <span />
-        <Button tone="danger" onClick={() => ante.dispatch({ type: 'boost/delete', id: boostId })}>
-          Delete boost
+        <Button tone="danger" onClick={removeBoost}>
+          {confirmingDelete ? 'Click again to delete' : 'Delete boost'}
         </Button>
       </div>
     </>

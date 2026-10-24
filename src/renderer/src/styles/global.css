@@ -16,12 +16,15 @@
   --panel-shadow: 0 24px 64px rgb(0 0 0 / 0.22), 0 2px 8px rgb(0 0 0 / 0.08);
   --content-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.08), 0 1px 3px rgb(0 0 0 / 0.1);
   --accent: color-mix(in oklab, var(--space) 88%, black);
+  --on-accent: #ffffff;
+  --danger: #d64545;
   --radius: 8px;
   --row: 34px;
   color-scheme: light;
 }
 
 :root[data-theme='dark'] {
+  --danger: #ef6b6b;
   --base: #1a1a1c;
   --fg: #ececee;
   --sidebar-bg: color-mix(in oklab, var(--space) 22%, var(--base));

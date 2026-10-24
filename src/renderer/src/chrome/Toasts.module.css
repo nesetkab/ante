@@ -17,3 +17,7 @@
     translate: 0 4px;
   }
 }
+
+.region {
+  display: contents;
+}

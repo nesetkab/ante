@@ -1,4 +1,5 @@
 import { useEffect, useSyncExternalStore, type ReactNode } from 'react'
+import { onAccent } from '@shared/color'
 import { useAppState, useWindowData } from '../store'
 
 const darkQuery = window.matchMedia('(prefers-color-scheme: dark)')
@@ -21,8 +22,10 @@ export function ThemeRoot({ children }: { children: ReactNode }) {
   }, [resolved])
 
   useEffect(() => {
-    if (color) document.documentElement.style.setProperty('--space', color)
-  }, [color])
+    if (!color) return
+    document.documentElement.style.setProperty('--space', color)
+    document.documentElement.style.setProperty('--on-accent', onAccent(color, resolved === 'dark'))
+  }, [color, resolved])
 
   return children
 }

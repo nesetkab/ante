@@ -127,7 +127,7 @@
 
 .danger,
 .danger:hover {
-  color: #d64545;
+  color: var(--danger);
 }
 
 .group {

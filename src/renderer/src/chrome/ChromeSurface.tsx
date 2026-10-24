@@ -38,6 +38,7 @@ function SidebarResizer({ side }: { side: 'left' | 'right' }) {
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
+      onLostPointerCapture={onPointerUp}
     />
   )
 }
@@ -106,6 +107,9 @@ function SplitHandles() {
             }}
             onPointerMove={onPointerMove}
             onPointerUp={() => {
+              drag.current = null
+            }}
+            onLostPointerCapture={() => {
               drag.current = null
             }}
           />

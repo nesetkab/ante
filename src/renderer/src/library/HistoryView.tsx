@@ -55,7 +55,13 @@ export function HistoryView({ query }: { query: string }) {
     loadingMore.current = true
     const requested = generation.current
     library
-      .searchHistory({ query, limit: PAGE, order: 'recent', before: last.lastVisit })
+      .searchHistory({
+        query,
+        limit: PAGE,
+        order: 'recent',
+        before: last.lastVisit,
+        beforeId: last.id,
+      })
       .then((result) => {
         if (requested !== generation.current) return
         setEntries((current) => [...current, ...result.entries])

@@ -250,6 +250,7 @@ export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
         if (acceptCompletion()) event.preventDefault()
         return
       case 'Enter':
+        if (event.nativeEvent.isComposing) return
         event.preventDefault()
         execute(entries[current], dispositionFor(event, fallback))
         return

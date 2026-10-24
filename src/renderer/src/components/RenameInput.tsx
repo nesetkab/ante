@@ -26,6 +26,7 @@ export function RenameInput({ value, className, onCommit, onCancel }: RenameInpu
     ref.current?.select()
   }, [])
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.nativeEvent.isComposing) return
     if (event.key === 'Enter') onCommit(event.currentTarget.value.trim())
     if (event.key === 'Escape') onCancel()
   }

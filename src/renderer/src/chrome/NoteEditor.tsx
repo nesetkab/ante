@@ -3,6 +3,7 @@ import type { Id, Rect } from '@shared/schema'
 import { ante } from '../ante'
 import { useDebouncedCallback } from '../panels/useDebounced'
 import { useAppState } from '../store'
+import { useRemoteVersion } from '../useRemoteVersion'
 import styles from './NoteEditor.module.css'
 
 const SAVE_DELAY_MS = 250
@@ -10,15 +11,14 @@ const SAVE_DELAY_MS = 250
 export function NoteEditor({ noteId, rect }: { noteId: Id; rect: Rect }) {
   const note = useAppState((state) => state.data.notes[noteId])
   const body = useRef<HTMLTextAreaElement>(null)
-  const saveTitle = useDebouncedCallback(
-    (title: string) => ante.dispatch({ type: 'note/update', id: noteId, title, now: Date.now() }),
-    SAVE_DELAY_MS,
-  )
-  const saveBody = useDebouncedCallback(
-    (text: string) =>
-      ante.dispatch({ type: 'note/update', id: noteId, body: text, now: Date.now() }),
-    SAVE_DELAY_MS,
-  )
+  const { fieldsKey, markLocal } = useRemoteVersion(note?.updatedAt ?? 0)
+  const save = (patch: { title?: string; body?: string }) => {
+    const now = Date.now()
+    markLocal(now)
+    ante.dispatch({ type: 'note/update', id: noteId, ...patch, now })
+  }
+  const saveTitle = useDebouncedCallback((title: string) => save({ title }), SAVE_DELAY_MS)
+  const saveBody = useDebouncedCallback((text: string) => save({ body: text }), SAVE_DELAY_MS)
 
   useEffect(() => {
     body.current?.focus()
@@ -31,7 +31,7 @@ export function NoteEditor({ noteId, rect }: { noteId: Id; rect: Rect }) {
     >
       <div className={styles.page}>
         <input
-          key={`${noteId}:title`}
+          key={`${noteId}:title:${fieldsKey}`}
           className={styles.title}
           defaultValue={note?.title ?? ''}
           placeholder="Untitled note"
@@ -45,7 +45,7 @@ export function NoteEditor({ noteId, rect }: { noteId: Id; rect: Rect }) {
           }}
         />
         <textarea
-          key={`${noteId}:body`}
+          key={`${noteId}:body:${fieldsKey}`}
           ref={body}
           className={styles.body}
           defaultValue={note?.body ?? ''}

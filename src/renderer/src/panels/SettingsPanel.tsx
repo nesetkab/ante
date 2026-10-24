@@ -13,6 +13,7 @@ import { isPrivateProfile } from '@shared/state/private'
 import { ante } from '../ante'
 import { Button, Row, Section, Segmented, Select, Toggle } from '../components/Form'
 import { IconButton } from '../components/IconButton'
+import { useConfirm } from '../library/useConfirm'
 import { useAppState } from '../store'
 import styles from './Panel.module.css'
 
@@ -120,6 +121,25 @@ function SyncSection() {
         </Row>
       )}
     </Section>
+  )
+}
+
+function ClearDataRow({ profileId, label }: { profileId: string; label: string }) {
+  const [confirming, clear] = useConfirm(() =>
+    ante.command({
+      type: 'privacy/clearData',
+      profileId,
+      cookies: true,
+      cache: true,
+      storage: true,
+    }),
+  )
+  return (
+    <Row label={label} hint="Cookies, cache and site storage">
+      <Button tone="danger" onClick={clear}>
+        {confirming ? 'Click again to clear' : 'Clear'}
+      </Button>
+    </Row>
   )
 }
 
@@ -231,26 +251,11 @@ export function SettingsPanel() {
           </div>
         )}
         {visibleProfiles.map((profile) => (
-          <Row
+          <ClearDataRow
             key={profile.id}
+            profileId={profile.id}
             label={`Clear browsing data${visibleProfiles.length > 1 ? ` for ${profile.name}` : ''}`}
-            hint="Cookies, cache and site storage"
-          >
-            <Button
-              tone="danger"
-              onClick={() =>
-                ante.command({
-                  type: 'privacy/clearData',
-                  profileId: profile.id,
-                  cookies: true,
-                  cache: true,
-                  storage: true,
-                })
-              }
-            >
-              Clear
-            </Button>
-          </Row>
+          />
         ))}
       </Section>
 

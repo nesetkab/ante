@@ -21,7 +21,10 @@ import { ElementView, strokePath, type Box, type BoxElement } from './EaselEleme
 
 type Tool = 'select' | 'text' | 'draw'
 
-const PEN_COLORS = ['#141414', '#d64545', '#3d6be0', '#1f9e8f'] as const
+const INK = '#141414'
+const PEN_COLORS = [INK, '#d64545', '#3d6be0', '#1f9e8f'] as const
+
+const inkColor = (color: string) => (color === INK ? 'var(--fg)' : color)
 const PEN_WIDTH = 3
 const MIN_BOX = { w: 40, h: 24 }
 
@@ -65,6 +68,10 @@ export function EaselEditor({ easelId, rect }: { easelId: Id; rect: Rect }) {
     const current = elementsRef.current.find((element) => element.id === change.id)
     if (current?.kind === 'text') upsert({ ...current, text: change.text })
   }, 300)
+
+  useEffect(() => {
+    saveText.flush()
+  }, [editing, saveText])
 
   const saveTitle = useDebouncedCallback(
     (title: string) => ante.dispatch({ type: 'easel/rename', id: easelId, title, now: Date.now() }),
@@ -208,6 +215,7 @@ export function EaselEditor({ easelId, rect }: { easelId: Id; rect: Rect }) {
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (editing || event.target instanceof HTMLInputElement) return
+    if (event.metaKey || event.ctrlKey || event.altKey) return
     if (event.key === 'Backspace' || event.key === 'Delete') removeSelected()
     if (event.key === 'Escape') {
       setSelected(null)
@@ -304,7 +312,7 @@ export function EaselEditor({ easelId, rect }: { easelId: Id; rect: Rect }) {
               type="button"
               aria-label={`Pen color ${pen}`}
               className={[styles.pen, pen === color && styles.penOn].filter(Boolean).join(' ')}
-              style={{ background: pen }}
+              style={{ background: inkColor(pen) }}
               onClick={() => setColor(pen)}
             />
           ))}
@@ -351,6 +359,7 @@ export function EaselEditor({ easelId, rect }: { easelId: Id; rect: Rect }) {
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
+          onLostPointerCapture={onPointerUp}
           onDoubleClick={(event) => {
             const target = event.target instanceof Element ? event.target : null
             const hit = target?.closest<HTMLElement>('[data-element]')?.dataset.element
@@ -364,12 +373,14 @@ export function EaselEditor({ easelId, rect }: { easelId: Id; rect: Rect }) {
                 key={element.id}
                 data-element={element.id}
                 d={strokePath(element.points)}
-                stroke={element.color}
+                stroke={inkColor(element.color)}
                 strokeWidth={element.width}
                 className={selected === element.id ? styles.strokeSelected : undefined}
               />
             ))}
-            {stroke && <path d={strokePath(stroke)} stroke={color} strokeWidth={PEN_WIDTH} />}
+            {stroke && (
+              <path d={strokePath(stroke)} stroke={inkColor(color)} strokeWidth={PEN_WIDTH} />
+            )}
           </svg>
           {boxes.map((element) => (
             <ElementView

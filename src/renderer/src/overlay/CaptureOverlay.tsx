@@ -41,6 +41,7 @@ export function CaptureOverlay() {
         if (start) setEnd({ x: event.clientX, y: event.clientY })
       }}
       onPointerUp={onPointerUp}
+      onLostPointerCapture={onPointerUp}
     >
       {selection ? (
         <div

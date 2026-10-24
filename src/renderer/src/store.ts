@@ -6,6 +6,8 @@ import { ante, windowId } from './ante'
 
 enablePatches()
 
+const RETRY_MS = 500
+
 class ClientStore {
   #state: AppState | null = null
   #version = -1
@@ -34,6 +36,10 @@ class ClientStore {
       const snapshot = await ante.snapshot()
       this.#state = snapshot.state
       this.#version = snapshot.version
+    } catch (error) {
+      console.error('[store] snapshot failed, retrying', error)
+      window.setTimeout(() => void this.#resync(), RETRY_MS)
+      return
     } finally {
       this.#syncing = false
     }

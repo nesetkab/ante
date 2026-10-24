@@ -25,6 +25,7 @@ export const historyQuerySchema = z.object({
   limit: z.number().int().min(1).max(500),
   order: z.enum(['relevance', 'recent']).default('relevance'),
   before: z.number().optional(),
+  beforeId: z.number().int().optional(),
 })
 export type HistoryQuery = z.input<typeof historyQuerySchema>
 

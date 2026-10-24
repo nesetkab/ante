@@ -1,8 +1,15 @@
 import { resolve } from 'node:path'
 import { defineConfig } from 'electron-vite'
 import react from '@vitejs/plugin-react'
+import type { Plugin } from 'vite'
 
 const alias = { '@shared': resolve(import.meta.dirname, 'src/shared') }
+
+const productionCsp: Plugin = {
+  name: 'ante-production-csp',
+  apply: 'build',
+  transformIndexHtml: (html) => html.replace("connect-src 'self' ws:", "connect-src 'self'"),
+}
 
 export default defineConfig({
   main: {
@@ -20,7 +27,7 @@ export default defineConfig({
   },
   renderer: {
     resolve: { alias },
-    plugins: [react()],
+    plugins: [react(), productionCsp],
     build: { minify: true },
   },
 })

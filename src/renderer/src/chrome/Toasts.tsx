@@ -30,8 +30,6 @@ export function Toasts() {
     return () => clearTimeout(timer)
   }, [toast])
 
-  if (!toast) return null
-
   const inSidebar = window?.kind === 'main' && !window.sidebarHidden
   const style: CSSProperties = inSidebar
     ? {
@@ -42,8 +40,12 @@ export function Toasts() {
     : { bottom: 16, left: '50%', transform: 'translateX(-50%)' }
 
   return (
-    <div key={toast.id} role="status" className={styles.toast} style={style}>
-      {toast.message}
+    <div role="status" aria-live="polite" className={styles.region}>
+      {toast && (
+        <div key={toast.id} className={styles.toast} style={style}>
+          {toast.message}
+        </div>
+      )}
     </div>
   )
 }

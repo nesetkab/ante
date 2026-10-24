@@ -131,3 +131,21 @@ describe('HistoryStore', () => {
     expect(result.entries.map((item) => item.url)).toEqual(['https://example.com/100%'])
   })
 })
+
+describe('history paging', () => {
+  it('does not skip entries that share a timestamp', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'ante-paging-'))
+    const store = new HistoryStore(join(directory, 'history.sqlite'))
+    for (const page of ['a', 'b', 'c', 'd']) store.visit('default', `https://${page}.example/`, NOW)
+    const first = store.search('default', { query: '', limit: 2, order: 'recent' }, NOW).entries
+    const last = first.at(-1)
+    const second = store.search(
+      'default',
+      { query: '', limit: 2, order: 'recent', before: last?.lastVisit, beforeId: last?.id },
+      NOW,
+    ).entries
+    expect(new Set([...first, ...second].map((entry) => entry.url)).size).toBe(4)
+    store.close()
+    rmSync(directory, { recursive: true, force: true })
+  })
+})

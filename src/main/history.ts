@@ -140,15 +140,20 @@ export class HistoryStore {
       params.push(pattern, pattern)
     }
     if (options.before !== undefined) {
-      conditions.push('last_visit < ?')
-      params.push(options.before)
+      if (options.beforeId === undefined) {
+        conditions.push('last_visit < ?')
+        params.push(options.before)
+      } else {
+        conditions.push('(last_visit < ? or (last_visit = ? and id < ?))')
+        params.push(options.before, options.before, options.beforeId)
+      }
     }
     const recent = options.order === 'recent'
     const limit = recent ? options.limit : RELEVANCE_CANDIDATES
     const rows = this.#db
       .prepare(
         `select id, url, title, favicon, visit_count, last_visit from visits
-         where ${conditions.join(' and ')} order by last_visit desc limit ?`,
+         where ${conditions.join(' and ')} order by last_visit desc, id desc limit ?`,
       )
       .all(...params, limit)
     const entries = z.array(rowSchema).parse(rows).map(toEntry)

@@ -94,7 +94,7 @@ export function RoutesPanel() {
                 />
                 <input
                   className={styles.input}
-                  style={{ flex: 1, ...(invalid ? { color: '#d64545' } : {}) }}
+                  style={{ flex: 1, ...(invalid ? { color: 'var(--danger)' } : {}) }}
                   defaultValue={route.match.value}
                   placeholder={placeholders[route.match.kind]}
                   spellCheck={false}

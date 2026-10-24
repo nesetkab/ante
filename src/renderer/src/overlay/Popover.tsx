@@ -17,6 +17,7 @@ function FindBar({ tabId, find }: { tabId: Id; find: FindState }) {
   }, [find.focus])
 
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.nativeEvent.isComposing) return
     if (event.key === 'Enter') {
       event.preventDefault()
       ante.command({ type: 'find/step', tabId, forward: !event.shiftKey })

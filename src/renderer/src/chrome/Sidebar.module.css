@@ -194,6 +194,7 @@
 }
 
 .row:hover .close,
+.row:focus-within .close,
 .active .close {
   opacity: 1;
 }
