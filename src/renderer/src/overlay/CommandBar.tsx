@@ -12,6 +12,7 @@ import type { Command, Disposition } from '@shared/commands'
 import { fuzzyMatch, rank } from '@shared/fuzzy'
 import type { Data, Id } from '@shared/schema'
 import { shortcuts, type Platform } from '@shared/shortcuts'
+import { matchSiteSearch, siteSearchUrl, type SiteSearch } from '@shared/siteSearch'
 import { isPrivateSpace } from '@shared/state/private'
 import { activeTabId, displayTitle, getTab, spaceTabOrder } from '@shared/state/tree'
 import { displayUrl, resolveInput, searchUrls } from '@shared/url'
@@ -31,6 +32,7 @@ interface Entry {
   detail?: string
   hint?: string
   navigates?: boolean
+  keepsOpen?: boolean
   run(disposition: Disposition): void
 }
 
@@ -70,19 +72,32 @@ export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
   const [typed, setTyped] = useState(initial)
   const [autocomplete, setAutocomplete] = useState(true)
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  const [site, setSite] = useState<SiteSearch | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const fallback: Disposition = mode === 'edit' ? 'current' : 'newTab'
   const engine = data.settings.searchEngine
-  const history = useHistorySearch(typed)
+  const history = useHistorySearch(site ? '' : typed)
   const suggestions = useSuggestions(
     typed,
     typed !== initial && !/^[a-z][a-z0-9+.-]*:/i.test(typed),
   )
   const completion =
-    autocomplete && extendsInput(history.completion, typed)
+    !site && autocomplete && extendsInput(history.completion, typed)
       ? typed + history.completion.slice(typed.length)
       : null
   const value = completion ?? typed
+  const siteMatch = site || /\s/.test(typed.trim()) ? null : matchSiteSearch(typed)
+
+  const enterSite = (next: SiteSearch) => {
+    setSite(next)
+    setTyped('')
+    setSelectedKey(null)
+  }
+
+  const leaveSite = () => {
+    setSite(null)
+    setSelectedKey(null)
+  }
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -101,6 +116,21 @@ export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
     const searchFor = (query: string) => openEntry(searchUrls[engine] + encodeURIComponent(query))
     const result: Entry[] = []
 
+    if (site) {
+      const query = text.toLowerCase()
+      const queries = text
+        ? [text, ...suggestions.filter((item) => item.toLowerCase() !== query).slice(0, 5)]
+        : []
+      return queries.map((item, index) => ({
+        key: index === 0 ? 'site' : `suggest:${item}`,
+        icon: <Search size={16} />,
+        title: item,
+        detail: `Search ${site.name}`,
+        navigates: true,
+        run: openEntry(siteSearchUrl(site, item)),
+      }))
+    }
+
     if (target) {
       const resolved = resolveInput(target, engine)
       const searching = resolved.startsWith(searchUrls[engine])
@@ -111,6 +141,16 @@ export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
         detail: searching ? `Search ${engineNames[engine]}` : 'Open',
         navigates: true,
         run: openEntry(target),
+      })
+    }
+    if (siteMatch) {
+      result.push({
+        key: `site:${siteMatch.id}`,
+        icon: <Search size={16} />,
+        title: `Search ${siteMatch.name}`,
+        hint: 'Tab',
+        keepsOpen: true,
+        run: () => enterSite(siteMatch),
       })
     }
     if (completion && text) {
@@ -210,7 +250,19 @@ export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
       result.push(...weak.map(actionEntry))
     }
     return result.slice(0, MAX_RESULTS)
-  }, [typed, completion, history, suggestions, data, window, activeId, mode, engine])
+  }, [
+    typed,
+    completion,
+    history,
+    suggestions,
+    data,
+    window,
+    activeId,
+    mode,
+    engine,
+    site,
+    siteMatch,
+  ])
 
   const selectedIndex = entries.findIndex((entry) => entry.key === selectedKey)
   const current = selectedIndex >= 0 ? selectedIndex : 0
@@ -223,7 +275,7 @@ export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
   const execute = (entry: Entry | undefined, disposition: Disposition) => {
     if (!entry) return
     entry.run(disposition)
-    if (!entry.navigates) ante.command({ type: 'overlay/close' })
+    if (!entry.navigates && !entry.keepsOpen) ante.command({ type: 'overlay/close' })
   }
 
   const acceptCompletion = () => {
@@ -247,7 +299,26 @@ export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
         acceptCompletion()
         return
       case 'Tab':
+        if (event.shiftKey) return
+        if (siteMatch) {
+          event.preventDefault()
+          enterSite(siteMatch)
+          return
+        }
         if (acceptCompletion()) event.preventDefault()
+        return
+      case 'Backspace':
+        if (site && typed === '') {
+          event.preventDefault()
+          leaveSite()
+        }
+        return
+      case 'Escape':
+        if (site) {
+          event.preventDefault()
+          event.stopPropagation()
+          leaveSite()
+        }
         return
       case 'Enter':
         if (event.nativeEvent.isComposing) return
@@ -261,12 +332,22 @@ export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
     <div className={styles.backdrop} onMouseDown={() => ante.command({ type: 'overlay/close' })}>
       <div className={styles.panel} onMouseDown={(event) => event.stopPropagation()}>
         <div className={styles.inputRow}>
-          <Search size={17} className={styles.inputIcon} />
+          {site ? (
+            <span className={styles.siteChip}>{site.name}</span>
+          ) : (
+            <Search size={17} className={styles.inputIcon} />
+          )}
           <input
             ref={inputRef}
             className={styles.input}
             value={value}
-            placeholder="Search or enter address"
+            placeholder={site ? `Search ${site.name}` : 'Search or enter address'}
+            aria-label={site ? `Search ${site.name}` : 'Search or enter address'}
+            role="combobox"
+            aria-expanded={entries.length > 0}
+            aria-controls="command-results"
+            aria-autocomplete="both"
+            aria-activedescendant={entries.length > 0 ? `command-option-${current}` : undefined}
             spellCheck={false}
             autoComplete="off"
             onChange={(event) => {
@@ -281,10 +362,11 @@ export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
           />
         </div>
         {entries.length > 0 && (
-          <ul className={styles.results} role="listbox">
+          <ul id="command-results" className={styles.results} role="listbox">
             {entries.map((entry, index) => (
               <li
                 key={entry.key}
+                id={`command-option-${index}`}
                 role="option"
                 aria-selected={index === current}
                 className={[styles.result, index === current && styles.selected]
