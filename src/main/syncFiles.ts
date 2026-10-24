@@ -35,6 +35,13 @@ export async function readDeviceFile(path: string): Promise<DeviceFile | null> {
 export interface DeviceFiles {
   files: DeviceFile[]
   broken: string[]
+  evicted: string[]
+}
+
+const ICLOUD_PLACEHOLDER = /^\.(.+\.json)\.icloud$/
+
+export function evictedName(name: string): string | null {
+  return ICLOUD_PLACEHOLDER.exec(name)?.[1] ?? null
 }
 
 export async function readDeviceFiles(folder: string): Promise<DeviceFiles> {
@@ -43,11 +50,13 @@ export async function readDeviceFiles(folder: string): Promise<DeviceFiles> {
   try {
     names = await readdir(dir)
   } catch (error) {
-    if (isMissing(error)) return { files: [], broken: [] }
+    if (isMissing(error)) return { files: [], broken: [], evicted: [] }
     throw error
   }
-  const result: DeviceFiles = { files: [], broken: [] }
+  const result: DeviceFiles = { files: [], broken: [], evicted: [] }
   for (const name of names.sort()) {
+    const evicted = evictedName(name)
+    if (evicted && !names.includes(evicted)) result.evicted.push(join(dir, name))
     if (name.startsWith('.') || !name.endsWith('.json')) continue
     const file = await readDeviceFile(join(dir, name))
     if (file && deviceFileName(file.deviceId) === name) result.files.push(file)

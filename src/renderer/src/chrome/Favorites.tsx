@@ -1,4 +1,5 @@
 import { memo } from 'react'
+import { titleBadge } from '@shared/badges'
 import type { Id } from '@shared/schema'
 import { getTab } from '@shared/state/tree'
 import { ante } from '../ante'
@@ -15,10 +16,12 @@ const FavoriteTile = memo(function FavoriteTile({ id }: { id: Id }) {
   const active = useAppState((state) => selectActiveId(state) === id)
   const { dragging, onPointerDown } = useDragSource({ type: 'item', id, variant: 'tile' })
   if (!tab) return null
+  const badge = runtime ? titleBadge(tab.title) : null
   return (
     <button
       type="button"
       title={tab.customTitle ?? tab.title}
+      aria-label={badge ? `${tab.customTitle ?? tab.title}, ${badge} unread` : undefined}
       className={[
         styles.favorite,
         active && styles.favoriteActive,
@@ -36,6 +39,7 @@ const FavoriteTile = memo(function FavoriteTile({ id }: { id: Id }) {
       }}
     >
       <Favicon src={tab.favicon} pageUrl={tab.url} loading={runtime?.loading} size={18} />
+      {badge && <span className={styles.badge}>{badge}</span>}
     </button>
   )
 })

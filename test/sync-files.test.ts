@@ -6,6 +6,7 @@ import { createDeviceFile, syncCycle, type DeviceFile } from '@shared/sync'
 import { createInitialData } from '@shared/state/initial'
 import {
   devicesDir,
+  evictedName,
   folderExists,
   readDeviceFile,
   readDeviceFiles,
@@ -41,14 +42,14 @@ describe('sync folder files', () => {
   })
 
   it('reads nothing when no device has written yet', async () => {
-    expect(await readDeviceFiles(root)).toEqual({ files: [], broken: [] })
+    expect(await readDeviceFiles(root)).toEqual({ files: [], broken: [], evicted: [] })
   })
 
   it('writes atomically and reads the file back', async () => {
     await writeDeviceFile(root, sample('one'))
     await writeDeviceFile(root, sample('one'))
     expect(readdirSync(devicesDir(root))).toEqual(['one.json'])
-    expect(await readDeviceFiles(root)).toEqual({ files: [sample('one')], broken: [] })
+    expect(await readDeviceFiles(root)).toEqual({ files: [sample('one')], broken: [], evicted: [] })
     expect(await readDeviceFile(join(devicesDir(root), 'one.json'))).toEqual(sample('one'))
   })
 
@@ -77,6 +78,22 @@ describe('sync folder files', () => {
       'nested.json',
       'renamed.json',
     ])
+    expect(result.evicted).toEqual([join(dir, '.other.json.icloud')])
+  })
+
+  it('ignores a placeholder once the real file is back', async () => {
+    await writeDeviceFile(root, sample('back'))
+    writeFileSync(join(devicesDir(root), '.back.json.icloud'), 'placeholder')
+    expect((await readDeviceFiles(root)).evicted).toEqual([])
+  })
+
+  it.each([
+    ['.abc.json.icloud', 'abc.json'],
+    ['abc.json.icloud', null],
+    ['.abc.txt.icloud', null],
+    ['.abc.json', null],
+  ])('reads the real name of %s', (name, expected) => {
+    expect(evictedName(name)).toBe(expected)
   })
 
   it('fails to write when the folder is gone and leaves nothing behind', async () => {

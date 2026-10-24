@@ -1,3 +1,4 @@
+import { execFile } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { existsSync, statSync, watch, type FSWatcher } from 'node:fs'
 import { mkdir } from 'node:fs/promises'
@@ -28,6 +29,15 @@ import {
 } from './syncFiles'
 
 const PUBLISH_DELAY_MS = 2000
+
+function requestDownloads(paths: string[]): void {
+  if (process.platform !== 'darwin') return
+  for (const path of paths) {
+    execFile('/usr/bin/brctl', ['download', path], (error) => {
+      if (error) console.warn('[sync] could not download from icloud', path, error.message)
+    })
+  }
+}
 const PULL_DELAY_MS = 500
 const POLL_MS = 30_000
 
@@ -237,8 +247,9 @@ export class SyncManager {
       this.#fail('The sync folder is not available')
       return
     }
-    const { files } = await readDeviceFiles(folder)
+    const { files, evicted } = await readDeviceFiles(folder)
     if (folder !== this.#folder) return
+    requestDownloads(evicted)
     if (!this.#baselineLoaded) {
       const found = files.find((file) => file.deviceId === deviceId)
       const own = found && isFreshDevice(found, Date.now()) ? found : undefined

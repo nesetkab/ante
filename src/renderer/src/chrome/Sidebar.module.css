@@ -90,6 +90,7 @@
 }
 
 .favorite {
+  position: relative;
   display: grid;
   place-items: center;
   height: 44px;
@@ -100,6 +101,24 @@
 
 .favorite:hover {
   background: color-mix(in oklab, var(--fg) 10%, transparent);
+}
+
+.badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--on-accent);
+  background: var(--accent);
+  pointer-events: none;
 }
 
 .favoriteActive,
