@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import type { Command, Disposition } from '@shared/commands'
-import type { Container, Id, Tab, WindowData, Rect } from '@shared/schema'
+import type { Command, Disposition, SyncCommand } from '@shared/commands'
+import type { Container, Id, Rect, Tab, WindowData } from '@shared/schema'
 import { nextSpaceColor } from '@shared/state/initial'
 import { samePrivacy } from '@shared/state/private'
 import { MAX_SPLIT } from '@shared/state/reducer'
@@ -41,6 +41,7 @@ interface Deps {
   openSettings: () => void
   runFeature: (window: AppWindow, command: FeatureCommand) => void
   runPrivacy: (window: AppWindow, command: PrivacyCommand) => void
+  runSync: (window: AppWindow, command: SyncCommand) => void
   media: Pick<MediaController, 'toggle' | 'togglePip'>
   devtools: Pick<DevtoolsDock, 'toggle' | 'setMode' | 'inspect'>
   feeds: Pick<FeedManager, 'follow' | 'refresh'>
@@ -54,6 +55,7 @@ export class CommandRunner {
   readonly #openSettings: () => void
   readonly #runFeature: (window: AppWindow, command: FeatureCommand) => void
   readonly #runPrivacy: (window: AppWindow, command: PrivacyCommand) => void
+  readonly #runSync: (window: AppWindow, command: SyncCommand) => void
   readonly #media: Deps['media']
   readonly #devtools: Deps['devtools']
   readonly #feeds: Deps['feeds']
@@ -66,6 +68,7 @@ export class CommandRunner {
     this.#openSettings = deps.openSettings
     this.#runFeature = deps.runFeature
     this.#runPrivacy = deps.runPrivacy
+    this.#runSync = deps.runSync
     this.#media = deps.media
     this.#devtools = deps.devtools
     this.#feeds = deps.feeds
@@ -708,6 +711,12 @@ export class CommandRunner {
       case 'privacy/clearData':
       case 'window/newPrivate':
         this.#runPrivacy(window, command)
+        return
+      case 'sync/useICloud':
+      case 'sync/chooseFolder':
+      case 'sync/stop':
+      case 'sync/now':
+        this.#runSync(window, command)
         return
       case 'note/new': {
         const noteId = randomUUID()

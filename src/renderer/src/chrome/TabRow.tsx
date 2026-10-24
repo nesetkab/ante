@@ -18,9 +18,18 @@ interface TabRowProps {
   depth: number
   persistent: boolean
   compact?: boolean
+  unread?: boolean
 }
 
-export function TabRow({ tab, runtime, active, depth, persistent, compact = false }: TabRowProps) {
+export function TabRow({
+  tab,
+  runtime,
+  active,
+  depth,
+  persistent,
+  compact = false,
+  unread = false,
+}: TabRowProps) {
   const [editing, setEditing] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const title = displayTitle(tab)
@@ -122,7 +131,7 @@ export function TabRow({ tab, runtime, active, depth, persistent, compact = fals
           {title || 'New Tab'}
         </span>
       )}
-      {tab.lastActiveAt === 0 && <span className={styles.unreadDot} aria-label="Unread" />}
+      {unread && <span className={styles.unreadDot} aria-label="Unread" />}
       {runtime?.audible || runtime?.muted ? (
         <IconButton
           size="sm"

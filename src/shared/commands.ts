@@ -130,6 +130,10 @@ export const commandSchema = z.discriminatedUnion('type', [
     x: z.number().int(),
     y: z.number().int(),
   }),
+  z.object({ type: z.literal('sync/useICloud') }),
+  z.object({ type: z.literal('sync/chooseFolder') }),
+  z.object({ type: z.literal('sync/stop') }),
+  z.object({ type: z.literal('sync/now') }),
   z.object({
     type: z.literal('extensions/menu'),
     profileId: idSchema,
@@ -150,3 +154,11 @@ export const privacyCommandTypes = [
   'window/newPrivate',
 ] as const
 export type PrivacyCommand = Extract<Command, { type: (typeof privacyCommandTypes)[number] }>
+
+export const syncCommandTypes = [
+  'sync/useICloud',
+  'sync/chooseFolder',
+  'sync/stop',
+  'sync/now',
+] as const
+export type SyncCommand = Extract<Command, { type: (typeof syncCommandTypes)[number] }>

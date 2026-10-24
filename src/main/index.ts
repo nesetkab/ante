@@ -31,6 +31,7 @@ import { AdBlocker } from './privacy/adblock'
 import { Persistence } from './persistence'
 import { Sessions } from './sessions'
 import { Store } from './store'
+import { SyncManager } from './sync'
 import { SurfaceRegistry } from './surfaces'
 import { TabManager } from './tabs'
 import { WindowManager } from './windows'
@@ -121,6 +122,12 @@ async function start(): Promise<void> {
     },
     runFeature: (window, command) => features.run(window, command),
     runPrivacy: (window, command) => privacy.run(window, command),
+    runSync: (window, command) => {
+      const parent = panels.get(window.id, 'settings') ?? window.win
+      sync.run(parent, command).catch((error: unknown) => {
+        console.error('[sync] command failed', error)
+      })
+    },
     media,
     devtools,
     feeds,
@@ -180,6 +187,8 @@ async function start(): Promise<void> {
 
   startArchiveSweeper(store)
   feeds.start()
+  const sync = new SyncManager(store)
+  sync.start()
 
   const automation = process.env.ANTE_AUTOMATION
   if (automation) void runAutomation(automation, { store, tabs, windows, runner })
@@ -198,6 +207,7 @@ async function start(): Promise<void> {
   })
   app.on('before-quit', () => {
     quitting = true
+    sync.flush()
     persistence.schedule(store.state.data)
     persistence.flush()
   })

@@ -14,6 +14,7 @@ interface ListContext {
   runtime: Runtime
   activeId: Id | null
   persistent: boolean
+  feed?: boolean
 }
 
 interface ItemListProps extends ListContext {
@@ -69,7 +70,14 @@ function FolderRow({ folder, depth, ...context }: ListContext & { folder: Folder
         )}
         {unread > 0 && <span className={styles.unreadCount}>{unread}</span>}
       </div>
-      {folder.open && <ItemList {...context} ids={folder.children} depth={depth + 1} />}
+      {folder.open && (
+        <ItemList
+          {...context}
+          feed={folder.feedUrl !== null}
+          ids={folder.children}
+          depth={depth + 1}
+        />
+      )}
     </div>
   )
 }
@@ -136,6 +144,7 @@ export function ItemList({ ids, depth = 0, ...context }: ItemListProps) {
                 active={id === context.activeId}
                 depth={depth}
                 persistent={context.persistent}
+                unread={context.feed === true && item.lastActiveAt === 0}
               />
             )
           case 'folder':
