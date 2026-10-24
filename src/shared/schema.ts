@@ -164,6 +164,7 @@ export const settingsSchema = z.object({
   externalLinks: z.enum(['little', 'space']).default('little'),
   adblockAllowlist: z.array(z.string().min(1).max(253)).max(10000).default([]),
   autoPip: z.boolean().default(true),
+  checkUpdates: z.boolean().default(true),
   devtoolsWidth: z.number().min(280).max(1600).default(480),
   sync: syncSettingsSchema.prefault({}),
 })
@@ -355,12 +356,21 @@ export interface SyncStatus {
   iCloudFolder: string | null
 }
 
+export interface UpdateStatus {
+  state: 'idle' | 'checking' | 'current' | 'available' | 'error'
+  current: string
+  version: string | null
+  url: string | null
+  checkedAt: number | null
+}
+
 export interface Runtime {
   tabs: Record<Id, TabRuntime>
   windows: Record<Id, WindowRuntime>
   downloads: Record<Id, DownloadRuntime>
   arcImportAvailable?: boolean
   sync?: SyncStatus
+  update?: UpdateStatus
 }
 
 export interface AppState {

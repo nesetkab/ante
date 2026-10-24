@@ -8,6 +8,7 @@ import type {
   SyncStatus,
   Tab,
   TabRuntime,
+  UpdateStatus,
   WindowData,
   WindowRuntime,
 } from '../schema'
@@ -826,6 +827,14 @@ export function reduce(state: AppState, action: Action): void {
       if (folder !== undefined && sync.folder !== folder) sync.folder = folder
       if (deviceId !== undefined && sync.deviceId !== deviceId) sync.deviceId = deviceId
       if (deviceName !== undefined && sync.deviceName !== deviceName) sync.deviceName = deviceName
+      return
+    }
+    case 'runtime/update': {
+      const previous = runtime.update
+      const next = action.status
+      const keys = Object.keys(next) as (keyof UpdateStatus)[]
+      if (previous && keys.every((key) => previous[key] === next[key])) return
+      runtime.update = { ...next }
       return
     }
     case 'runtime/sync': {

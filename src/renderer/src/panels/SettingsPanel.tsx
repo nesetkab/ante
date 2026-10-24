@@ -7,6 +7,7 @@ import {
   type SearchEngine,
   type Settings,
   type SyncStatus,
+  type UpdateStatus,
 } from '@shared/schema'
 import { shortcuts, type Platform } from '@shared/shortcuts'
 import { isPrivateProfile } from '@shared/state/private'
@@ -120,6 +121,53 @@ function SyncSection() {
           </Button>
         </Row>
       )}
+    </Section>
+  )
+}
+
+function updateHeadline(status: UpdateStatus | undefined): string {
+  if (!status) return 'Ante'
+  switch (status.state) {
+    case 'checking':
+      return 'Checking for updates…'
+    case 'available':
+      return `Ante ${status.version ?? ''} is available`
+    case 'current':
+      return `Ante ${status.current} is up to date`
+    case 'error':
+      return 'Could not check for updates'
+    case 'idle':
+      return `Ante ${status.current}`
+  }
+}
+
+function UpdatesSection() {
+  const checkUpdates = useAppState((state) => state.data.settings.checkUpdates)
+  const status = useAppState((state) => state.runtime.update)
+  return (
+    <Section title="Updates">
+      <Row
+        label={updateHeadline(status)}
+        hint={status?.state === 'available' ? `You have version ${status.current}` : undefined}
+      >
+        {status?.state === 'available' ? (
+          <Button onClick={() => ante.command({ type: 'update/open' })}>Download</Button>
+        ) : (
+          <Button
+            disabled={status?.state === 'checking'}
+            onClick={() => ante.command({ type: 'update/check' })}
+          >
+            Check Now
+          </Button>
+        )}
+      </Row>
+      <Row label="Check for updates automatically" hint="Asks GitHub for the latest release">
+        <Toggle
+          label="Check for updates"
+          checked={checkUpdates}
+          onChange={(value) => update({ checkUpdates: value })}
+        />
+      </Row>
     </Section>
   )
 }
@@ -306,6 +354,8 @@ export function SettingsPanel() {
           </Row>
         ))}
       </Section>
+
+      <UpdatesSection />
 
       <Section title="Keyboard shortcuts">
         {shortcuts(ante.platform as Platform)

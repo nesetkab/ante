@@ -24,6 +24,7 @@ import {
   type SyncStatus,
   type Tab,
   type TabRuntime,
+  type UpdateStatus,
   type WindowData,
   type WindowRuntime,
 } from '../schema'
@@ -187,5 +188,6 @@ export type InternalAction =
   | { type: 'sync/apply'; entities: SyncEntities; dropSpaces: Id[] }
   | { type: 'sync/configure'; patch: Partial<SyncSettings> }
   | { type: 'runtime/sync'; status: SyncStatus }
+  | { type: 'runtime/update'; status: UpdateStatus }
 
 export type Action = UiAction | InternalAction

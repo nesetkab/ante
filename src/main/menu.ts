@@ -31,6 +31,7 @@ export function buildAppMenu(run: (command: Command) => void): Menu {
       label: app.name,
       submenu: [
         { role: 'about' },
+        { label: 'Check for Updates…', click: () => run({ type: 'update/check' }) },
         { type: 'separator' },
         { label: 'Settings…', accelerator: 'Cmd+,', click: () => run({ type: 'settings/open' }) },
         { type: 'separator' },
@@ -76,5 +77,10 @@ export function buildAppMenu(run: (command: Command) => void): Menu {
     { label: sectionLabels.space, submenu: itemsFor('space') },
     { role: 'windowMenu' },
   )
+  if (!isMac)
+    template.push({
+      role: 'help',
+      submenu: [{ label: 'Check for Updates…', click: () => run({ type: 'update/check' }) }],
+    })
   return Menu.buildFromTemplate(template)
 }

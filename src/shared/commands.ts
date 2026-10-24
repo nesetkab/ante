@@ -134,6 +134,8 @@ export const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('sync/chooseFolder') }),
   z.object({ type: z.literal('sync/stop') }),
   z.object({ type: z.literal('sync/now') }),
+  z.object({ type: z.literal('update/check') }),
+  z.object({ type: z.literal('update/open') }),
   z.object({
     type: z.literal('extensions/menu'),
     profileId: idSchema,

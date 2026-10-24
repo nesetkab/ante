@@ -33,6 +33,7 @@ import { Persistence } from './persistence'
 import { Sessions } from './sessions'
 import { Store } from './store'
 import { SyncManager } from './sync'
+import { UpdateChecker } from './updates'
 import { SurfaceRegistry } from './surfaces'
 import { TabManager } from './tabs'
 import { WindowManager } from './windows'
@@ -87,6 +88,10 @@ async function start(): Promise<void> {
   })
   const media = new MediaController(store, tabs)
   const feeds = new FeedManager(store)
+  const updates = new UpdateChecker(store, (version) => {
+    const window = windows.lastFocused('main') ?? windows.focused()
+    if (window) runner.toast(window, `Ante ${version} is available. Open Settings to download it.`)
+  })
   const assets = new EaselAssets(join(app.getPath('userData'), 'easel-assets'))
   assets.serve(surfaces)
   void assets.collect(referencedAssets(store.state.data))
@@ -123,6 +128,7 @@ async function start(): Promise<void> {
     devtools,
     feeds,
     assets,
+    updates,
   })
   const privacy = new Privacy({
     store,
@@ -183,6 +189,7 @@ async function start(): Promise<void> {
   feeds.start()
   const sync = new SyncManager(store)
   sync.start()
+  updates.start()
 
   const automation = process.env.ANTE_AUTOMATION
   if (automation) void runAutomation(automation, { store, tabs, windows, runner })
@@ -201,6 +208,7 @@ async function start(): Promise<void> {
   })
   app.on('before-quit', () => {
     quitting = true
+    updates.stop()
     sync.flush()
     persistence.schedule(store.state.data)
     persistence.flush()

@@ -32,6 +32,7 @@ import { deleteSpaceWithConfirm } from './spaceDelete'
 import { showSpaceMenu } from './spaceMenu'
 import type { OpenDisposition, TabManager } from './tabs'
 import type { Store } from './store'
+import type { UpdateChecker } from './updates'
 import type { AppWindow, WindowManager } from './windows'
 
 interface Deps {
@@ -46,6 +47,7 @@ interface Deps {
   devtools: Pick<DevtoolsDock, 'toggle' | 'setMode' | 'inspect'>
   feeds: Pick<FeedManager, 'follow' | 'refresh'>
   assets: Pick<EaselAssets, 'save'>
+  updates: Pick<UpdateChecker, 'check' | 'release'>
 }
 
 export class CommandRunner {
@@ -60,6 +62,7 @@ export class CommandRunner {
   readonly #devtools: Deps['devtools']
   readonly #feeds: Deps['feeds']
   readonly #assets: Deps['assets']
+  readonly #updates: Deps['updates']
 
   constructor(deps: Deps) {
     this.#store = deps.store
@@ -73,6 +76,7 @@ export class CommandRunner {
     this.#devtools = deps.devtools
     this.#feeds = deps.feeds
     this.#assets = deps.assets
+    this.#updates = deps.updates
   }
 
   get #data() {
@@ -718,6 +722,19 @@ export class CommandRunner {
       case 'sync/now':
         this.#runSync(window, command)
         return
+      case 'update/check':
+        void this.#updates.check().then((status) => {
+          if (status.state === 'available' && status.version)
+            this.toast(window, `Ante ${status.version} is available`)
+          if (status.state === 'current') this.toast(window, 'Ante is up to date')
+          if (status.state === 'error') this.toast(window, 'Could not check for updates')
+        })
+        return
+      case 'update/open': {
+        const release = this.#updates.release
+        if (release) this.open(window, release.url, 'newTab')
+        return
+      }
       case 'note/new': {
         const noteId = randomUUID()
         const now = this.#now()
