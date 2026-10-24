@@ -2,7 +2,9 @@ import { X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { permissionLabels, sitePermissionSchema } from '@shared/permissions'
 import {
+  customSearchSchema,
   searchEngines,
+  type CustomSearch,
   type ArchiveAfter,
   type SearchEngine,
   type Settings,
@@ -26,6 +28,7 @@ const engineLabels: Record<SearchEngine, string> = {
   brave: 'Brave Search',
   kagi: 'Kagi',
   ecosia: 'Ecosia',
+  custom: 'Custom…',
 }
 
 const archiveOptions: readonly { value: ArchiveAfter; label: string }[] = [
@@ -133,6 +136,49 @@ function SyncSection() {
   )
 }
 
+function CustomSearchRows({ current }: { current: CustomSearch | null }) {
+  const [name, setName] = useState(current?.name ?? '')
+  const [url, setUrl] = useState(current?.url ?? '')
+  const parsed = customSearchSchema.safeParse({ name, url })
+  const invalid = url.trim() !== '' && !parsed.success
+  const save = () => {
+    if (parsed.success) update({ customSearch: parsed.data })
+  }
+  return (
+    <>
+      <Row label="Engine name">
+        <input
+          className={styles.input}
+          value={name}
+          placeholder="Startpage"
+          aria-label="Search engine name"
+          onChange={(event) => setName(event.target.value)}
+          onBlur={save}
+        />
+      </Row>
+      <Row
+        label="Search address"
+        hint={
+          invalid
+            ? 'Use an http or https address with %s where the search goes'
+            : 'Put %s where the search goes'
+        }
+      >
+        <input
+          className={styles.input}
+          value={url}
+          placeholder="https://www.startpage.com/do/search?q=%s"
+          aria-label="Search address"
+          aria-invalid={invalid}
+          spellCheck={false}
+          onChange={(event) => setUrl(event.target.value)}
+          onBlur={save}
+        />
+      </Row>
+    </>
+  )
+}
+
 function updateHeadline(status: UpdateStatus | undefined): string {
   if (!status) return 'Ante'
   switch (status.state) {
@@ -222,6 +268,7 @@ export function SettingsPanel() {
             onChange={(searchEngine) => update({ searchEngine })}
           />
         </Row>
+        {settings.searchEngine === 'custom' && <CustomSearchRows current={settings.customSearch} />}
         <Row label="Archive today tabs after" hint="Unused tabs move to the archive automatically">
           <Select
             label="Archive after"

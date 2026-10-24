@@ -15,7 +15,7 @@ import { shortcuts, type Platform } from '@shared/shortcuts'
 import { matchSiteSearch, siteSearchUrl, type SiteSearch } from '@shared/siteSearch'
 import { isPrivateSpace } from '@shared/state/private'
 import { activeTabId, displayTitle, getTab, spaceTabOrder } from '@shared/state/tree'
-import { displayUrl, resolveInput, searchUrls } from '@shared/url'
+import { displayUrl, resolveInput, searchName, searchTemplate, searchUrl } from '@shared/url'
 import { ante } from '../ante'
 import { Favicon } from '../components/Favicon'
 import { useAppState, useWindowData } from '../store'
@@ -34,15 +34,6 @@ interface Entry {
   navigates?: boolean
   keepsOpen?: boolean
   run(disposition: Disposition): void
-}
-
-const engineNames: Record<keyof typeof searchUrls, string> = {
-  google: 'Google',
-  duckduckgo: 'DuckDuckGo',
-  bing: 'Bing',
-  brave: 'Brave Search',
-  kagi: 'Kagi',
-  ecosia: 'Ecosia',
 }
 
 function dispositionFor(event: KeyboardEvent, fallback: Disposition): Disposition {
@@ -75,7 +66,8 @@ export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
   const [site, setSite] = useState<SiteSearch | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const fallback: Disposition = mode === 'edit' ? 'current' : 'newTab'
-  const engine = data.settings.searchEngine
+  const template = searchTemplate(data.settings)
+  const engineName = searchName(data.settings)
   const history = useHistorySearch(site ? '' : typed)
   const suggestions = useSuggestions(
     typed,
@@ -113,7 +105,7 @@ export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
     const text = typed.trim()
     const target = (completion ?? typed).trim()
     const run = (command: Command) => () => ante.command(command)
-    const searchFor = (query: string) => openEntry(searchUrls[engine] + encodeURIComponent(query))
+    const searchFor = (query: string) => openEntry(searchUrl(query, template))
     const result: Entry[] = []
 
     if (site) {
@@ -132,13 +124,13 @@ export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
     }
 
     if (target) {
-      const resolved = resolveInput(target, engine)
-      const searching = resolved.startsWith(searchUrls[engine])
+      const resolved = resolveInput(target, template)
+      const searching = resolved === searchUrl(target.trim(), template)
       result.push({
         key: 'go',
         icon: searching ? <Search size={16} /> : <Globe size={16} />,
         title: searching ? target : displayUrl(resolved),
-        detail: searching ? `Search ${engineNames[engine]}` : 'Open',
+        detail: searching ? `Search ${engineName}` : 'Open',
         navigates: true,
         run: openEntry(target),
       })
@@ -158,7 +150,7 @@ export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
         key: 'search',
         icon: <Search size={16} />,
         title: text,
-        detail: `Search ${engineNames[engine]}`,
+        detail: `Search ${engineName}`,
         navigates: true,
         run: searchFor(text),
       })
@@ -204,7 +196,7 @@ export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
 
     if (text) {
       const shown = new Set(tabs.map((tab) => tab.url))
-      if (completion) shown.add(resolveInput(completion, engine))
+      if (completion) shown.add(resolveInput(completion, template))
       const visits = history.entries.filter((entry) => !shown.has(entry.url)).slice(0, 4)
       for (const entry of visits) {
         result.push({
@@ -259,7 +251,8 @@ export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
     window,
     activeId,
     mode,
-    engine,
+    template,
+    engineName,
     site,
     siteMatch,
   ])

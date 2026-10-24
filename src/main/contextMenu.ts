@@ -6,7 +6,7 @@ import {
   type WebContents,
 } from 'electron'
 import type { Command } from '@shared/commands'
-import type { Id, SearchEngine } from '@shared/schema'
+import type { Id } from '@shared/schema'
 import { isWebUrl, searchUrl } from '@shared/url'
 import { copyText } from './clipboard'
 
@@ -14,7 +14,7 @@ interface ContextMenuDeps {
   contents: WebContents
   tabId: Id
   run: (command: Command) => void
-  searchEngine: SearchEngine
+  searchTemplate: string
   extensionItems?: MenuItem[]
 }
 
@@ -100,7 +100,7 @@ export function buildContextMenu(
         click: () =>
           run({
             type: 'open',
-            input: searchUrl(text, deps.searchEngine),
+            input: searchUrl(text, deps.searchTemplate),
             disposition: 'background',
           }),
       },

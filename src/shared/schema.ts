@@ -134,9 +134,34 @@ export const windowSchema = z.object({
 })
 export type WindowData = z.infer<typeof windowSchema>
 
-export const searchEngines = ['google', 'duckduckgo', 'bing', 'brave', 'kagi', 'ecosia'] as const
+export const searchEngines = [
+  'google',
+  'duckduckgo',
+  'bing',
+  'brave',
+  'kagi',
+  'ecosia',
+  'custom',
+] as const
 export const searchEngineSchema = z.enum(searchEngines)
 export type SearchEngine = z.infer<typeof searchEngineSchema>
+export type BuiltInEngine = Exclude<SearchEngine, 'custom'>
+
+export function isSearchTemplate(url: string): boolean {
+  if (!url.includes('%s')) return false
+  try {
+    const { protocol } = new URL(url.replaceAll('%s', 'ante'))
+    return protocol === 'https:' || protocol === 'http:'
+  } catch {
+    return false
+  }
+}
+
+export const customSearchSchema = z.object({
+  name: z.string().trim().min(1).max(60),
+  url: z.string().trim().max(2000).refine(isSearchTemplate),
+})
+export type CustomSearch = z.infer<typeof customSearchSchema>
 
 export const sleepOptions = ['15m', '1h', '4h', 'never'] as const
 export type SleepAfter = (typeof sleepOptions)[number]
@@ -158,6 +183,7 @@ export type SyncSettings = z.infer<typeof syncSettingsSchema>
 
 export const settingsSchema = z.object({
   searchEngine: searchEngineSchema.default('google'),
+  customSearch: customSearchSchema.nullable().default(null),
   archiveAfter: archiveAfterSchema.default('12h'),
   sidebarWidth: z.number().min(180).max(480).default(260),
   sidebarSide: z.enum(['left', 'right']).default('left'),

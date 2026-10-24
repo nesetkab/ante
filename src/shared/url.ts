@@ -1,12 +1,33 @@
-import type { SearchEngine } from './schema'
+import type { BuiltInEngine, Settings } from './schema'
 
-export const searchUrls: Record<SearchEngine, string> = {
-  google: 'https://www.google.com/search?q=',
-  duckduckgo: 'https://duckduckgo.com/?q=',
-  bing: 'https://www.bing.com/search?q=',
-  brave: 'https://search.brave.com/search?q=',
-  kagi: 'https://kagi.com/search?q=',
-  ecosia: 'https://www.ecosia.org/search?q=',
+export const searchTemplates: Record<BuiltInEngine, string> = {
+  google: 'https://www.google.com/search?q=%s',
+  duckduckgo: 'https://duckduckgo.com/?q=%s',
+  bing: 'https://www.bing.com/search?q=%s',
+  brave: 'https://search.brave.com/search?q=%s',
+  kagi: 'https://kagi.com/search?q=%s',
+  ecosia: 'https://www.ecosia.org/search?q=%s',
+}
+
+export const engineNames: Record<BuiltInEngine, string> = {
+  google: 'Google',
+  duckduckgo: 'DuckDuckGo',
+  bing: 'Bing',
+  brave: 'Brave Search',
+  kagi: 'Kagi',
+  ecosia: 'Ecosia',
+}
+
+type SearchSettings = Pick<Settings, 'searchEngine' | 'customSearch'>
+
+export function searchTemplate(settings: SearchSettings): string {
+  if (settings.searchEngine !== 'custom') return searchTemplates[settings.searchEngine]
+  return settings.customSearch?.url ?? searchTemplates.google
+}
+
+export function searchName(settings: SearchSettings): string {
+  if (settings.searchEngine !== 'custom') return engineNames[settings.searchEngine]
+  return settings.customSearch?.name ?? engineNames.google
 }
 
 const SCHEME = /^[a-z][a-z0-9+.-]*:/i
@@ -28,8 +49,8 @@ export function markdownLink(title: string, url: string): string {
   return `[${text}](${target})`
 }
 
-export function searchUrl(query: string, engine: SearchEngine): string {
-  return searchUrls[engine] + encodeURIComponent(query)
+export function searchUrl(query: string, template: string): string {
+  return template.split('%s').join(encodeURIComponent(query))
 }
 
 export function isNavigable(url: string): boolean {
@@ -49,14 +70,14 @@ export function isWebUrl(url: string): boolean {
   }
 }
 
-export function resolveInput(input: string, engine: SearchEngine): string {
+export function resolveInput(input: string, template: string): string {
   const text = input.trim()
   if (!text) return 'about:blank'
   if (SCHEME.test(text) && isNavigable(text) && !/^[a-z]+:\s/i.test(text)) return text
-  if (/\s/.test(text)) return searchUrl(text, engine)
+  if (/\s/.test(text)) return searchUrl(text, template)
   if (LOCAL_HOST.test(text) || IPV4.test(text)) return `http://${text}`
   if (DOMAIN.test(text)) return `https://${text}`
-  return searchUrl(text, engine)
+  return searchUrl(text, template)
 }
 
 export function displayUrl(url: string): string {

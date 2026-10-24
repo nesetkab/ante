@@ -46,6 +46,7 @@ export function createInitialData(spaceId: Id): Data {
     closed: [],
     settings: {
       searchEngine: 'google',
+      customSearch: null,
       archiveAfter: '12h',
       sidebarWidth: 260,
       sidebarSide: 'left',

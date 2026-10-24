@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { displayUrl, markdownLink, resolveInput, siteFaviconUrl } from '@shared/url'
+import { settingsPatchSchema } from '@shared/schema'
+import {
+  displayUrl,
+  markdownLink,
+  resolveInput,
+  searchName,
+  searchTemplate,
+  searchTemplates,
+  searchUrl,
+  siteFaviconUrl,
+} from '@shared/url'
 
 describe('resolveInput', () => {
   it.each([
@@ -11,20 +21,20 @@ describe('resolveInput', () => {
     ['about:blank', 'about:blank'],
     ['data:text/html,hello world', 'data:text/html,hello world'],
   ])('treats %s as an address', (input, expected) => {
-    expect(resolveInput(input, 'google')).toBe(expected)
+    expect(resolveInput(input, searchTemplates.google)).toBe(expected)
   })
 
   it.each(['how to cook rice', 'typescript', 'javascript:alert(1)', 'file name.txt'])(
     'searches for %s',
     (input) => {
-      expect(resolveInput(input, 'duckduckgo')).toBe(
+      expect(resolveInput(input, searchTemplates.duckduckgo)).toBe(
         `https://duckduckgo.com/?q=${encodeURIComponent(input)}`,
       )
     },
   )
 
   it('opens a blank page for empty input', () => {
-    expect(resolveInput('   ', 'google')).toBe('about:blank')
+    expect(resolveInput('   ', searchTemplates.google)).toBe('about:blank')
   })
 })
 
@@ -58,5 +68,43 @@ describe('markdownLink', () => {
     ['Wiki', 'https://w.test/A_(b) c', '[Wiki](https://w.test/A_%28b%29%20c)'],
   ])('formats %j', (title, url, expected) => {
     expect(markdownLink(title, url)).toBe(expected)
+  })
+})
+
+describe('search templates', () => {
+  const custom = { name: 'Startpage', url: 'https://www.startpage.com/do/search?q=%s' }
+
+  it('uses the built in engine or the custom template', () => {
+    expect(searchTemplate({ searchEngine: 'kagi', customSearch: custom })).toBe(
+      searchTemplates.kagi,
+    )
+    expect(searchTemplate({ searchEngine: 'custom', customSearch: custom })).toBe(custom.url)
+    expect(searchName({ searchEngine: 'custom', customSearch: custom })).toBe('Startpage')
+  })
+
+  it('falls back to Google when the custom engine is missing', () => {
+    expect(searchTemplate({ searchEngine: 'custom', customSearch: null })).toBe(
+      searchTemplates.google,
+    )
+    expect(searchName({ searchEngine: 'custom', customSearch: null })).toBe('Google')
+  })
+
+  it('fills every placeholder and keeps dollar signs literal', () => {
+    expect(searchUrl('a $& b', 'https://s.test/?q=%s&again=%s')).toBe(
+      'https://s.test/?q=a%20%24%26%20b&again=a%20%24%26%20b',
+    )
+  })
+})
+
+describe('custom search settings', () => {
+  it.each([
+    ['https://s.test/?q=%s', true],
+    ['http://intranet.test/find/%s', true],
+    ['https://s.test/?q=', false],
+    ['javascript:alert(%s)', false],
+    ['not a url %s', false],
+  ])('accepts %s: %s', (url, valid) => {
+    const parsed = settingsPatchSchema.safeParse({ customSearch: { name: 'S', url } })
+    expect(parsed.success).toBe(valid)
   })
 })

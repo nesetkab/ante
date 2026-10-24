@@ -51,17 +51,16 @@ export function registerLibraryIpc({ store, surfaces, history, downloads }: Libr
     pendingSuggestions.get(senderId)?.abort()
     const parsed = suggestQuerySchema.safeParse(raw)
     if (!parsed.success) return []
+    const endpoint = suggestUrl(store.state.data.settings.searchEngine, parsed.data)
+    if (!endpoint) return []
     const controller = new AbortController()
     pendingSuggestions.set(senderId, controller)
     try {
-      const response = await fetch(
-        suggestUrl(store.state.data.settings.searchEngine, parsed.data),
-        {
-          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(SUGGEST_TIMEOUT_MS)]),
-          headers: { 'User-Agent': userAgent, Accept: 'application/json' },
-          credentials: 'omit',
-        },
-      )
+      const response = await fetch(endpoint, {
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(SUGGEST_TIMEOUT_MS)]),
+        headers: { 'User-Agent': userAgent, Accept: 'application/json' },
+        credentials: 'omit',
+      })
       if (!response.ok) return []
       return parseSuggestions(await response.json(), parsed.data)
     } catch {

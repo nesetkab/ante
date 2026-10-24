@@ -1,9 +1,9 @@
 import { z } from 'zod'
-import type { SearchEngine } from './schema'
+import type { BuiltInEngine, SearchEngine } from './schema'
 
 export const MAX_SUGGESTIONS = 8
 
-const suggestEndpoints: Record<SearchEngine, string> = {
+const suggestEndpoints: Record<BuiltInEngine, string> = {
   google: 'https://suggestqueries.google.com/complete/search?client=firefox&ie=utf-8&oe=utf-8&q=',
   duckduckgo: 'https://duckduckgo.com/ac/?q=',
   bing: 'https://api.bing.com/osjson.aspx?query=',
@@ -14,7 +14,8 @@ const suggestEndpoints: Record<SearchEngine, string> = {
 
 export const suggestQuerySchema = z.string().trim().min(1).max(512)
 
-export function suggestUrl(engine: SearchEngine, query: string): string {
+export function suggestUrl(engine: SearchEngine, query: string): string | null {
+  if (engine === 'custom') return null
   return suggestEndpoints[engine] + encodeURIComponent(query)
 }
 

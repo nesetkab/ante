@@ -8,6 +8,7 @@ import { isPrivateProfile } from '@shared/state/private'
 import { sanitize } from '@shared/state/sanitize'
 import { referencedAssets } from '@shared/easels'
 import { profileIndex } from '@shared/state/tree'
+import { searchTemplate } from '@shared/url'
 import { startArchiveSweeper } from './archive'
 import { runAutomation } from './automation'
 import { BoostManager } from './boosts'
@@ -73,7 +74,7 @@ async function start(): Promise<void> {
         contents,
         extensionItems: extensions.contextMenuItems(contents, params),
         tabId,
-        searchEngine: store.state.data.settings.searchEngine,
+        searchTemplate: searchTemplate(store.state.data.settings),
         run: (command) => runner.run(windowId, command),
       })
     },

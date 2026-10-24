@@ -14,7 +14,7 @@ import {
   rootOf,
   spaceTabOrder,
 } from '@shared/state/tree'
-import { hostOf, isWebUrl, markdownLink, resolveInput } from '@shared/url'
+import { hostOf, isWebUrl, markdownLink, resolveInput, searchTemplate } from '@shared/url'
 import { nextZoom } from '@shared/zoom'
 import { noteTabTitle, noteUrl } from '@shared/notes'
 import { easelUrl, placeImage } from '@shared/easels'
@@ -160,7 +160,7 @@ export class CommandRunner {
   }
 
   open(window: AppWindow, input: string, disposition: Disposition): void {
-    const url = resolveInput(input, this.#data.settings.searchEngine)
+    const url = resolveInput(input, searchTemplate(this.#data.settings))
     const data = this.#windowData(window)
     this.#store.dispatch({ type: 'runtime/window', id: window.id, patch: { overlay: null } })
     switch (disposition) {
@@ -580,7 +580,7 @@ export class CommandRunner {
       case 'window/little': {
         this.#little(
           command.input
-            ? resolveInput(command.input, this.#data.settings.searchEngine)
+            ? resolveInput(command.input, searchTemplate(this.#data.settings))
             : 'about:blank',
         )
         const little = this.#windows.lastFocused('little')
