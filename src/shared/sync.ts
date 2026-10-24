@@ -392,6 +392,11 @@ function readIncoming(entities: SyncEntities): Incoming {
 const sameIds = (a: readonly Id[], b: readonly Id[]): boolean =>
   a.length === b.length && a.every((id, index) => id === b[index])
 
+function todayItems(data: Data): Set<Id> {
+  const roots = Object.values(data.spaces).flatMap((space) => space.today)
+  return new Set(roots.flatMap((id) => descendantIds(data, id)))
+}
+
 function localOnlyItems(data: Data): Set<Id> {
   const roots: Id[] = []
   for (const space of Object.values(data.spaces)) {
@@ -515,6 +520,7 @@ export function applySyncInPlace(
 ): void {
   const incoming = readIncoming(entities)
   const localOnly = localOnlyItems(data)
+  const today = todayItems(data)
 
   for (const [id, value] of incoming.profiles) {
     if (isPrivateProfile(id)) continue
@@ -555,7 +561,7 @@ export function applySyncInPlace(
   for (const [id, value] of incoming.items) {
     if (localOnly.has(id)) continue
     if (value === null) {
-      if (data.items[id]) Reflect.deleteProperty(data.items, id)
+      if (data.items[id] && !today.has(id)) Reflect.deleteProperty(data.items, id)
     } else applyItem(data, id, value)
   }
 
