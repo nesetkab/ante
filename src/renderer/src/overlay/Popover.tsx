@@ -187,7 +187,7 @@ function ScreenCard({ tabId, prompt }: { tabId: Id; prompt: Extract<Prompt, { ki
 
 function samePopover(a: PopoverState | null, b: PopoverState | null): boolean {
   if (a === null || b === null) return a === b
-  return a.tabId === b.tabId && a.find === b.find && a.prompt === b.prompt
+  return a.tabId === b.tabId && a.find === b.find && a.prompt === b.prompt && a.link === b.link
 }
 
 export function Popover() {
@@ -196,6 +196,12 @@ export function Popover() {
     return window ? popoverFor(state.data, state.runtime, window) : null
   }, samePopover)
   if (!popover) return null
+  if (popover.link && !popover.find && !popover.prompt)
+    return (
+      <div className={styles.link} role="status">
+        {popover.link}
+      </div>
+    )
   return (
     <div className={styles.popover}>
       {popover.find && <FindBar key={popover.tabId} tabId={popover.tabId} find={popover.find} />}

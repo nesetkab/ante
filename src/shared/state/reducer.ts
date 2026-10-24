@@ -68,6 +68,7 @@ export const defaultTabRuntime: TabRuntime = {
   devtools: null,
   error: null,
   capturing: false,
+  hoverUrl: null,
 }
 
 export const defaultWindowRuntime: WindowRuntime = {
@@ -685,6 +686,10 @@ export function reduce(state: AppState, action: Action): void {
       const spaceId = rootOf(data, action.tabId)?.spaceId
       if (spaceId && !samePrivacy(data, window.spaceId, spaceId)) return
       stampVisible(data, window, action.now)
+      for (const id of visibleTabIds(data, window)) {
+        const shown = runtime.tabs[id]
+        if (shown?.hoverUrl) shown.hoverUrl = null
+      }
       if (spaceId && spaceId !== window.spaceId) window.spaceId = spaceId
       window.activeBySpace[window.spaceId] = action.tabId
       tab.lastActiveAt = action.now

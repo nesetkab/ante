@@ -7,6 +7,20 @@
   padding: 16px;
 }
 
+.link {
+  height: 100%;
+  padding: 0 10px;
+  border-radius: 7px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  line-height: 24px;
+  color: var(--fg-muted);
+  background: var(--panel);
+  border: 0.5px solid var(--panel-border);
+}
+
 .card {
   width: 100%;
   border-radius: 12px;

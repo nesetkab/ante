@@ -251,6 +251,10 @@ export class TabManager {
     contents.on('render-process-gone', (_event, details) => {
       if (details.reason !== 'clean-exit') this.#runtime(id, { crashed: true, loading: false })
     })
+    contents.on('update-target-url', (_event, url) => {
+      const hoverUrl = url || null
+      if (this.#store.state.runtime.tabs[id]?.hoverUrl !== hoverUrl) this.#runtime(id, { hoverUrl })
+    })
     contents.on('unresponsive', () => void this.#askAboutHang(id, contents))
     contents.on('responsive', () => {
       this.#hung.get(id)?.abort()

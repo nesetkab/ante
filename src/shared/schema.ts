@@ -349,6 +349,7 @@ export interface TabRuntime {
   devtools: DevtoolsMode | null
   error: LoadError | null
   capturing: boolean
+  hoverUrl: string | null
 }
 
 export interface TabMedia {
