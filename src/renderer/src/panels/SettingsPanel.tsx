@@ -101,6 +101,16 @@ export function SettingsPanel() {
             onChange={(peekExternalLinks) => update({ peekExternalLinks })}
           />
         </Row>
+        <Row
+          label="Picture in picture"
+          hint="Keep videos playing in a floating window when you switch tabs"
+        >
+          <Toggle
+            label="Picture in picture"
+            checked={settings.autoPip}
+            onChange={(autoPip) => update({ autoPip })}
+          />
+        </Row>
         <Row label="Import from Arc" hint="Bring over spaces, pinned tabs and folders">
           <Button onClick={() => ante.command({ type: 'import/arc' })}>Import</Button>
         </Row>
