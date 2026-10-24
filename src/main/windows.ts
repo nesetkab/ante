@@ -1,7 +1,14 @@
 import { randomUUID } from 'node:crypto'
-import { BrowserWindow, WebContentsView, screen, type View, type WebContents } from 'electron'
+import {
+  BrowserWindow,
+  nativeTheme,
+  WebContentsView,
+  screen,
+  type View,
+  type WebContents,
+} from 'electron'
 import { dockedDevtoolsTabId } from '@shared/devtools'
-import { computeLayout, type Layout } from '@shared/layout'
+import { computeLayout, WINDOW_CONTROLS_HEIGHT, type Layout } from '@shared/layout'
 import { popoverFor, popoverRect } from '@shared/popover'
 import type { Id, Rect, WindowData, WindowKind } from '@shared/schema'
 import { visibleTabIds } from '@shared/state/tree'
@@ -10,6 +17,12 @@ import { loadSurface, preloadPath, type SurfaceRegistry } from './surfaces'
 import type { TabManager } from './tabs'
 
 const isMac = process.platform === 'darwin'
+
+function windowColors(): { background: string; symbols: string } {
+  return nativeTheme.shouldUseDarkColors
+    ? { background: '#1a1a1c', symbols: '#d8d8dc' }
+    : { background: '#ececee', symbols: '#555559' }
+}
 const FLOATING_SIDEBAR_INSET = 6
 const PEEK_RADIUS = 10
 
@@ -68,12 +81,18 @@ export class AppWindow {
       minHeight: 320,
       show: false,
       title: 'Ante',
-      backgroundColor: '#e9e9ec',
+      backgroundColor: windowColors().background,
       titleBarStyle: 'hidden',
       trafficLightPosition: { x: 14, y: 14 },
       ...(isMac
         ? {}
-        : { titleBarOverlay: { color: '#00000000', symbolColor: '#555', height: 36 } }),
+        : {
+            titleBarOverlay: {
+              color: '#00000000',
+              symbolColor: windowColors().symbols,
+              height: WINDOW_CONTROLS_HEIGHT,
+            },
+          }),
       webPreferences: { preload: preloadPath, sandbox: true, contextIsolation: true },
     })
     this.overlay = new WebContentsView({
@@ -151,7 +170,15 @@ export class AppWindow {
     const fullscreenTabId =
       visibleTabIds(data, window).find((id) => runtime.tabs[id]?.fullscreen) ?? null
     const devtoolsTabId = fullscreenTabId ? null : dockedDevtoolsTabId(data, runtime, window)
-    const layout = computeLayout({ width, height, window, data, fullscreenTabId, devtoolsTabId })
+    const layout = computeLayout({
+      width,
+      height,
+      window,
+      data,
+      fullscreenTabId,
+      devtoolsTabId,
+      controlsInset: isMac ? 0 : WINDOW_CONTROLS_HEIGHT,
+    })
     this.#layout = layout
     const overlayState = runtime.windows[this.id]?.overlay ?? null
     const views: View[] = []
@@ -307,6 +334,15 @@ export class WindowManager {
 
   get(id: Id): AppWindow | undefined {
     return this.#windows.get(id)
+  }
+
+  applyTheme(): void {
+    const colors = windowColors()
+    for (const window of this.all()) {
+      if (window.win.isDestroyed()) continue
+      window.win.setBackgroundColor(colors.background)
+      if (!isMac) window.win.setTitleBarOverlay({ symbolColor: colors.symbols })
+    }
   }
 
   all(): AppWindow[] {

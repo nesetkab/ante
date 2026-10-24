@@ -63,10 +63,13 @@ export class PanelManager {
     return win && !win.isDestroyed() ? win : undefined
   }
 
-  #background(): string {
+  #dark(): boolean {
     const theme = this.#store.state.data.settings.theme
-    const dark = theme === 'dark' || (theme === 'system' && nativeTheme.shouldUseDarkColors)
-    return dark ? '#232326' : '#ffffff'
+    return theme === 'dark' || (theme === 'system' && nativeTheme.shouldUseDarkColors)
+  }
+
+  #background(): string {
+    return this.#dark() ? '#232326' : '#ffffff'
   }
 
   #create(parent: AppWindow, kind: PanelKind): BrowserWindow {
@@ -95,7 +98,13 @@ export class PanelManager {
       fullscreenable: false,
       ...(isMac
         ? {}
-        : { titleBarOverlay: { color: '#00000000', symbolColor: '#555', height: 44 } }),
+        : {
+            titleBarOverlay: {
+              color: '#00000000',
+              symbolColor: this.#dark() ? '#d8d8dc' : '#555559',
+              height: 44,
+            },
+          }),
       webPreferences: { preload: preloadPath, sandbox: true, contextIsolation: true },
     })
     win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))

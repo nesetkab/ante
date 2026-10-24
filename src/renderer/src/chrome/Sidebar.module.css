@@ -32,6 +32,10 @@
   padding-left: 68px;
 }
 
+.toolbarControls {
+  padding-right: 140px;
+}
+
 .toolbarSpacer {
   display: flex;
   justify-content: flex-end;

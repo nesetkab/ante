@@ -16,7 +16,7 @@ export function LittleToolbar() {
   )
 
   return (
-    <header className={[styles.toolbar, isMac && styles.mac].filter(Boolean).join(' ')}>
+    <header className={[styles.toolbar, isMac ? styles.mac : styles.controls].join(' ')}>
       <IconButton
         label="Back"
         disabled={!runtime?.canGoBack}

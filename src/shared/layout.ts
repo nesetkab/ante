@@ -10,6 +10,7 @@ export const CONTENT_RADIUS = 8
 export const DEVTOOLS_HEADER_HEIGHT = 32
 export const DEVTOOLS_MIN_WIDTH = 280
 export const DEVTOOLS_MIN_PAGE_WIDTH = 240
+export const WINDOW_CONTROLS_HEIGHT = 36
 
 export interface Pane {
   tabId: Id
@@ -39,6 +40,7 @@ export interface LayoutInput {
   data: Data
   fullscreenTabId: Id | null
   devtoolsTabId?: Id | null
+  controlsInset?: number
 }
 
 const rect = (x: number, y: number, width: number, height: number): Rect => ({
@@ -48,10 +50,17 @@ const rect = (x: number, y: number, width: number, height: number): Rect => ({
   height: Math.max(0, Math.round(height)),
 })
 
-function mainContent(width: number, height: number, window: WindowData, settings: Settings) {
+function mainContent(
+  width: number,
+  height: number,
+  window: WindowData,
+  settings: Settings,
+  controlsInset: number,
+) {
   const inset = CONTENT_INSET
+  const top = Math.max(inset, controlsInset)
   if (window.sidebarHidden) {
-    return { sidebar: null, content: rect(inset, inset, width - inset * 2, height - inset * 2) }
+    return { sidebar: null, content: rect(inset, top, width - inset * 2, height - top - inset) }
   }
   const sidebarWidth = Math.min(settings.sidebarWidth, Math.max(0, width - 200))
   const contentWidth = width - sidebarWidth - inset
@@ -63,7 +72,7 @@ function mainContent(width: number, height: number, window: WindowData, settings
   }
   return {
     sidebar: rect(0, 0, sidebarWidth, height),
-    content: rect(sidebarWidth, inset, contentWidth, height - inset * 2),
+    content: rect(sidebarWidth, top, contentWidth, height - top - inset),
   }
 }
 
@@ -118,6 +127,7 @@ export function computeLayout({
   data,
   fullscreenTabId,
   devtoolsTabId = null,
+  controlsInset = 0,
 }: LayoutInput): Layout {
   if (fullscreenTabId) {
     return {
@@ -145,7 +155,7 @@ export function computeLayout({
     }
   }
 
-  const { sidebar, content } = mainContent(width, height, window, data.settings)
+  const { sidebar, content } = mainContent(width, height, window, data.settings, controlsInset)
   const active = activeTabId(data, window)
   const split = active ? parentSplit(data, active) : null
   const visible = visibleTabIds(data, window)

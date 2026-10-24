@@ -1,8 +1,8 @@
 import { dockedDevtoolsTabId } from '@shared/devtools'
-import { computeLayout, type Layout, type Pane } from '@shared/layout'
+import { computeLayout, WINDOW_CONTROLS_HEIGHT, type Layout, type Pane } from '@shared/layout'
 import { internalPage, type InternalPage } from '@shared/pages'
 import { getTab, visibleTabIds } from '@shared/state/tree'
-import { windowId } from '../ante'
+import { isMac, windowId } from '../ante'
 import { useViewportSize } from '../hooks'
 import { useAppSelector } from '../store'
 
@@ -32,6 +32,7 @@ export function useWindowLayout(): WindowLayout | null {
       data: state.data,
       fullscreenTabId: null,
       devtoolsTabId,
+      controlsInset: isMac ? 0 : WINDOW_CONTROLS_HEIGHT,
     })
     const panes = layout.panes.map((pane) => {
       const runtime = state.runtime.tabs[pane.tabId]

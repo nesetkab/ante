@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  WINDOW_CONTROLS_HEIGHT,
   computeLayout,
   CONTENT_RADIUS,
   LITTLE_TOOLBAR_HEIGHT,
@@ -72,6 +73,33 @@ describe('sidebar placement', () => {
 
   it('has no panes without an active tab', () => {
     expect(layout(makeWindow('w', 's1')).panes).toEqual([])
+  })
+})
+
+describe('window controls on windows and linux', () => {
+  const controls = { controlsInset: WINDOW_CONTROLS_HEIGHT }
+
+  it('keeps the page below the window buttons next to a left sidebar', () => {
+    expect(layout(active('a'), controls).content).toEqual({
+      x: 260,
+      y: 36,
+      width: 932,
+      height: 756,
+    })
+  })
+
+  it('keeps the page below the window buttons when the sidebar is hidden', () => {
+    expect(layout(active('a', { sidebarHidden: true }), controls).content).toEqual({
+      x: 8,
+      y: 36,
+      width: 1184,
+      height: 756,
+    })
+  })
+
+  it('lets the page use the full height when the buttons sit over a right sidebar', () => {
+    const result = layout(active('a'), controls, withSettings({ sidebarSide: 'right' }))
+    expect(result.content).toEqual({ x: 8, y: 8, width: 932, height: 784 })
   })
 })
 

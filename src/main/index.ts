@@ -154,6 +154,7 @@ async function start(): Promise<void> {
     nativeTheme.themeSource = store.state.data.settings.theme
   }
   applyTheme()
+  nativeTheme.on('updated', () => windows.applyTheme())
   const runInFocused = (command: Command) => runner.run(windows.focused()?.id ?? null, command)
 
   store.subscribe((change) => {

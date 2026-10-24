@@ -55,6 +55,9 @@ export function Sidebar({ floating = false }: { floating?: boolean }) {
   const hasFavorites = useAppState((state) =>
     space ? (state.data.favorites[space.profileId] ?? []).length > 0 : false,
   )
+  const underControls = useAppState(
+    (state) => !isMac && !floating && state.data.settings.sidebarSide === 'right',
+  )
   const onWheel = useSpaceSwipe()
   if (!window) return null
 
@@ -63,7 +66,15 @@ export function Sidebar({ floating = false }: { floating?: boolean }) {
       className={[styles.sidebar, floating && styles.floating].filter(Boolean).join(' ')}
       onWheel={onWheel}
     >
-      <header className={[styles.toolbar, isMac && styles.toolbarMac].filter(Boolean).join(' ')}>
+      <header
+        className={[
+          styles.toolbar,
+          isMac && styles.toolbarMac,
+          underControls && styles.toolbarControls,
+        ]
+          .filter(Boolean)
+          .join(' ')}
+      >
         <IconButton
           label="Toggle sidebar"
           onClick={() => ante.command({ type: 'window/toggleSidebar' })}

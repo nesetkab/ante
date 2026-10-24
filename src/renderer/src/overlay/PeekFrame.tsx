@@ -1,8 +1,8 @@
 import { Maximize2, X } from 'lucide-react'
-import { computeLayout, PEEK_TOOLBAR_HEIGHT } from '@shared/layout'
+import { computeLayout, PEEK_TOOLBAR_HEIGHT, WINDOW_CONTROLS_HEIGHT } from '@shared/layout'
 import { getTab } from '@shared/state/tree'
 import { displayUrl } from '@shared/url'
-import { ante } from '../ante'
+import { ante, isMac } from '../ante'
 import { Favicon } from '../components/Favicon'
 import { IconButton } from '../components/IconButton'
 import { useViewportSize } from '../hooks'
@@ -18,7 +18,14 @@ export function PeekFrame() {
   const { width, height } = useViewportSize()
   if (!window?.peekTabId) return null
   const tab = getTab(data, window.peekTabId)
-  const { peek } = computeLayout({ width, height, window, data, fullscreenTabId: null })
+  const { peek } = computeLayout({
+    width,
+    height,
+    window,
+    data,
+    fullscreenTabId: null,
+    controlsInset: isMac ? 0 : WINDOW_CONTROLS_HEIGHT,
+  })
   if (!peek || !tab) return null
 
   return (
