@@ -1,12 +1,15 @@
 import { dialog, WebContentsView, type ContextMenuParams, type WebContents } from 'electron'
 import type { Id, TabRuntime } from '@shared/schema'
 import { IGNORED_LOAD_ERRORS } from '@shared/loadErrors'
+import { restorableHistory, trimHistory, type SavedHistory } from '@shared/navigation'
 import { isInternalPage } from '@shared/pages'
 import { getTab } from '@shared/state/tree'
 import type { Sessions } from './sessions'
 import type { Store } from './store'
 
 export type OpenDisposition = 'foreground' | 'background'
+
+const MAX_SAVED_HISTORIES = 100
 
 export interface TabHooks {
   profileFor(tabId: Id): Id
@@ -17,6 +20,8 @@ export interface TabHooks {
 export class TabManager {
   readonly #views = new Map<Id, WebContentsView>()
   readonly #hung = new Map<Id, AbortController>()
+  readonly #histories = new Map<Id, SavedHistory>()
+  readonly #discard = new Set<Id>()
   readonly #profiles = new Map<Id, Id>()
   readonly #store: Store
   readonly #sessions: Sessions
@@ -63,8 +68,32 @@ export class TabManager {
     this.#profiles.set(id, profileId)
     this.#wire(id, view.webContents)
     this.#runtime(id, { loading: true })
-    this.load(id, tab.url)
+    const saved = this.#histories.get(id)
+    this.#histories.delete(id)
+    if (saved && restorableHistory(saved, tab.url)) {
+      view.webContents.navigationHistory.restore(saved).catch((error: unknown) => {
+        console.warn('[tabs] could not restore history', error)
+        this.load(id, tab.url)
+      })
+    } else this.load(id, tab.url)
     return view
+  }
+
+  discardHistory(id: Id): void {
+    this.#histories.delete(id)
+    if (this.#views.has(id)) this.#discard.add(id)
+  }
+
+  #remember(id: Id, contents: WebContents): void {
+    const history = contents.navigationHistory
+    const saved = trimHistory(history.getAllEntries(), history.getActiveIndex())
+    this.#histories.delete(id)
+    if (!saved) return
+    this.#histories.set(id, saved)
+    for (const oldest of this.#histories.keys()) {
+      if (this.#histories.size <= MAX_SAVED_HISTORIES) break
+      this.#histories.delete(oldest)
+    }
   }
 
   load(id: Id, url: string): void {
@@ -81,19 +110,24 @@ export class TabManager {
   destroy(id: Id): void {
     this.#hung.get(id)?.abort()
     this.#hung.delete(id)
+    const keep = !this.#discard.delete(id)
     const view = this.#views.get(id)
     if (!view) return
     this.#views.delete(id)
     this.#profiles.delete(id)
     const contents = view.webContents
-    if (!contents.isDestroyed()) contents.close()
+    if (contents.isDestroyed()) return
+    if (keep) this.#remember(id, contents)
+    contents.close()
   }
 
   reconcile(): void {
     const { data, runtime } = this.#store.state
     for (const id of [...this.#views.keys()]) {
-      const stale = !getTab(data, id) || !runtime.tabs[id]
-      if (stale || this.#profiles.get(id) !== this.#hooks.profileFor(id)) this.destroy(id)
+      const gone = !getTab(data, id)
+      const moved = this.#profiles.get(id) !== this.#hooks.profileFor(id)
+      if (gone || moved) this.discardHistory(id)
+      if (gone || moved || !runtime.tabs[id]) this.destroy(id)
     }
   }
 

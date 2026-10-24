@@ -259,6 +259,7 @@ export class CommandRunner {
       return
     }
     if (isPersistent(this.#data, tabId)) {
+      this.#tabs.discardHistory(tabId)
       this.#store.dispatch({ type: 'tab/reset', id: tabId })
       this.#unload(tabId)
       return
