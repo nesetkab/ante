@@ -27,9 +27,15 @@ export default async function keyboard({ store, run, waitFor, windows, delay }) 
       `document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(key)}, bubbles: true, cancelable: true }))`,
     )
 
-  await contents.executeJavaScript(
-    `[...document.querySelectorAll('[data-row]')].find((row) => row.textContent.includes('New Tab')).focus()`,
-  )
+  const focusNewTab = () =>
+    contents.executeJavaScript(
+      `[...document.querySelectorAll('[data-row]')].find((row) => row.textContent.includes('New Tab'))?.focus()`,
+    )
+  for (let attempt = 0; attempt < 30 && !(await focused()).includes('New Tab'); attempt += 1) {
+    contents.focus()
+    await focusNewTab()
+    await delay(100)
+  }
   assert((await focused()).includes('New Tab'), 'the new tab row should take focus')
   await press('ArrowDown')
   assert((await focused()).includes('Second'), 'arrow down should move to the newest tab')
