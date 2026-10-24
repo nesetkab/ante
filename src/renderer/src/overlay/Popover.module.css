@@ -142,3 +142,7 @@
     transform: translateY(-4px);
   }
 }
+
+.findInput:focus-visible {
+  outline: none;
+}
