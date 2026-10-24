@@ -24,8 +24,20 @@ export default async function sleep({ store, tabs, run, waitFor, windows }) {
   await waitFor(() => space().today.length === 2)
   await waitFor((state) => state.data.windows[window.id].activeBySpace[space().id] !== id)
 
+  const changes = []
+  const stop = store.subscribe((change) => {
+    if ('id' in change.action && change.action.id === id) changes.push(change.action.type)
+  })
   store.dispatch({ type: 'runtime/unload', id })
-  await waitFor(() => tabs.contents(id) === undefined)
+  try {
+    await waitFor(() => tabs.contents(id) === undefined, 5000)
+  } catch {
+    throw new Error(
+      `the sleeping tab kept its view: runtime ${JSON.stringify(Object.keys(store.state.runtime.tabs[id] ?? {}))}, actions ${JSON.stringify(changes)}`,
+    )
+  } finally {
+    stop()
+  }
   run({ type: 'tab/activate', tabId: id }, window.id)
   await waitFor(() => tabs.contents(id) !== undefined && tabs.contents(id) !== first)
   await waitFor((state) => state.runtime.tabs[id]?.loading === false, 5000)
