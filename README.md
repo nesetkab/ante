@@ -28,6 +28,7 @@ Arc is being discontinued. Ante keeps the parts that made it good: a vertical si
 - **Favorites show unread counts** for sites like Gmail, Slack and Discord.
 - **Tabs go to sleep.** Today tabs you haven't touched in an hour free their memory and reload when you come back. Calls, music and anything on screen stay awake.
 - **Keyboard friendly.** Move through the sidebar with the arrow keys. Change any shortcut in Settings. `⌘⇧⌥C` copies the page as a Markdown link.
+- **Drop links or files on the sidebar** to open them, and see where a link goes before you click it.
 - **Tabs remember where you were.** Back and forward history and scroll position come back after a tab sleeps or Ante restarts.
 - **Developer tools** docked next to the page.
 
