@@ -1,5 +1,10 @@
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { DatabaseSync } from 'node:sqlite'
 import { describe, expect, it } from 'vitest'
-import { bookmarksToImport, fromChromeTime, parseChromeBookmarks } from '@shared/importers/chrome'
+import { bookmarksToImport, parseChromeBookmarks } from '@shared/importers/chrome'
+import { readVisits } from '../src/main/importers/chrome'
 
 const bookmarks = {
   roots: {
@@ -78,9 +83,32 @@ describe('bookmarksToImport', () => {
   })
 })
 
-describe('fromChromeTime', () => {
-  it('converts microseconds since 1601 to unix milliseconds', () => {
-    expect(fromChromeTime(13_350_000_000_000_000)).toBe(Date.UTC(2024, 0, 17, 21, 20))
-    expect(fromChromeTime(0)).toBe(0)
+describe('readVisits', () => {
+  it('reads real chrome timestamps without overflowing', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'ante-chrome-'))
+    try {
+      const file = join(dir, 'History')
+      const db = new DatabaseSync(file)
+      db.exec(
+        'create table urls (id integer primary key, url text, title text, visit_count integer, last_visit_time integer, hidden integer)',
+      )
+      db.prepare(
+        'insert into urls (url, title, visit_count, last_visit_time, hidden) values (?, ?, ?, ?, ?)',
+      ).run('https://a.test/', 'A', 3, 13_350_000_000_000_000n, 0)
+      db.prepare(
+        'insert into urls (url, title, visit_count, last_visit_time, hidden) values (?, ?, ?, ?, ?)',
+      ).run('https://hidden.test/', 'H', 1, 13_350_000_000_000_000n, 1)
+      db.close()
+      expect(await readVisits(file)).toEqual([
+        {
+          url: 'https://a.test/',
+          title: 'A',
+          visitCount: 3,
+          lastVisit: Date.UTC(2024, 0, 17, 21, 20),
+        },
+      ])
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
   })
 })

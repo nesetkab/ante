@@ -44,16 +44,29 @@ export function popoverFor(data: Data, runtime: Runtime, window: WindowData): Po
   return null
 }
 
-export function linkRect(pane: Rect, link: string): Rect {
+export interface Point {
+  x: number
+  y: number
+}
+
+const contains = (rect: Rect, point: Point) =>
+  point.x >= rect.x &&
+  point.x < rect.x + rect.width &&
+  point.y >= rect.y &&
+  point.y < rect.y + rect.height
+
+export function linkRect(pane: Rect, link: string, cursor: Point | null = null): Rect {
   const available = Math.max(0, pane.width - LINK_INSET * 2)
   const wanted = link.length * LINK_CHAR_WIDTH + LINK_PADDING
-  const width = Math.min(available, LINK_MAX_WIDTH, Math.max(LINK_MIN_WIDTH, wanted))
-  return {
+  const width = Math.round(Math.min(available, LINK_MAX_WIDTH, Math.max(LINK_MIN_WIDTH, wanted)))
+  const left: Rect = {
     x: Math.round(pane.x + LINK_INSET),
     y: Math.round(Math.max(pane.y, pane.y + pane.height - LINK_HEIGHT - LINK_INSET)),
-    width: Math.round(width),
+    width,
     height: LINK_HEIGHT,
   }
+  if (!cursor || !contains(left, cursor)) return left
+  return { ...left, x: Math.round(pane.x + pane.width - LINK_INSET - width) }
 }
 
 export function promptSize(prompt: Prompt): { width: number; height: number } {
@@ -73,8 +86,8 @@ export function popoverContentSize(popover: Popover): { width: number; height: n
   }
 }
 
-export function popoverRect(pane: Rect, popover: Popover): Rect {
-  if (popover.link && !popover.find && !popover.prompt) return linkRect(pane, popover.link)
+export function popoverRect(pane: Rect, popover: Popover, cursor: Point | null = null): Rect {
+  if (popover.link && !popover.find && !popover.prompt) return linkRect(pane, popover.link, cursor)
   const content = popoverContentSize(popover)
   const width = Math.min(content.width, Math.max(0, pane.width - POPOVER_INSET * 2))
   const outerWidth = width + POPOVER_PAD * 2

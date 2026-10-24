@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { mkdir, readdir, unlink, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, stat, unlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { ipcMain, net, protocol, session } from 'electron'
@@ -42,17 +42,26 @@ export class EaselAssets {
     return name
   }
 
-  async collect(referenced: ReadonlySet<string>): Promise<void> {
+  async collect(referenced: ReadonlySet<string>, minAgeMs = 0): Promise<void> {
     let names: string[]
     try {
       names = await readdir(this.#directory)
     } catch {
       return
     }
+    const cutoff = Date.now() - minAgeMs
     await Promise.all(
       names
         .filter((name) => isAssetName(name) && !referenced.has(name))
-        .map((name) => unlink(join(this.#directory, name)).catch(() => undefined)),
+        .map(async (name) => {
+          const path = join(this.#directory, name)
+          try {
+            if (minAgeMs > 0 && (await stat(path)).mtimeMs > cutoff) return
+            await unlink(path)
+          } catch {
+            return
+          }
+        }),
     )
   }
 }

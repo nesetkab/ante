@@ -10,6 +10,7 @@ import type { Store } from './store'
 export type OpenDisposition = 'foreground' | 'background'
 
 const MAX_SAVED_HISTORIES = 100
+const MAX_HOVER_URL = 2048
 
 export interface TabHooks {
   profileFor(tabId: Id): Id
@@ -214,13 +215,10 @@ export class TabManager {
 
     contents.on('did-start-loading', () => this.#runtime(id, { loading: true, crashed: false }))
     contents.on('did-start-navigation', (details) => {
-      if (
-        details.isMainFrame &&
-        !details.isSameDocument &&
-        this.#store.state.runtime.tabs[id]?.error
-      ) {
-        this.#runtime(id, { error: null })
-      }
+      if (!details.isMainFrame || details.isSameDocument) return
+      const current = this.#store.state.runtime.tabs[id]
+      if (current?.error) this.#runtime(id, { error: null })
+      if (current?.hoverUrl) this.#runtime(id, { hoverUrl: null })
     })
     contents.on('did-fail-load', (_event, code, _description, url, isMainFrame) => {
       if (!isMainFrame || IGNORED_LOAD_ERRORS.has(code)) return
@@ -252,7 +250,7 @@ export class TabManager {
       if (details.reason !== 'clean-exit') this.#runtime(id, { crashed: true, loading: false })
     })
     contents.on('update-target-url', (_event, url) => {
-      const hoverUrl = url || null
+      const hoverUrl = url ? url.slice(0, MAX_HOVER_URL) : null
       if (this.#store.state.runtime.tabs[id]?.hoverUrl !== hoverUrl) this.#runtime(id, { hoverUrl })
     })
     contents.on('unresponsive', () => void this.#askAboutHang(id, contents))

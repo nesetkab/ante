@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { isInternalPage } from './pages'
 import { isWebUrl } from './url'
-import { noteIdOf } from './notes'
+import { noteIdOf, referencedNoteIds } from './notes'
 import {
   boostSchema,
   deviceIdSchema,
@@ -621,6 +621,12 @@ export function applySyncInPlace(
   for (const id of options.dropSpaces ?? []) dropSpace(data, id)
 
   repairLive(data)
+
+  const referenced = referencedNoteIds(data)
+  for (const [id, value] of incoming.notes) {
+    if (value === null && data.notes[id] && !referenced.has(id))
+      Reflect.deleteProperty(data.notes, id)
+  }
 }
 
 export function applySync(data: Data, entities: SyncEntities, options: ApplyOptions = {}): Data {

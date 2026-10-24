@@ -14,7 +14,7 @@ export const browserNames: Record<BrowserId, string> = {
 
 const MAX_DEPTH = 32
 const MAX_BOOKMARKS = 5000
-const CHROME_EPOCH_OFFSET_MS = 11_644_473_600_000
+export const CHROME_EPOCH_OFFSET_MS = 11_644_473_600_000
 
 const urlNodeSchema = z.object({
   type: z.literal('url'),
@@ -78,8 +78,4 @@ export function bookmarksToImport(bookmarks: ChromeBookmarks, browser: BrowserId
     ],
     favorites: [],
   }
-}
-
-export function fromChromeTime(microseconds: number): number {
-  return Math.max(0, Math.round(microseconds / 1000 - CHROME_EPOCH_OFFSET_MS))
 }

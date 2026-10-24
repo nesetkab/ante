@@ -533,6 +533,29 @@ describe('syncing two devices', () => {
     expect(tabIds(a.data, a.data.spaces.s1?.today ?? [])).toEqual(['t1'])
   })
 
+  it('removes a note on other devices once it is deleted', () => {
+    const { a, b } = pair()
+    edit(
+      a,
+      { type: 'note/create', id: 'n1', now: 10 },
+      { type: 'note/update', id: 'n1', title: 'Plan', now: 10 },
+      {
+        type: 'tab/create',
+        tab: makeTab('nt', { url: 'ante:note/n1' }),
+        to: { type: 'pinned', spaceId: 's1' },
+        index: 0,
+      },
+    )
+    sync(a, [b], 5000)
+    sync(b, [a], 6000)
+    expect(b.data.notes.n1).toBeDefined()
+    edit(a, { type: 'page/delete', kind: 'note', id: 'n1', now: 11 })
+    sync(a, [b], 7000)
+    sync(b, [a], 8000)
+    expect(b.data.notes.n1).toBeUndefined()
+    expect(b.data.items.nt).toBeUndefined()
+  })
+
   it('syncs notes, boosts, routes and safe settings', () => {
     const { a, b } = pair()
     edit(

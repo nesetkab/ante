@@ -26,7 +26,7 @@ export interface LibraryPage {
 
 const firstLine = (text: string) => text.trim().split('\n')[0]?.trim() ?? ''
 
-export function libraryPages(data: Data, query = ''): LibraryPage[] {
+export function libraryPages(data: Pick<Data, 'notes' | 'easels'>, query = ''): LibraryPage[] {
   const notes = Object.values(data.notes)
     .filter((note) => !note.private)
     .map((note): LibraryPage => {
@@ -50,15 +50,10 @@ export function libraryPages(data: Data, query = ''): LibraryPage[] {
       updatedAt: easel.updatedAt,
     }))
   const needle = query.trim().toLowerCase()
-  const bodies = new Map(
-    Object.values(data.notes).map((note) => [note.id, note.body.toLowerCase()]),
-  )
+  const matches = (page: LibraryPage) =>
+    page.title.toLowerCase().includes(needle) ||
+    (page.kind === 'note' && (data.notes[page.id]?.body.toLowerCase().includes(needle) ?? false))
   return [...notes, ...easels]
-    .filter(
-      (page) =>
-        !needle ||
-        page.title.toLowerCase().includes(needle) ||
-        (page.kind === 'note' && (bodies.get(page.id) ?? '').includes(needle)),
-    )
+    .filter((page) => !needle || matches(page))
     .sort((a, b) => b.updatedAt - a.updatedAt)
 }

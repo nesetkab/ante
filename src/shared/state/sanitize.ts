@@ -1,3 +1,5 @@
+import { referencedEaselIds } from '../easels'
+import { referencedNoteIds } from '../notes'
 import { sameIds } from './tree'
 import type { Data, Id } from '../schema'
 import { createInitialData, DEFAULT_PROFILE_ID } from './initial'
@@ -65,11 +67,6 @@ function repairTree(data: Data, loose: ReadonlySet<Id>): void {
   for (const id of Object.keys(data.items)) {
     if (!claimed.has(id)) Reflect.deleteProperty(data.items, id)
   }
-
-  for (const [id, easel] of Object.entries(data.easels))
-    if (easel.private) Reflect.deleteProperty(data.easels, id)
-  for (const [id, note] of Object.entries(data.notes))
-    if (note.private) Reflect.deleteProperty(data.notes, id)
 }
 
 function repairWindowSpaces(data: Data, fallbackSpaceId: Id): void {
@@ -88,6 +85,16 @@ export function sanitize(input: Data, fallbackSpaceId: Id): Data {
   const data = structuredClone(stripPrivate(input))
   if (Object.keys(data.spaces).length === 0) return createInitialData(fallbackSpaceId)
   repairTree(data, new Set())
+  const usedNotes = referencedNoteIds(data)
+  const usedEasels = referencedEaselIds(data)
+  for (const [id, easel] of Object.entries(data.easels)) {
+    const empty = !easel.title.trim() && easel.elements.length === 0 && !usedEasels.has(id)
+    if (easel.private || empty) Reflect.deleteProperty(data.easels, id)
+  }
+  for (const [id, note] of Object.entries(data.notes)) {
+    const empty = !note.title.trim() && !note.body.trim() && !usedNotes.has(id)
+    if (note.private || empty) Reflect.deleteProperty(data.notes, id)
+  }
   for (const window of Object.values(data.windows)) {
     if (window.kind !== 'main') {
       Reflect.deleteProperty(data.windows, window.id)

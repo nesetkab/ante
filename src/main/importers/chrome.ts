@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync } from 'node:fs'
+import { copyFile, mkdtemp, readFile, rm } from 'node:fs/promises'
 import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
@@ -8,7 +9,7 @@ import {
   bookmarksToImport,
   browserIds,
   browserNames,
-  fromChromeTime,
+  CHROME_EPOCH_OFFSET_MS,
   parseChromeBookmarks,
   type BrowserId,
 } from '@shared/importers/chrome'
@@ -60,26 +61,26 @@ export function detectBrowsers(): BrowserId[] {
 }
 
 const visitRow = (row: Record<string, unknown>): ImportedVisit | null => {
-  const { url, title, visit_count: visitCount, last_visit_time: lastVisit } = row
+  const { url, title, visit_count: visitCount, last_visit: lastVisit } = row
   if (typeof url !== 'string' || typeof lastVisit !== 'number') return null
   return {
     url,
     title: typeof title === 'string' ? title : '',
     visitCount: typeof visitCount === 'number' ? visitCount : 1,
-    lastVisit: fromChromeTime(lastVisit),
+    lastVisit: Math.max(0, lastVisit),
   }
 }
 
-function readVisits(file: string): ImportedVisit[] {
-  const temp = mkdtempSync(join(tmpdir(), 'ante-import-'))
+export async function readVisits(file: string): Promise<ImportedVisit[]> {
+  const temp = await mkdtemp(join(tmpdir(), 'ante-import-'))
   try {
     const copy = join(temp, 'History')
-    copyFileSync(file, copy)
+    await copyFile(file, copy)
     const db = new DatabaseSync(copy, { readOnly: true })
     try {
       const rows = db
         .prepare(
-          'select url, title, visit_count, last_visit_time from urls where hidden = 0 order by last_visit_time desc limit ?',
+          `select url, title, visit_count, last_visit_time / 1000 - ${CHROME_EPOCH_OFFSET_MS} as last_visit from urls where hidden = 0 order by last_visit_time desc limit ?`,
         )
         .all(MAX_VISITS)
       return rows.flatMap((row) => visitRow(row) ?? [])
@@ -87,7 +88,7 @@ function readVisits(file: string): ImportedVisit[] {
       db.close()
     }
   } finally {
-    rmSync(temp, { recursive: true, force: true })
+    await rm(temp, { recursive: true, force: true })
   }
 }
 
@@ -96,11 +97,11 @@ export interface BrowserImportResult {
   spaceId: Id | null
 }
 
-export function importFromBrowser(
+export async function importFromBrowser(
   store: Store,
   history: HistoryStore,
   browser: BrowserId,
-): BrowserImportResult {
+): Promise<BrowserImportResult> {
   const name = browserNames[browser]
   const dir = profileDir(browser)
   if (!dir) return { message: `Could not find ${name}`, spaceId: null }
@@ -110,7 +111,7 @@ export function importFromBrowser(
   try {
     const bookmarksFile = join(dir, 'Bookmarks')
     if (existsSync(bookmarksFile)) {
-      const raw: unknown = JSON.parse(readFileSync(bookmarksFile, 'utf8'))
+      const raw: unknown = JSON.parse(await readFile(bookmarksFile, 'utf8'))
       const bundle = arcImportToBundle(bookmarksToImport(parseChromeBookmarks(raw), browser), {
         newId: randomUUID,
         now: Date.now(),
@@ -126,7 +127,7 @@ export function importFromBrowser(
   const historyFile = join(dir, 'History')
   if (existsSync(historyFile)) {
     try {
-      visitCount = history.importVisits(DEFAULT_PROFILE_ID, readVisits(historyFile))
+      visitCount = history.importVisits(DEFAULT_PROFILE_ID, await readVisits(historyFile))
     } catch (error) {
       console.error('[import] could not read history', browser, error)
       historyBusy = true

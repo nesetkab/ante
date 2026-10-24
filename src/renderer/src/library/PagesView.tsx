@@ -1,14 +1,13 @@
 import { Shapes, StickyNote, Trash2 } from 'lucide-react'
+import { useMemo } from 'react'
 import { groupByDay } from '@shared/history'
 import { libraryPages, type LibraryPage } from '@shared/pages'
 import { ante } from '../ante'
 import { IconButton } from '../components/IconButton'
-import { useAppSelector } from '../store'
+import { useAppState } from '../store'
 import { dayLabel, timeLabel } from './format'
 import styles from './Library.module.css'
 import { useConfirm } from './useConfirm'
-
-const samePages = (a: LibraryPage[], b: LibraryPage[]) => JSON.stringify(a) === JSON.stringify(b)
 
 function PageRow({ page }: { page: LibraryPage }) {
   const [confirming, remove] = useConfirm(() =>
@@ -47,7 +46,9 @@ function PageRow({ page }: { page: LibraryPage }) {
 }
 
 export function PagesView({ query }: { query: string }) {
-  const pages = useAppSelector((state) => libraryPages(state.data, query), samePages)
+  const notes = useAppState((state) => state.data.notes)
+  const easels = useAppState((state) => state.data.easels)
+  const pages = useMemo(() => libraryPages({ notes, easels }, query), [notes, easels, query])
 
   if (pages.length === 0) {
     return (

@@ -127,6 +127,8 @@ describe('easel reducer', () => {
     const state = apply(
       withEasel(),
       { type: 'easel/create', id: 'orphan', now: 2 },
+      { type: 'easel/rename', id: 'orphan', title: 'Moodboard', now: 2 },
+      { type: 'easel/create', id: 'blank', now: 2 },
       { type: 'easel/create', id: 'secret', now: 2, private: true },
     )
     expect(Object.keys(sanitize(state.data, 'x').easels).sort()).toEqual(['e', 'orphan'])

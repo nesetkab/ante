@@ -41,6 +41,13 @@ import {
   type Section,
 } from './tree'
 
+function clearHover(state: AppState, window: WindowData): void {
+  for (const id of visibleTabIds(state.data, window)) {
+    const shown = state.runtime.tabs[id]
+    if (shown?.hoverUrl) shown.hoverUrl = null
+  }
+}
+
 function stampVisible(data: Data, window: WindowData, now: number): void {
   for (const id of visibleTabIds(data, window)) {
     const tab = getTab(data, id)
@@ -676,6 +683,7 @@ export function reduce(state: AppState, action: Action): void {
       if (!window || !data.spaces[action.spaceId]) return
       if (!samePrivacy(data, window.spaceId, action.spaceId)) return
       if (action.now !== undefined) stampVisible(data, window, action.now)
+      clearHover(state, window)
       window.spaceId = action.spaceId
       return
     }
@@ -686,10 +694,7 @@ export function reduce(state: AppState, action: Action): void {
       const spaceId = rootOf(data, action.tabId)?.spaceId
       if (spaceId && !samePrivacy(data, window.spaceId, spaceId)) return
       stampVisible(data, window, action.now)
-      for (const id of visibleTabIds(data, window)) {
-        const shown = runtime.tabs[id]
-        if (shown?.hoverUrl) shown.hoverUrl = null
-      }
+      clearHover(state, window)
       if (spaceId && spaceId !== window.spaceId) window.spaceId = spaceId
       window.activeBySpace[window.spaceId] = action.tabId
       tab.lastActiveAt = action.now

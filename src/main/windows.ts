@@ -212,7 +212,12 @@ export class AppWindow {
     const popoverPane = popover && layout.panes.find((pane) => pane.tabId === popover.tabId)
     const overlayVisible = overlayState !== null || peekId !== null || Boolean(popoverPane)
     let overlayBounds: Rect = { x: 0, y: 0, width, height }
-    if (popover && popoverPane) overlayBounds = popoverRect(popoverPane.rect, popover)
+    if (popover && popoverPane) {
+      const content = this.win.getContentBounds()
+      const point = screen.getCursorScreenPoint()
+      const cursor = { x: point.x - content.x, y: point.y - content.y }
+      overlayBounds = popoverRect(popoverPane.rect, popover, cursor)
+    }
     if (overlayState?.kind === 'sidebar') {
       const sidebarWidth = data.settings.sidebarWidth
       const x =

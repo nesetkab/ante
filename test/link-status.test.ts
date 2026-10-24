@@ -56,4 +56,14 @@ describe('link status', () => {
     const finding = withHover(base, 'https://example.com/', true)
     expect(popoverFor(finding.data, finding.runtime, window())?.link).toBeUndefined()
   })
+
+  it('moves to the right when the cursor is over it', () => {
+    const state = withHover(base, 'https://example.com/docs')
+    const popover = popoverFor(state.data, state.runtime, window())
+    if (!popover) throw new Error('missing popover')
+    const left = popoverRect(pane, popover)
+    const moved = popoverRect(pane, popover, { x: left.x + 5, y: left.y + 5 })
+    expect(moved.x + moved.width).toBe(pane.x + pane.width - LINK_INSET)
+    expect(popoverRect(pane, popover, { x: 0, y: 0 })).toEqual(left)
+  })
 })

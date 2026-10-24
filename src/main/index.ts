@@ -47,6 +47,8 @@ registerAssetScheme()
 if (process.env.ANTE_USER_DATA) app.setPath('userData', process.env.ANTE_USER_DATA)
 externalLinks.listen()
 
+const ASSET_GRACE_MS = 60_000
+
 async function start(): Promise<void> {
   await app.whenReady()
   if (process.platform === 'darwin' && !app.isPackaged) {
@@ -112,6 +114,10 @@ async function start(): Promise<void> {
   const assets = new EaselAssets(join(app.getPath('userData'), 'easel-assets'))
   assets.serve(surfaces)
   void assets.collect(referencedAssets(store.state.data))
+  store.subscribe((change) => {
+    if (change.action.type === 'private/remove')
+      void assets.collect(referencedAssets(store.state.data), ASSET_GRACE_MS)
+  })
   windows.onSync(() => media.sync())
   const boosts = new BoostManager(store, tabs)
   boosts.start()

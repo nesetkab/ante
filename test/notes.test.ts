@@ -82,7 +82,8 @@ describe('sanitize', () => {
       ...state.data,
       notes: {
         kept: { id: 'kept', title: '', body: '', updatedAt: 0, private: false },
-        orphan: { id: 'orphan', title: '', body: '', updatedAt: 0, private: false },
+        orphan: { id: 'orphan', title: '', body: 'keep me', updatedAt: 0, private: false },
+        blank: { id: 'blank', title: '', body: '  ', updatedAt: 0, private: false },
         secret: { id: 'secret', title: '', body: '', updatedAt: 0, private: true },
       },
     }
@@ -112,5 +113,24 @@ describe('sanitize', () => {
     const tab = { ...makeTab('t1'), url: 'https://example.com', savedUrl: noteUrl('home') }
     const state = buildState({ spaces: { s1: { pinned: ['t1'] } }, tabs: { t1: tab } })
     expect(referencedNoteIds(state.data).has('home')).toBe(true)
+  })
+})
+
+describe('private notes and sync', () => {
+  it('keeps an open private note when a sync pass repairs the tree', () => {
+    const state = apply(
+      buildState(),
+      { type: 'private/create', profileId: 'private-1', spaceId: 'ps' },
+      { type: 'note/create', id: 'pn', now: 1, private: true },
+      {
+        type: 'tab/create',
+        tab: makeTab('pt', { url: noteUrl('pn') }),
+        to: { type: 'today', spaceId: 'ps' },
+        index: 0,
+      },
+      { type: 'sync/apply', entities: {}, dropSpaces: [] },
+      { type: 'note/update', id: 'pn', body: 'still here', now: 2 },
+    )
+    expect(state.data.notes.pn?.body).toBe('still here')
   })
 })

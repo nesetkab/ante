@@ -48,7 +48,7 @@ interface Deps {
   openSettings: () => void
   recordShortcuts: (window: AppWindow, recording: boolean) => void
   chooseDownloadFolder: (window: AppWindow) => void
-  importBrowser: (browser: BrowserId) => BrowserImportResult
+  importBrowser: (browser: BrowserId) => Promise<BrowserImportResult>
   runFeature: (window: AppWindow, command: FeatureCommand) => void
   runPrivacy: (window: AppWindow, command: PrivacyCommand) => void
   runSync: (window: AppWindow, command: SyncCommand) => void
@@ -66,7 +66,8 @@ export class CommandRunner {
   readonly #openSettings: () => void
   readonly #recordShortcuts: (window: AppWindow, recording: boolean) => void
   readonly #chooseDownloadFolder: (window: AppWindow) => void
-  readonly #importBrowser: (browser: BrowserId) => BrowserImportResult
+  readonly #importBrowser: (browser: BrowserId) => Promise<BrowserImportResult>
+  #importing = false
   readonly #runFeature: (window: AppWindow, command: FeatureCommand) => void
   readonly #runPrivacy: (window: AppWindow, command: PrivacyCommand) => void
   readonly #runSync: (window: AppWindow, command: SyncCommand) => void
@@ -717,12 +718,19 @@ export class CommandRunner {
         this.#sendUi(window, { type: 'toast', message: describeArcImport(result) })
         return
       }
-      case 'import/browser': {
-        const result = this.#importBrowser(command.browser)
-        if (result.spaceId) this.#selectSpace(window, result.spaceId)
-        this.toast(window, result.message)
+      case 'import/browser':
+        if (this.#importing) return
+        this.#importing = true
+        this.toast(window, 'Importing…')
+        void this.#importBrowser(command.browser)
+          .then((result) => {
+            if (result.spaceId) this.#selectSpace(window, result.spaceId)
+            this.toast(window, result.message)
+          })
+          .finally(() => {
+            this.#importing = false
+          })
         return
-      }
       case 'space/delete':
         void deleteSpaceWithConfirm(
           { store: this.#store, windows: this.#windows, window },
@@ -825,6 +833,10 @@ export class CommandRunner {
         const url = command.kind === 'note' ? noteUrl(command.id) : easelUrl(command.id)
         const target = this.#mainWindowFor(window)
         const spaceId = this.#windowData(target).spaceId
+        if (isPrivateSpace(this.#data, spaceId) !== page.private) {
+          this.toast(window, 'Open this from a regular window')
+          return
+        }
         const existing = spaceTabOrder(this.#data, spaceId).find(
           (id) => getTab(this.#data, id)?.url === url,
         )

@@ -47,6 +47,9 @@ function useSpaceSwipe() {
 
 const DROP_TYPES = ['Files', 'text/uri-list', 'text/plain']
 
+const isTextField = (target: EventTarget) =>
+  target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement
+
 function useExternalDrop() {
   const [over, setOver] = useState(false)
   const accepts = (event: DragEvent) =>
@@ -55,7 +58,7 @@ function useExternalDrop() {
     over,
     props: {
       onDragOver: (event: DragEvent) => {
-        if (!accepts(event)) return
+        if (!accepts(event) || isTextField(event.target)) return
         event.preventDefault()
         event.dataTransfer.dropEffect = 'copy'
         setOver(true)
@@ -64,7 +67,7 @@ function useExternalDrop() {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOver(false)
       },
       onDrop: (event: DragEvent) => {
-        if (!accepts(event)) return
+        if (!accepts(event) || isTextField(event.target)) return
         event.preventDefault()
         setOver(false)
         const paths = [...event.dataTransfer.files].map((file) => ante.pathForFile(file))
