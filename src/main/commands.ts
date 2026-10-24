@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto'
+import { isAbsolute } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import type { Command, Disposition, SyncCommand } from '@shared/commands'
 import type { BrowserId } from '@shared/importers/chrome'
 import type { Container, Id, Rect, Tab, WindowData } from '@shared/schema'
@@ -516,6 +518,10 @@ export class CommandRunner {
         if (tab && isWebUrl(tab.url)) sharePage(window.win, tab.url)
         return
       }
+      case 'file/openPaths':
+        for (const path of command.paths)
+          if (isAbsolute(path)) this.open(window, pathToFileURL(path).href, 'newTab')
+        return
       case 'file/open':
         void pickFiles(window.win).then((urls) => {
           for (const url of urls) this.open(window, url, 'newTab')

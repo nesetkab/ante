@@ -1,7 +1,8 @@
 import { ArrowLeft, ArrowRight, PanelLeft, Plus, RotateCw, X, Shield } from 'lucide-react'
-import { useRef, type WheelEvent } from 'react'
+import { useRef, useState, type DragEvent, type WheelEvent } from 'react'
 import { getTab } from '@shared/state/tree'
 import { displayUrl } from '@shared/url'
+import { droppedUrls } from '@shared/drops'
 import { profilePartition } from '@shared/extensions'
 import { internalPage } from '@shared/pages'
 import { isPrivateProfile } from '@shared/state/private'
@@ -44,6 +45,44 @@ function useSpaceSwipe() {
   }
 }
 
+const DROP_TYPES = ['Files', 'text/uri-list', 'text/plain']
+
+function useExternalDrop() {
+  const [over, setOver] = useState(false)
+  const accepts = (event: DragEvent) =>
+    event.dataTransfer.types.some((type) => DROP_TYPES.includes(type))
+  return {
+    over,
+    props: {
+      onDragOver: (event: DragEvent) => {
+        if (!accepts(event)) return
+        event.preventDefault()
+        event.dataTransfer.dropEffect = 'copy'
+        setOver(true)
+      },
+      onDragLeave: (event: DragEvent) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOver(false)
+      },
+      onDrop: (event: DragEvent) => {
+        if (!accepts(event)) return
+        event.preventDefault()
+        setOver(false)
+        const paths = [...event.dataTransfer.files].map((file) => ante.pathForFile(file))
+        const files = paths.filter(Boolean).slice(0, 20)
+        if (files.length > 0) {
+          ante.command({ type: 'file/openPaths', paths: files })
+          return
+        }
+        const urls = droppedUrls(
+          event.dataTransfer.getData('text/uri-list'),
+          event.dataTransfer.getData('text/plain'),
+        )
+        for (const input of urls) ante.command({ type: 'open', input, disposition: 'newTab' })
+      },
+    },
+  }
+}
+
 export function Sidebar({ floating = false }: { floating?: boolean }) {
   const window = useWindowData()
   const space = useAppState((state) => (window ? state.data.spaces[window.spaceId] : undefined))
@@ -59,14 +98,22 @@ export function Sidebar({ floating = false }: { floating?: boolean }) {
     (state) => !isMac && state.data.settings.sidebarSide === 'right',
   )
   const onWheel = useSpaceSwipe()
+  const externalDrop = useExternalDrop()
   const zoom = activeRuntime?.zoom ?? 1
   const zoomed = Math.abs(zoom - 1) > 0.001
   if (!window) return null
 
   return (
     <aside
-      className={[styles.sidebar, floating && styles.floating].filter(Boolean).join(' ')}
+      className={[
+        styles.sidebar,
+        floating && styles.floating,
+        externalDrop.over && styles.externalDrop,
+      ]
+        .filter(Boolean)
+        .join(' ')}
       onWheel={onWheel}
+      {...externalDrop.props}
     >
       <header
         className={[

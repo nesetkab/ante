@@ -28,6 +28,10 @@
   flex: none;
 }
 
+.externalDrop {
+  box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--accent) 70%, transparent);
+}
+
 .toolbarMac {
   padding-left: 68px;
 }

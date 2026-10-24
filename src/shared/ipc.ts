@@ -37,4 +37,5 @@ export interface AnteApi {
   command(command: Command): void
   onUiEvent(listener: (event: UiEvent) => void): () => void
   saveAsset(bytes: Uint8Array): Promise<string | null>
+  pathForFile(file: File): string
 }

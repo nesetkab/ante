@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
+import { contextBridge, ipcRenderer, webUtils, type IpcRendererEvent } from 'electron'
 import { injectBrowserAction } from 'electron-chrome-extensions/browser-action'
 import { IPC, type AnteApi, type PatchBatch, type Snapshot, type UiEvent } from '@shared/ipc'
 import { libraryApi } from './library'
@@ -14,6 +14,7 @@ const api: AnteApi = {
   dispatch: (action) => ipcRenderer.send(IPC.dispatch, action),
   command: (command) => ipcRenderer.send(IPC.command, command),
   saveAsset: (bytes) => ipcRenderer.invoke(IPC.saveAsset, bytes) as Promise<string | null>,
+  pathForFile: (file) => webUtils.getPathForFile(file),
   onUiEvent: (listener) => {
     const handler = (_event: IpcRendererEvent, uiEvent: UiEvent) => listener(uiEvent)
     ipcRenderer.on(IPC.ui, handler)

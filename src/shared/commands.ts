@@ -51,6 +51,10 @@ export const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('tab/savePage'), ...optionalTab.shape }),
   z.object({ type: z.literal('tab/share'), ...optionalTab.shape }),
   z.object({ type: z.literal('file/open') }),
+  z.object({
+    type: z.literal('file/openPaths'),
+    paths: z.array(z.string().min(1).max(4096)).min(1).max(20),
+  }),
   z.object({ type: z.literal('downloads/chooseFolder') }),
   z.object({ type: z.literal('downloads/useDefaultFolder') }),
   z.object({ type: z.literal('tab/contextMenu'), tabId: idSchema }),
