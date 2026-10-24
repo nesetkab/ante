@@ -137,6 +137,15 @@ export type ArchiveAfter = z.infer<typeof archiveAfterSchema>
 export const themeModeSchema = z.enum(['system', 'light', 'dark'])
 export type ThemeMode = z.infer<typeof themeModeSchema>
 
+export const deviceIdSchema = z.string().regex(/^[A-Za-z0-9-]{0,64}$/)
+
+export const syncSettingsSchema = z.object({
+  folder: z.string().min(1).max(4096).nullable().default(null),
+  deviceId: deviceIdSchema.default(''),
+  deviceName: z.string().max(200).default(''),
+})
+export type SyncSettings = z.infer<typeof syncSettingsSchema>
+
 export const settingsSchema = z.object({
   searchEngine: searchEngineSchema.default('google'),
   archiveAfter: archiveAfterSchema.default('12h'),
@@ -149,9 +158,10 @@ export const settingsSchema = z.object({
   adblockAllowlist: z.array(z.string().min(1).max(253)).max(10000).default([]),
   autoPip: z.boolean().default(true),
   devtoolsWidth: z.number().min(280).max(1600).default(480),
+  sync: syncSettingsSchema.prefault({}),
 })
 export type Settings = z.infer<typeof settingsSchema>
-export const settingsPatchSchema = withoutDefaults(settingsSchema).partial()
+export const settingsPatchSchema = withoutDefaults(settingsSchema.omit({ sync: true })).partial()
 
 export const fontFamilySchema = z
   .string()
@@ -283,11 +293,20 @@ export interface DownloadRuntime {
   profileId: Id
 }
 
+export interface SyncStatus {
+  state: 'off' | 'ok' | 'error'
+  lastSyncedAt: number | null
+  error: string | null
+  devices: number
+  iCloudFolder: string | null
+}
+
 export interface Runtime {
   tabs: Record<Id, TabRuntime>
   windows: Record<Id, WindowRuntime>
   downloads: Record<Id, DownloadRuntime>
   arcImportAvailable?: boolean
+  sync?: SyncStatus
 }
 
 export interface AppState {

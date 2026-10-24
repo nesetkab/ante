@@ -56,6 +56,7 @@ export function createInitialData(spaceId: Id): Data {
       adblockAllowlist: [],
       autoPip: true,
       devtoolsWidth: 480,
+      sync: { folder: null, deviceId: '', deviceName: '' },
     },
     boosts: {},
     routes: [],
