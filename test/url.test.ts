@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { displayUrl, resolveInput, siteFaviconUrl } from '@shared/url'
+import { displayUrl, markdownLink, resolveInput, siteFaviconUrl } from '@shared/url'
 
 describe('resolveInput', () => {
   it.each([
@@ -46,5 +46,17 @@ describe('siteFaviconUrl', () => {
     )
     expect(siteFaviconUrl('about:blank')).toBeNull()
     expect(siteFaviconUrl('not a url')).toBeNull()
+  })
+})
+
+describe('markdownLink', () => {
+  it.each([
+    ['Docs', 'https://a.test/', '[Docs](https://a.test/)'],
+    ['  Two\n lines ', 'https://a.test/', '[Two lines](https://a.test/)'],
+    ['[x] \\ y', 'https://a.test/', '[\\[x\\] \\\\ y](https://a.test/)'],
+    ['', 'https://a.test/', '[https://a.test/](https://a.test/)'],
+    ['Wiki', 'https://w.test/A_(b) c', '[Wiki](https://w.test/A_%28b%29%20c)'],
+  ])('formats %j', (title, url, expected) => {
+    expect(markdownLink(title, url)).toBe(expected)
   })
 })

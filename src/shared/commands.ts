@@ -30,7 +30,11 @@ export const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('tab/resetToSaved'), ...optionalTab.shape }),
   z.object({ type: z.literal('tab/toggleMute'), ...optionalTab.shape }),
   z.object({ type: z.literal('tab/unload'), ...optionalTab.shape }),
-  z.object({ type: z.literal('tab/copyUrl'), ...optionalTab.shape }),
+  z.object({
+    type: z.literal('tab/copyUrl'),
+    ...optionalTab.shape,
+    markdown: z.boolean().optional(),
+  }),
   z.object({ type: z.literal('tab/togglePin'), ...optionalTab.shape }),
   z.object({ type: z.literal('tab/next') }),
   z.object({ type: z.literal('tab/recent') }),

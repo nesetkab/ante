@@ -7,13 +7,14 @@ import { MAX_SPLIT } from '@shared/state/reducer'
 import { recentTab } from '@shared/state/recent'
 import {
   activeTabId,
+  displayTitle,
   getTab,
   isPersistent,
   parentSplit,
   rootOf,
   spaceTabOrder,
 } from '@shared/state/tree'
-import { hostOf, isWebUrl, resolveInput } from '@shared/url'
+import { hostOf, isWebUrl, markdownLink, resolveInput } from '@shared/url'
 import { nextZoom } from '@shared/zoom'
 import { noteTabTitle, noteUrl } from '@shared/notes'
 import { easelUrl, placeImage } from '@shared/easels'
@@ -443,8 +444,11 @@ export class CommandRunner {
       case 'tab/copyUrl': {
         const tab = getTab(this.#data, tabFor(command.tabId))
         if (!tab) return
-        copyText(tab.url)
-        this.#sendUi(window, { type: 'toast', message: 'Copied URL' })
+        copyText(command.markdown ? markdownLink(displayTitle(tab), tab.url) : tab.url)
+        this.#sendUi(window, {
+          type: 'toast',
+          message: command.markdown ? 'Copied Markdown link' : 'Copied URL',
+        })
         return
       }
       case 'tab/togglePin': {

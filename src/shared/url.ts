@@ -15,6 +15,19 @@ const LOCAL_HOST = /^(localhost|127(?:\.\d{1,3}){3}|\[::1\]|0\.0\.0\.0)(:\d+)?(\
 const IPV4 = /^\d{1,3}(\.\d{1,3}){3}(:\d+)?(\/.*)?$/
 const DOMAIN = /^([a-z0-9-]+\.)+[a-z][a-z0-9-]{1,62}\.?(:\d+)?([/?#].*)?$/i
 
+export function markdownLink(title: string, url: string): string {
+  const text =
+    title
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/[[\]\\]/g, '\\$&') || url
+  const target = url.replace(
+    /[()\s]/g,
+    (char) => `%${char.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0')}`,
+  )
+  return `[${text}](${target})`
+}
+
 export function searchUrl(query: string, engine: SearchEngine): string {
   return searchUrls[engine] + encodeURIComponent(query)
 }

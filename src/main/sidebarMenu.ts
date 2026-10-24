@@ -35,6 +35,10 @@ function tabMenu(id: Id, deps: SidebarMenuDeps): MenuItemConstructorOptions[] {
   const items: MenuItemConstructorOptions[] = [
     { label: 'Rename…', click: () => ui({ type: 'rename', id }) },
     { label: 'Copy URL', click: () => run({ type: 'tab/copyUrl', tabId: id }) },
+    {
+      label: 'Copy as Markdown',
+      click: () => run({ type: 'tab/copyUrl', tabId: id, markdown: true }),
+    },
     { label: 'Duplicate', click: () => run({ type: 'tab/duplicate', tabId: id }) },
     separator,
   ]

@@ -76,6 +76,13 @@ export function shortcuts(platform: Platform): Shortcut[] {
       accelerator: 'CmdOrCtrl+Shift+C',
       command: { type: 'tab/copyUrl' },
     },
+    {
+      id: 'copy-markdown',
+      label: 'Copy URL as Markdown',
+      section: 'file',
+      accelerator: 'CmdOrCtrl+Shift+Alt+C',
+      command: { type: 'tab/copyUrl', markdown: true },
+    },
 
     {
       id: 'toggle-sidebar',
