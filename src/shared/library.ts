@@ -2,13 +2,7 @@ import { z } from 'zod'
 import type { HistoryQuery, HistoryResult } from './history'
 import { idSchema } from './schema'
 
-export const LIBRARY_IPC = {
-  historySearch: 'ante:history/search',
-  historyDelete: 'ante:history/delete',
-  historyClear: 'ante:history/clear',
-  suggest: 'ante:suggest',
-  download: 'ante:download',
-} as const
+export { LIBRARY_IPC } from './libraryChannels'
 
 export const downloadCommandSchema = z.discriminatedUnion('type', [
   z.object({

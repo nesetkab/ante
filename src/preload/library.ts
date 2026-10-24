@@ -1,6 +1,7 @@
 import { ipcRenderer } from 'electron'
 import type { HistoryResult } from '@shared/history'
-import { LIBRARY_IPC, type LibraryApi } from '@shared/library'
+import type { LibraryApi } from '@shared/library'
+import { LIBRARY_IPC } from '@shared/libraryChannels'
 
 export const libraryApi: LibraryApi = {
   searchHistory: (query) =>
