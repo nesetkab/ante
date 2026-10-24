@@ -19,12 +19,15 @@ import {
   type Data,
   type DownloadRuntime,
   type Id,
+  type SyncSettings,
+  type SyncStatus,
   type Tab,
   type TabRuntime,
   type WindowData,
   type WindowRuntime,
 } from '../schema'
 import type { ImportBundle } from '../importers/bundle'
+import type { SyncEntities } from '../sync'
 
 const indexSchema = z.number().int().nonnegative()
 
@@ -160,5 +163,8 @@ export type InternalAction =
     }
   | { type: 'private/create'; profileId: Id; spaceId: Id }
   | { type: 'private/remove'; profileId: Id }
+  | { type: 'sync/apply'; entities: SyncEntities; dropSpaces: Id[] }
+  | { type: 'sync/configure'; patch: Partial<SyncSettings> }
+  | { type: 'runtime/sync'; status: SyncStatus }
 
 export type Action = UiAction | InternalAction

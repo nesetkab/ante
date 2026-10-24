@@ -5,6 +5,7 @@ import type {
   Id,
   Item,
   Location,
+  SyncStatus,
   Tab,
   TabRuntime,
   WindowData,
@@ -13,6 +14,7 @@ import type {
 import { applyImport } from '../importers/bundle'
 import { noteTabTitle, noteUrl } from '../notes'
 import { clearSitePermission, setSitePermissions } from '../permissions'
+import { applySyncInPlace } from '../sync'
 import type { Action } from './actions'
 import { reduceBoosts } from './boosts'
 import {
@@ -760,6 +762,29 @@ export function reduce(state: AppState, action: Action): void {
     case 'feed/sync':
       syncFeed(state, action.id, action.entries, action.now)
       return
+    case 'sync/apply': {
+      applySyncInPlace(data, action.entities, { dropSpaces: action.dropSpaces })
+      for (const id of Object.keys(runtime.tabs)) {
+        if (!getTab(data, id)) Reflect.deleteProperty(runtime.tabs, id)
+      }
+      return
+    }
+    case 'sync/configure': {
+      const sync = data.settings.sync
+      const { folder, deviceId, deviceName } = action.patch
+      if (folder !== undefined && sync.folder !== folder) sync.folder = folder
+      if (deviceId !== undefined && sync.deviceId !== deviceId) sync.deviceId = deviceId
+      if (deviceName !== undefined && sync.deviceName !== deviceName) sync.deviceName = deviceName
+      return
+    }
+    case 'runtime/sync': {
+      const previous = runtime.sync
+      const next = action.status
+      const keys = Object.keys(next) as (keyof SyncStatus)[]
+      if (previous && keys.every((key) => previous[key] === next[key])) return
+      runtime.sync = { ...next }
+      return
+    }
     case 'note/update': {
       const note = (data.notes[action.id] ??= {
         id: action.id,
