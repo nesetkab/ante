@@ -1,5 +1,5 @@
 import { History, X } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { groupByDay, type HistoryEntry } from '@shared/history'
 import { displayUrl, hostOf } from '@shared/url'
 import { ante } from '../ante'
@@ -8,12 +8,13 @@ import { IconButton } from '../components/IconButton'
 import { library } from '../libraryApi'
 import { dayLabel, timeLabel } from './format'
 import styles from './Library.module.css'
+import { rowProps } from './rowProps'
 import { useConfirm } from './useConfirm'
 
 const PAGE = 150
 const SEARCH_DEBOUNCE_MS = 120
 
-export function openFromLibrary(url: string, event: MouseEvent) {
+export function openFromLibrary(url: string, event: { metaKey: boolean; ctrlKey: boolean }) {
   const background = event.metaKey || event.ctrlKey
   ante.command({ type: 'open', input: url, disposition: background ? 'background' : 'newTab' })
 }
@@ -125,7 +126,7 @@ export function HistoryView({ query }: { query: string }) {
               key={entry.id}
               className={styles.row}
               title={entry.url}
-              onClick={(event) => openFromLibrary(entry.url, event)}
+              {...rowProps((event) => openFromLibrary(entry.url, event))}
             >
               <span className={styles.time}>{timeLabel(entry.lastVisit)}</span>
               <Favicon src={entry.favicon} size={16} />

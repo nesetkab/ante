@@ -216,6 +216,7 @@
 }
 
 .row:hover .rowActions,
+.row:focus-within .rowActions,
 .rowActionsVisible {
   opacity: 1;
 }
