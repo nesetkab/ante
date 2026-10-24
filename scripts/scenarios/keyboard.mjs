@@ -40,8 +40,5 @@ export default async function keyboard({ store, run, waitFor, windows, delay }) 
   await press('End')
   assert((await focused()).includes('First'), 'end should jump to the last row')
   await press('Enter')
-  await waitFor(
-    (state) => state.data.windows[window.id].activeBySpace[space().id] === first,
-    3000,
-  )
+  await waitFor((state) => state.data.windows[window.id].activeBySpace[space().id] === first, 3000)
 }
