@@ -21,6 +21,8 @@ export default async function sleep({ store, tabs, run, waitFor, windows }) {
   await waitFor((state) => state.runtime.tabs[id]?.canGoBack === true)
 
   store.dispatch({ type: 'runtime/unload', id })
+  await waitFor(() => tabs.contents(id) === undefined)
+  run({ type: 'tab/activate', tabId: id }, window.id)
   await waitFor(() => tabs.contents(id) !== undefined && tabs.contents(id) !== first)
   await waitFor((state) => state.runtime.tabs[id]?.loading === false, 5000)
   await waitFor((state) => state.runtime.tabs[id]?.canGoBack === true, 5000)

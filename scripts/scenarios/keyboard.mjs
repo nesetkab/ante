@@ -20,43 +20,38 @@ export default async function keyboard({ store, run, waitFor, windows, delay }) 
   await waitFor((state) => state.data.items[second]?.title === 'Second')
   await delay(300)
 
-  const focused = () =>
-    contents.executeJavaScript('document.activeElement?.textContent?.trim() ?? ""')
-  const press = (key) =>
-    contents.executeJavaScript(
-      `document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(key)}, bubbles: true, cancelable: true }))`,
-    )
-
-  const focusNewTab = () =>
-    contents.executeJavaScript(
-      `[...document.querySelectorAll('[data-row]')].find((row) => row.textContent.includes('New Tab'))?.focus()`,
-    )
-  for (let attempt = 0; attempt < 30 && !(await focused()).includes('New Tab'); attempt += 1) {
+  const script = `(() => {
+    const text = () => document.activeElement?.textContent?.trim() ?? ''
+    const press = (key) =>
+      document.activeElement.dispatchEvent(
+        new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }),
+      )
+    const rows = [...document.querySelectorAll('[data-row]')]
+    rows.find((row) => row.textContent.includes('New Tab'))?.focus()
+    if (!text().includes('New Tab')) return null
+    const seen = [text()]
+    for (const key of ['ArrowDown', 'ArrowDown', 'Home', 'End']) {
+      press(key)
+      seen.push(text())
+    }
+    press('Enter')
+    return seen
+  })()`
+  let steps = null
+  for (let attempt = 0; attempt < 30 && !steps; attempt += 1) {
     contents.focus()
-    await focusNewTab()
     await delay(100)
+    steps = await contents.executeJavaScript(script)
   }
-  assert((await focused()).includes('New Tab'), 'the new tab row should take focus')
-  await press('ArrowDown')
-  assert((await focused()).includes('Second'), 'arrow down should move to the newest tab')
-  await press('ArrowDown')
-  assert((await focused()).includes('First'), 'arrow down should move to the next tab')
-  await press('Home')
-  assert((await focused()).includes('New Tab'), 'home should jump to the first row')
-  await press('End')
-  assert((await focused()).includes('First'), 'end should jump to the last row')
-  await press('Enter')
-  try {
-    await waitFor(
-      (state) => state.data.windows[window.id].activeBySpace[space().id] === first,
-      3000,
+  assert(steps, 'the new tab row should take focus')
+  const expected = ['New Tab', 'Second', 'First', 'New Tab', 'First']
+  expected.forEach((label, index) => {
+    assert(
+      steps[index]?.includes(label),
+      `step ${index} should focus ${label}, got ${JSON.stringify(steps)}`,
     )
-  } catch {
-    const active = store.state.data.windows[window.id].activeBySpace[space().id]
-    throw new Error(
-      `enter should open the tab: active ${active}, first ${first}, second ${second}, focus "${await focused()}"`,
-    )
-  }
+  })
+  await waitFor((state) => state.data.windows[window.id].activeBySpace[space().id] === first, 3000)
 
   run({ type: 'commandBar/open', mode: 'new' }, window.id)
   const overlay = window.overlay.webContents
