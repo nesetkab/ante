@@ -12,7 +12,7 @@ Arc is being discontinued. Ante keeps the parts that made it good: a vertical si
 - **Sidebar with spaces.** Each space has its own pinned tabs, today tabs, color, icon and profile. Swipe sideways or press `Ctrl+1…9` to switch.
 - **Favorites, pinned and today tabs.** Pinned tabs remember their home URL. Today tabs archive themselves after 12 hours (configurable). Drag anything anywhere.
 - **Folders and split view.** Group pinned tabs into folders. Put up to four tabs side by side.
-- **Command bar.** `⌘T` searches open tabs, history, spaces and actions, with inline autocomplete and search suggestions.
+- **Command bar.** `⌘T` searches open tabs, history, spaces and actions, with inline autocomplete and search suggestions. Type a site like `youtube` and press Tab to search it directly. Pick any search engine, or add your own.
 - **Peek and little windows.** Links from pinned tabs open in a floating preview. `⌘⌥N` opens a quick window for one-off links.
 - **Boosts.** Restyle any site with CSS, JavaScript, fonts and colors, or zap away parts of a page.
 - **Air Traffic Control.** Route links from other apps into the right space.
@@ -23,7 +23,10 @@ Arc is being discontinued. Ante keeps the parts that made it good: a vertical si
 - **Notes and Easels.** Write notes or build freeform boards with text, drawings, links, images and page captures. Both live in the sidebar like tabs.
 - **Live folders.** Follow any site with a feed and keep its latest posts in a pinned folder.
 - **Capture** (`⌘⇧2`). Drag over any part of a page to copy and save it.
-- **Library** with history, downloads and archived tabs (`⌘Y`).
+- **Library** with history, downloads and archived tabs (`⌘Y`). A ring on the library button shows download progress.
+- **Favorites show unread counts** for sites like Gmail, Slack and Discord.
+- **Tabs go to sleep.** Today tabs you haven't touched in an hour free their memory and reload when you come back. Calls, music and anything on screen stay awake.
+- **Keyboard friendly.** Move through the sidebar with the arrow keys. `⌘⇧⌥C` copies the page as a Markdown link.
 - **Developer tools** docked next to the page.
 
 ## Getting started
