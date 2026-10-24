@@ -34,10 +34,12 @@ const FolderRow = memo(function FolderRow({ id, depth, persistent }: Omit<RowPro
   if (!folder) return null
 
   return (
-    <div className={styles.folder}>
+    <div className={styles.folder} data-folder>
       <div
         role="button"
         tabIndex={-1}
+        data-row
+        aria-expanded={folder.open}
         className={[styles.row, dragging && styles.dragging].filter(Boolean).join(' ')}
         style={{ paddingLeft: 10 + depth * 14 }}
         {...dropRow(id, depth)}
@@ -95,6 +97,9 @@ const SplitPane = memo(function SplitPane({ id }: { id: Id }) {
   return (
     <button
       type="button"
+      tabIndex={active ? 0 : -1}
+      data-row
+      aria-current={active ? 'page' : undefined}
       className={[styles.splitPane, active && styles.splitPaneActive].filter(Boolean).join(' ')}
       onClick={() => ante.command({ type: 'tab/activate', tabId: id })}
       title={tab.title || tab.url}

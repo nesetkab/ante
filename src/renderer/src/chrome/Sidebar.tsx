@@ -14,6 +14,7 @@ import { Favorites, FavoritesDrop } from './Favorites'
 import { ItemList } from './ItemList'
 import { selectActiveId } from './selectors'
 import { MiniPlayer } from './MiniPlayer'
+import { onRowKeyDown } from './rowKeys'
 import styles from './Sidebar.module.css'
 import { SpaceBar } from './SpaceBar'
 import { SpaceHeader } from './SpaceHeader'
@@ -137,7 +138,7 @@ export function Sidebar({ floating = false }: { floating?: boolean }) {
 
       {space && <Favorites profileId={space.profileId} />}
 
-      <div className={styles.scroll} data-drag-scroll>
+      <div className={styles.scroll} data-drag-scroll onKeyDown={onRowKeyDown}>
         {space && (
           <div key={space.id} className={styles.spaceContent}>
             <SpaceHeader space={space} />
@@ -166,6 +167,7 @@ export function Sidebar({ floating = false }: { floating?: boolean }) {
             <button
               type="button"
               className={[styles.row, styles.newTab].join(' ')}
+              data-row
               {...dropZone({
                 placement: { to: { type: 'today', spaceId: space.id }, index: 0 },
                 line: 'bottom',

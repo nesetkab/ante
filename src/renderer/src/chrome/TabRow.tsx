@@ -96,7 +96,9 @@ function TabRowView({ tab, runtime, active, depth, persistent, unread, compact }
   return (
     <div
       role="button"
-      tabIndex={-1}
+      tabIndex={active ? 0 : -1}
+      data-row
+      aria-current={active ? 'page' : undefined}
       className={[
         styles.row,
         active && styles.active,
