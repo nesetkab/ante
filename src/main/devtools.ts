@@ -9,6 +9,7 @@ interface Entry {
   view: WebContentsView
   inspected: WebContents
   host: BaseWindow | null
+  detach: () => void
 }
 
 export class DevtoolsDock {
@@ -48,12 +49,17 @@ export class DevtoolsDock {
     if (!inspected) return
     const view = new WebContentsView()
     view.setBackgroundColor('#ffffff')
-    const entry: Entry = { view, inspected, host: null }
+    const entry: Entry = { view, inspected, host: null, detach: () => undefined }
     this.#entries.set(tabId, entry)
     inspected.setDevToolsWebContents(view.webContents)
     inspected.openDevTools()
-    inspected.once('devtools-closed', () => this.#cleanup(tabId, entry))
-    inspected.once('destroyed', () => this.#cleanup(tabId, entry))
+    const cleanup = () => this.#cleanup(tabId, entry)
+    entry.detach = () => {
+      inspected.off('devtools-closed', cleanup)
+      inspected.off('destroyed', cleanup)
+    }
+    inspected.once('devtools-closed', cleanup)
+    inspected.once('destroyed', cleanup)
     const docked = mode === 'docked' && canDockDevtools(this.#store.state.data, tabId)
     if (!docked) this.#popOut(tabId, entry)
     this.#runtime(tabId, docked ? 'docked' : 'window')
@@ -116,6 +122,7 @@ export class DevtoolsDock {
   #cleanup(tabId: Id, entry: Entry): void {
     if (this.#entries.get(tabId) !== entry) return
     this.#entries.delete(tabId)
+    entry.detach()
     const host = entry.host
     entry.host = null
     if (host && !host.isDestroyed()) host.close()

@@ -2,7 +2,9 @@ import { join } from 'node:path'
 import {
   app,
   BrowserWindow,
+  dialog,
   session as electronSession,
+  webContents,
   type BaseWindow,
   type ContextMenuParams,
   type MenuItem,
@@ -11,6 +13,8 @@ import {
 } from 'electron'
 import { ElectronChromeExtensions } from 'electron-chrome-extensions'
 import { installChromeWebStore } from 'electron-chrome-web-store'
+import { describeExtensionAccess, WEB_STORE_ORIGIN } from '@shared/extensions'
+import { originOf } from '@shared/permissions'
 import type { Id } from '@shared/schema'
 import { isPrivateProfile } from '@shared/state/private'
 import { activeTabId, visibleTabIds } from '@shared/state/tree'
@@ -18,6 +22,9 @@ import type { CommandRunner } from './commands'
 import type { Store } from './store'
 import type { TabManager } from './tabs'
 import type { AppWindow, WindowManager } from './windows'
+
+type WebStoreOptions = NonNullable<Parameters<typeof installChromeWebStore>[0]>
+type ExtensionInstallDetails = Parameters<NonNullable<WebStoreOptions['beforeInstall']>>[0]
 
 interface ExtensionDeps {
   store: Store
@@ -42,10 +49,10 @@ export class Extensions {
     const extensions = new ElectronChromeExtensions({
       license: 'GPL-3.0',
       session,
-      createTab: (details) => this.#createTab(details),
+      createTab: (details) => this.#createTab(profileId, details),
       selectTab: (contents) => this.#selectTab(contents),
       removeTab: (contents) => this.#removeTab(contents),
-      createWindow: (details) => this.#createWindow(details),
+      createWindow: (details) => this.#createWindow(profileId, details),
       removeWindow: (window) => {
         if (!window.isDestroyed()) window.close()
       },
@@ -54,9 +61,33 @@ export class Extensions {
     installChromeWebStore({
       session,
       extensionsPath: join(app.getPath('userData'), 'Extensions', profileId),
+      beforeInstall: (details) => this.#confirmInstall(details),
     }).catch((error: unknown) => {
       console.error('[extensions] web store setup failed', error)
     })
+  }
+
+  async #confirmInstall(details: ExtensionInstallDetails): Promise<{ action: 'allow' | 'deny' }> {
+    if (originOf(details.frame.url) !== WEB_STORE_ORIGIN) return { action: 'deny' }
+    const contents = webContents.fromFrame(details.frame)
+    const parent = (contents && this.#deps.windows.windowFor(contents)?.win) ?? undefined
+    const access = describeExtensionAccess(details.manifest)
+    const options = {
+      type: 'question' as const,
+      buttons: ['Add Extension', 'Cancel'],
+      defaultId: 1,
+      cancelId: 1,
+      message: `Add “${details.localizedName}”?`,
+      detail:
+        access.length > 0
+          ? `It will be able to:\n${access.map((line) => `• ${line}`).join('\n')}`
+          : '',
+      icon: details.icon,
+    }
+    const { response } = parent
+      ? await dialog.showMessageBox(parent, options)
+      : await dialog.showMessageBox(options)
+    return { action: response === 0 ? 'allow' : 'deny' }
   }
 
   sync(): void {
@@ -86,29 +117,41 @@ export class Extensions {
     const extensions = contents && this.#forContents(contents)
     if (!contents || !extensions || this.#tracked.get(contents) === window.win) return
     if (this.#tracked.has(contents)) extensions.removeTab(contents)
+    else contents.once('destroyed', () => this.#tracked.delete(contents))
     this.#tracked.set(contents, window.win)
     extensions.addTab(contents, window.win)
-    contents.once('destroyed', () => this.#tracked.delete(contents))
   }
 
   #windowFor(base: BaseWindow): AppWindow | undefined {
     return this.#deps.windows.all().find((window) => window.win === base)
   }
 
-  #targetWindow(): AppWindow {
+  #profileOf(window: AppWindow): Id | null {
+    const spaceId = window.data?.spaceId
+    return (spaceId && this.#deps.store.state.data.spaces[spaceId]?.profileId) ?? null
+  }
+
+  #windowForProfile(profileId: Id, preferred?: BaseWindow | null): AppWindow {
     const { windows, store } = this.#deps
-    const existing = windows.lastFocused('main')
+    const matches = (window: AppWindow) =>
+      window.kind === 'main' && this.#profileOf(window) === profileId
+    const requested = preferred ? this.#windowFor(preferred) : undefined
+    if (requested && matches(requested)) return requested
+    const existing = windows.lastFocusedWhere(matches)
     if (existing) return existing
-    const spaceId = store.state.data.spaceOrder[0]
-    if (!spaceId) throw new Error('No space to open a tab in')
+    const data = store.state.data
+    const spaceId = data.spaceOrder.find((id) => data.spaces[id]?.profileId === profileId)
+    if (!spaceId) throw new Error('No space uses this profile')
     return windows.createMain(spaceId)
   }
 
-  async #createTab(details: chrome.tabs.CreateProperties): Promise<[WebContents, BaseWindow]> {
-    const requested =
-      details.windowId === undefined ? undefined : BrowserWindow.fromId(details.windowId)
-    const window = (requested && this.#windowFor(requested)) ?? this.#targetWindow()
-    const spaceId = window.data?.spaceId ?? this.#deps.store.state.data.spaceOrder[0]
+  async #createTab(
+    profileId: Id,
+    details: chrome.tabs.CreateProperties,
+  ): Promise<[WebContents, BaseWindow]> {
+    const requested = details.windowId === undefined ? null : BrowserWindow.fromId(details.windowId)
+    const window = this.#windowForProfile(profileId, requested)
+    const spaceId = window.data?.spaceId
     if (!spaceId) throw new Error('No space to open a tab in')
     const runner = this.#deps.runner()
     const tabId = runner.createTab(details.url ?? 'about:blank', { type: 'today', spaceId })
@@ -132,11 +175,10 @@ export class Extensions {
     if (tabId) this.#deps.runner().run(window?.id ?? null, { type: 'tab/close', tabId })
   }
 
-  async #createWindow(details: chrome.windows.CreateData): Promise<BaseWindow> {
-    const spaceId =
-      this.#deps.windows.lastFocused('main')?.data?.spaceId ??
-      this.#deps.store.state.data.spaceOrder[0]
-    if (!spaceId) throw new Error('No space to open a window in')
+  async #createWindow(profileId: Id, details: chrome.windows.CreateData): Promise<BaseWindow> {
+    const data = this.#deps.store.state.data
+    const spaceId = data.spaceOrder.find((id) => data.spaces[id]?.profileId === profileId)
+    if (!spaceId) throw new Error('No space uses this profile')
     const window = this.#deps.windows.createMain(spaceId)
     const urls =
       details.url === undefined ? [] : Array.isArray(details.url) ? details.url : [details.url]

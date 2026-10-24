@@ -15,7 +15,13 @@ import { noteTabTitle, noteUrl } from '../notes'
 import { clearSitePermission, setSitePermissions } from '../permissions'
 import type { Action } from './actions'
 import { reduceBoosts } from './boosts'
-import { createPrivateSpace, isPrivateProfile, removePrivateProfile, samePrivacy } from './private'
+import {
+  createPrivateSpace,
+  isPrivateProfile,
+  removePrivateProfile,
+  samePrivacy,
+  isPrivateSpace,
+} from './private'
 import {
   descendantIds,
   displayTitle,
@@ -257,6 +263,10 @@ function deleteItems(state: AppState, rootId: Id): void {
 
 function archiveItem(state: AppState, id: Id, spaceId: Id, now: number): void {
   const { data } = state
+  if (isPrivateSpace(data, spaceId)) {
+    deleteItems(state, id)
+    return
+  }
   const entries = flattenTabs(data, [id])
     .map((tabId) => getTab(data, tabId))
     .filter((tab): tab is Tab => tab !== null)
@@ -724,7 +734,11 @@ export function reduce(state: AppState, action: Action): void {
       createPrivateSpace(data, action.profileId, action.spaceId)
       return
     case 'private/remove':
-      removePrivateProfile(state, action.profileId, { closeWindows: false })
+      if (removePrivateProfile(state, action.profileId, { closeWindows: false })) {
+        for (const [id, download] of Object.entries(runtime.downloads)) {
+          if (download.profileId === action.profileId) Reflect.deleteProperty(runtime.downloads, id)
+        }
+      }
       return
     case 'feed/create': {
       const space = data.spaces[action.spaceId]

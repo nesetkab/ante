@@ -4,6 +4,7 @@ import { domainMatches, findBoostForHost, hostnameOf } from '@shared/boosts'
 import type { Command } from '@shared/commands'
 import { IPC, type UiEvent } from '@shared/ipc'
 import { findRoute } from '@shared/routing'
+import { isPrivateSpace } from '@shared/state/private'
 import { zapSelectorSchema, type Id } from '@shared/schema'
 import { activeTabId, getTab } from '@shared/state/tree'
 import type { BoostManager } from './boosts'
@@ -97,16 +98,22 @@ export class Features {
     const route = findRoute(data.routes, url, (spaceId) => data.spaces[spaceId] !== undefined)
     if (process.platform === 'darwin') app.focus({ steal: true })
     if (!route && data.settings.externalLinks === 'little') {
-      runner.run(windows.lastFocused('main')?.id ?? null, { type: 'window/little', input: url })
+      runner.run(this.#normalWindow()?.id ?? null, { type: 'window/little', input: url })
       return
     }
     const spaceId = route?.spaceId ?? data.spaceOrder[0]
     if (!spaceId) return
-    const target = windows.lastFocused('main') ?? windows.createMain(spaceId)
+    const target = this.#normalWindow() ?? windows.createMain(spaceId)
     if (target.win.isMinimized()) target.win.restore()
     if (route) runner.run(target.id, { type: 'space/select', spaceId: route.spaceId })
     runner.run(target.id, { type: 'open', input: url, disposition: 'newTab' })
     target.win.focus()
+  }
+
+  #normalWindow(): AppWindow | undefined {
+    return this.#deps.windows.lastFocusedWhere(
+      (window) => window.kind === 'main' && !isPrivateSpace(this.#data, window.data?.spaceId),
+    )
   }
 
   #mainParent(window: AppWindow): AppWindow {

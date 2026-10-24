@@ -68,6 +68,17 @@ function FindBar({ tabId, find }: { tabId: Id; find: FindState }) {
   )
 }
 
+const ARM_DELAY_MS = 500
+
+function useArmed(): boolean {
+  const [armed, setArmed] = useState(false)
+  useEffect(() => {
+    const timer = window.setTimeout(() => setArmed(true), ARM_DELAY_MS)
+    return () => window.clearTimeout(timer)
+  }, [])
+  return armed
+}
+
 function siteName(origin: string): string {
   return origin.replace(/^https?:\/\//, '')
 }
@@ -80,8 +91,11 @@ function PermissionCard({
   prompt: Extract<Prompt, { kind: 'permission' }>
 }) {
   const [remember, setRemember] = useState(true)
-  const respond = (allow: boolean) =>
-    ante.command({ type: 'permission/respond', tabId, promptId: prompt.id, allow, remember })
+  const armed = useArmed()
+  const respond = (allow: boolean) => {
+    if (armed)
+      ante.command({ type: 'permission/respond', tabId, promptId: prompt.id, allow, remember })
+  }
   return (
     <div className={styles.card}>
       <div className={styles.prompt}>
@@ -111,7 +125,9 @@ function PermissionCard({
 
 function ScreenCard({ tabId, prompt }: { tabId: Id; prompt: Extract<Prompt, { kind: 'screen' }> }) {
   const [selected, setSelected] = useState<string | null>(prompt.sources[0]?.id ?? null)
-  const respond = (allow: boolean) =>
+  const armed = useArmed()
+  const respond = (allow: boolean) => {
+    if (!armed) return
     ante.command({
       type: 'permission/respond',
       tabId,
@@ -120,6 +136,7 @@ function ScreenCard({ tabId, prompt }: { tabId: Id; prompt: Extract<Prompt, { ki
       remember: false,
       ...(selected ? { sourceId: selected } : {}),
     })
+  }
   return (
     <div className={styles.card}>
       <div className={styles.prompt}>
@@ -175,7 +192,7 @@ export function Popover() {
   if (!popover) return null
   return (
     <div className={styles.popover}>
-      {popover.find && <FindBar tabId={popover.tabId} find={popover.find} />}
+      {popover.find && <FindBar key={popover.tabId} tabId={popover.tabId} find={popover.find} />}
       {popover.prompt?.kind === 'permission' && (
         <PermissionCard key={popover.prompt.id} tabId={popover.tabId} prompt={popover.prompt} />
       )}

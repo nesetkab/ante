@@ -1,22 +1,39 @@
 import { useEffect, useRef } from 'react'
 
+interface Pending<T> {
+  timer: number
+  value: T
+}
+
 export function useDebouncedCallback<T>(callback: (value: T) => void, delay: number) {
-  const timer = useRef<number | null>(null)
+  const pending = useRef<Pending<T> | null>(null)
   const latest = useRef(callback)
+
   useEffect(() => {
     latest.current = callback
   }, [callback])
-  useEffect(
-    () => () => {
-      if (timer.current !== null) window.clearTimeout(timer.current)
-    },
-    [],
-  )
+
+  useEffect(() => {
+    const flush = () => {
+      const current = pending.current
+      if (!current) return
+      window.clearTimeout(current.timer)
+      pending.current = null
+      latest.current(current.value)
+    }
+    window.addEventListener('pagehide', flush)
+    return () => {
+      window.removeEventListener('pagehide', flush)
+      flush()
+    }
+  }, [])
+
   return (value: T) => {
-    if (timer.current !== null) window.clearTimeout(timer.current)
-    timer.current = window.setTimeout(() => {
-      timer.current = null
+    if (pending.current) window.clearTimeout(pending.current.timer)
+    const timer = window.setTimeout(() => {
+      pending.current = null
       latest.current(value)
     }, delay)
+    pending.current = { timer, value }
   }
 }

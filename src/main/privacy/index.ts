@@ -172,7 +172,7 @@ export class Privacy {
       {
         label: 'Block Ads and Trackers',
         type: 'checkbox',
-        enabled: adblock,
+        enabled: adblock && !isPrivateProfile(profileId),
         checked: adblock && !isAllowlisted(adblockAllowlist, tab.url),
         click: () =>
           dispatch({

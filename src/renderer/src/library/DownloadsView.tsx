@@ -1,3 +1,4 @@
+import { isPrivateProfile } from '@shared/state/private'
 import { Download, FileDown, FolderOpen, Pause, Play, RotateCw, X } from 'lucide-react'
 import { useMemo } from 'react'
 import { downloadProgress, formatBytes, isActiveDownload } from '@shared/downloads'
@@ -5,7 +6,7 @@ import type { DownloadRuntime } from '@shared/schema'
 import { hostOf } from '@shared/url'
 import { IconButton } from '../components/IconButton'
 import { library } from '../libraryApi'
-import { useAppState } from '../store'
+import { useAppState, useWindowData } from '../store'
 import styles from './Library.module.css'
 
 function statusLine(download: DownloadRuntime): string {
@@ -97,9 +98,20 @@ function DownloadRow({ download }: { download: DownloadRuntime }) {
 
 export function DownloadsView() {
   const downloads = useAppState((state) => state.runtime.downloads)
+  const window = useWindowData()
+  const profileId = useAppState((state) =>
+    window ? (state.data.spaces[window.spaceId]?.profileId ?? null) : null,
+  )
   const sorted = useMemo(
-    () => Object.values(downloads).sort((a, b) => b.startedAt - a.startedAt),
-    [downloads],
+    () =>
+      Object.values(downloads)
+        .filter(
+          (download) =>
+            download.profileId === profileId ||
+            (!isPrivateProfile(download.profileId) && !isPrivateProfile(profileId)),
+        )
+        .sort((a, b) => b.startedAt - a.startedAt),
+    [downloads, profileId],
   )
   const finished = sorted.filter((download) => !isActiveDownload(download)).length
 

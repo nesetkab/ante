@@ -365,6 +365,14 @@ export class WindowManager {
     return undefined
   }
 
+  lastFocusedWhere(predicate: (window: AppWindow) => boolean): AppWindow | undefined {
+    for (const id of this.#focusOrder) {
+      const window = this.#windows.get(id)
+      if (window && !window.win.isDestroyed() && predicate(window)) return window
+    }
+    return undefined
+  }
+
   windowFor(contents: WebContents): AppWindow | undefined {
     const tabId = this.#ctx.tabs.tabIdFor(contents)
     const view = tabId ? this.#ctx.tabs.get(tabId) : undefined

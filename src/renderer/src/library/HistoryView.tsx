@@ -23,10 +23,12 @@ export function HistoryView({ query }: { query: string }) {
   const [complete, setComplete] = useState(false)
   const [loaded, setLoaded] = useState(false)
   const loadingMore = useRef(false)
+  const generation = useRef(0)
   const sentinel = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     let cancelled = false
+    generation.current += 1
     const timer = setTimeout(
       () => {
         library
@@ -51,9 +53,11 @@ export function HistoryView({ query }: { query: string }) {
     const last = entries.at(-1)
     if (complete || loadingMore.current || !last) return
     loadingMore.current = true
+    const requested = generation.current
     library
       .searchHistory({ query, limit: PAGE, order: 'recent', before: last.lastVisit })
       .then((result) => {
+        if (requested !== generation.current) return
         setEntries((current) => [...current, ...result.entries])
         setComplete(result.entries.length < PAGE)
       })

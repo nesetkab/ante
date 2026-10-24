@@ -12,6 +12,7 @@ import type { Command, Disposition } from '@shared/commands'
 import { fuzzyMatch, rank } from '@shared/fuzzy'
 import type { Data, Id } from '@shared/schema'
 import { shortcuts, type Platform } from '@shared/shortcuts'
+import { isPrivateSpace } from '@shared/state/private'
 import { activeTabId, displayTitle, getTab, spaceTabOrder } from '@shared/state/tree'
 import { displayUrl, resolveInput, searchUrls } from '@shared/url'
 import { ante } from '../ante'
@@ -51,6 +52,7 @@ function dispositionFor(event: KeyboardEvent, fallback: Disposition): Dispositio
 
 function collectTabs(data: Data, spaceId: Id): Id[] {
   const own = spaceTabOrder(data, spaceId)
+  if (isPrivateSpace(data, spaceId)) return own
   const others = data.spaceOrder
     .filter((id) => id !== spaceId)
     .flatMap((id) => spaceTabOrder(data, id))
@@ -192,9 +194,9 @@ export function CommandBar({ mode }: { mode: 'new' | 'edit' }) {
         })
       }
 
-      const spaces = data.spaceOrder
-        .map((id) => data.spaces[id])
-        .filter((space) => space !== undefined)
+      const spaces = isPrivateSpace(data, window.spaceId)
+        ? []
+        : data.spaceOrder.map((id) => data.spaces[id]).filter((space) => space !== undefined)
       for (const space of rank(text, spaces, (space) => [space.name]).slice(0, 1)) {
         result.push({
           key: `space:${space.id}`,
