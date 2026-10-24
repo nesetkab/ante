@@ -52,6 +52,7 @@ export function createInitialData(spaceId: Id): Data {
       sidebarSide: 'left',
       theme: 'system',
       adblock: true,
+      globalPrivacyControl: true,
       peekExternalLinks: true,
       externalLinks: 'little',
       adblockAllowlist: [],

@@ -21,6 +21,10 @@ export default defineConfig({
       minify: true,
       externalizeDeps: false,
       rollupOptions: {
+        input: {
+          index: resolve(import.meta.dirname, 'src/preload/index.ts'),
+          page: resolve(import.meta.dirname, 'src/preload/page.ts'),
+        },
         output: { format: 'cjs', entryFileNames: '[name].cjs' },
       },
     },

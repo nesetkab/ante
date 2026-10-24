@@ -453,6 +453,16 @@ export function SettingsPanel() {
             onChange={(adblock) => update({ adblock })}
           />
         </Row>
+        <Row
+          label="Ask sites not to sell or share my data"
+          hint="Sends the Global Privacy Control signal"
+        >
+          <Toggle
+            label="Global Privacy Control"
+            checked={settings.globalPrivacyControl}
+            onChange={(globalPrivacyControl) => update({ globalPrivacyControl })}
+          />
+        </Row>
         {settings.adblockAllowlist.length > 0 && (
           <div className={styles.list}>
             {settings.adblockAllowlist.map((host) => (

@@ -33,6 +33,7 @@ import { AdBlocker } from './privacy/adblock'
 import { Persistence } from './persistence'
 import { Sessions } from './sessions'
 import { Store } from './store'
+import { PrivacySignals } from './privacy/signals'
 import { SyncManager } from './sync'
 import { UpdateChecker } from './updates'
 import { SurfaceRegistry } from './surfaces'
@@ -143,6 +144,12 @@ async function start(): Promise<void> {
   })
   const adblock = new AdBlocker(store, tabs, join(app.getPath('userData'), 'adblock'))
   sessions.onCreate((profileSession) => adblock.attach(profileSession))
+  const signals = new PrivacySignals(store)
+  sessions.onCreate((profileSession) => signals.attach(profileSession))
+  store.subscribe((change) => {
+    const before = change.prev.data.settings.globalPrivacyControl
+    if (before !== change.state.data.settings.globalPrivacyControl) signals.sync()
+  })
   const extensions = new Extensions({ store, tabs, windows, runner: () => runner })
   sessions.onCreate((profileSession, profileId) => extensions.attach(profileSession, profileId))
   for (const profileId of Object.keys(store.state.data.profiles)) {

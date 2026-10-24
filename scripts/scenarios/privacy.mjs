@@ -18,8 +18,11 @@ async function eventually(check, message, attempts = 60) {
   throw new Error(message)
 }
 
+const gpcHeaders = []
+
 function serve() {
-  const server = createServer((_request, response) => {
+  const server = createServer((request, response) => {
+    gpcHeaders.push(request.headers['sec-gpc'])
     response.writeHead(200, { 'content-type': 'text/html' })
     response.end(html)
   })
@@ -42,6 +45,12 @@ export default async function privacy({ store, tabs, run, waitFor, windows }) {
     (item) => item.title === 'Privacy Test',
   ).id
   const contents = tabs.contents(tabId)
+
+  assert(gpcHeaders.includes('1'), 'requests should carry the Global Privacy Control header')
+  assert(
+    (await contents.executeJavaScript('navigator.globalPrivacyControl')) === true,
+    'pages should see navigator.globalPrivacyControl',
+  )
 
   await eventually(
     () => (store.state.runtime.tabs[tabId]?.blocked ?? 0) > 0,

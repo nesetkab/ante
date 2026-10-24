@@ -190,6 +190,7 @@ export const settingsSchema = z.object({
   sidebarSide: z.enum(['left', 'right']).default('left'),
   theme: themeModeSchema.default('system'),
   adblock: z.boolean().default(true),
+  globalPrivacyControl: z.boolean().default(true),
   peekExternalLinks: z.boolean().default(true),
   externalLinks: z.enum(['little', 'space']).default('little'),
   adblockAllowlist: z.array(z.string().min(1).max(253)).max(10000).default([]),
