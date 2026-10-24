@@ -22,6 +22,7 @@ export function buildAppMenu(
     list
       .filter((shortcut) => shortcut.section === section)
       .map((shortcut) => ({
+        id: shortcut.id,
         label: shortcut.label,
         accelerator: shortcut.accelerator,
         visible: !shortcut.hidden,
