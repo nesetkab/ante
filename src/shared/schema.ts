@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { LoadError } from './loadErrors'
 import { sitePermissionsSchema, type FindState, type Prompt } from './permissions'
 
 type DefaultedShape = Record<string, z.ZodDefault>
@@ -284,6 +285,7 @@ export interface TabRuntime {
   find: FindState | null
   media: TabMedia | null
   devtools: DevtoolsMode | null
+  error: LoadError | null
 }
 
 export interface TabMedia {

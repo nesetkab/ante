@@ -1,0 +1,64 @@
+.problem {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--content-shadow);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: min(440px, 80%);
+}
+
+.icon {
+  color: var(--fg-muted);
+}
+
+.title {
+  margin: 4px 0 0;
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.detail {
+  margin: 0;
+  line-height: 1.5;
+  color: var(--fg-muted);
+}
+
+.url {
+  margin: 0;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font:
+    12px ui-monospace,
+    'SF Mono',
+    Menlo,
+    monospace;
+  color: var(--fg-faint);
+}
+
+.retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  margin-top: 8px;
+  padding: 0 14px;
+  border-radius: 7px;
+  font-weight: 500;
+  color: #fff;
+  background: var(--accent);
+}
+
+.retry:hover {
+  background: color-mix(in oklab, var(--accent) 88%, black);
+}

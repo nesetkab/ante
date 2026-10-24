@@ -11,6 +11,7 @@ import styles from './ChromeSurface.module.css'
 import { LittleToolbar } from './LittleToolbar'
 import { EaselEditor } from './easel/EaselEditor'
 import { NoteEditor } from './NoteEditor'
+import { TabProblem } from './TabProblem'
 import { Sidebar } from './Sidebar'
 import { Toasts } from './Toasts'
 
@@ -167,6 +168,10 @@ function ContentFrames() {
         }
         if (page?.kind === 'easel') {
           return <EaselEditor key={pane.tabId} easelId={page.id} rect={pane.rect} />
+        }
+        const problem = runtime.tabs[pane.tabId]
+        if (problem?.error || problem?.crashed) {
+          return <TabProblem key={pane.tabId} tabId={pane.tabId} rect={pane.rect} />
         }
         return (
           <div

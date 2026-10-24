@@ -158,6 +158,11 @@ export class AppWindow {
 
     for (const pane of layout.panes) {
       if (claimed.has(pane.tabId)) continue
+      const problem = runtime.tabs[pane.tabId]
+      if (problem?.error || problem?.crashed) {
+        claimed.add(pane.tabId)
+        continue
+      }
       const view = this.#ctx.tabs.ensure(pane.tabId)
       if (!view) continue
       claimed.add(pane.tabId)

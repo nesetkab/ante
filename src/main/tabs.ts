@@ -1,5 +1,6 @@
 import { WebContentsView, type ContextMenuParams, type WebContents } from 'electron'
 import type { Id, TabRuntime } from '@shared/schema'
+import { IGNORED_LOAD_ERRORS } from '@shared/loadErrors'
 import { isInternalPage } from '@shared/pages'
 import { getTab } from '@shared/state/tree'
 import type { Sessions } from './sessions'
@@ -115,6 +116,19 @@ export class TabManager {
     }
 
     contents.on('did-start-loading', () => this.#runtime(id, { loading: true, crashed: false }))
+    contents.on('did-start-navigation', (details) => {
+      if (
+        details.isMainFrame &&
+        !details.isSameDocument &&
+        this.#store.state.runtime.tabs[id]?.error
+      ) {
+        this.#runtime(id, { error: null })
+      }
+    })
+    contents.on('did-fail-load', (_event, code, _description, url, isMainFrame) => {
+      if (!isMainFrame || IGNORED_LOAD_ERRORS.has(code)) return
+      this.#runtime(id, { loading: false, error: { code, url } })
+    })
     contents.on('did-stop-loading', () => {
       this.#runtime(id, { loading: false })
       this.#navigationState(id, contents)

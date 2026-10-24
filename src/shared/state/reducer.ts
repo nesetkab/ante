@@ -55,6 +55,7 @@ export const defaultTabRuntime: TabRuntime = {
   find: null,
   media: null,
   devtools: null,
+  error: null,
 }
 
 export const defaultWindowRuntime: WindowRuntime = {
