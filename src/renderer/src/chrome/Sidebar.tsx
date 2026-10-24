@@ -9,6 +9,7 @@ import { DragLayer } from './DragLayer'
 import { dropZone } from './dropTargets'
 import { Favorites, FavoritesDrop } from './Favorites'
 import { ItemList } from './ItemList'
+import { MiniPlayer } from './MiniPlayer'
 import styles from './Sidebar.module.css'
 import { SpaceBar } from './SpaceBar'
 import { SpaceHeader } from './SpaceHeader'
@@ -173,6 +174,7 @@ export function Sidebar({ floating = false }: { floating?: boolean }) {
         )}
       </div>
 
+      <MiniPlayer />
       <SpaceBar />
       <DragLayer />
     </aside>

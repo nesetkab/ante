@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { BrowserWindow, WebContentsView, screen, type View, type WebContents } from 'electron'
+import { dockedDevtoolsTabId } from '@shared/devtools'
 import { computeLayout, type Layout } from '@shared/layout'
 import { popoverFor, popoverRect } from '@shared/popover'
 import type { Id, Rect, WindowData, WindowKind } from '@shared/schema'
@@ -21,6 +22,7 @@ interface WindowContext {
   onFocus(id: Id): void
   onClosing(id: Id): void
   onClosed(id: Id): void
+  devtoolsView?(tabId: Id): View | undefined
 }
 
 interface Plan {
@@ -143,7 +145,8 @@ export class AppWindow {
     const [width = 0, height = 0] = this.win.getContentSize()
     const fullscreenTabId =
       visibleTabIds(data, window).find((id) => runtime.tabs[id]?.fullscreen) ?? null
-    const layout = computeLayout({ width, height, window, data, fullscreenTabId })
+    const devtoolsTabId = fullscreenTabId ? null : dockedDevtoolsTabId(data, runtime, window)
+    const layout = computeLayout({ width, height, window, data, fullscreenTabId, devtoolsTabId })
     const overlayState = runtime.windows[this.id]?.overlay ?? null
     const views: View[] = []
 
@@ -155,6 +158,14 @@ export class AppWindow {
       view.setBounds(pane.rect)
       view.setBorderRadius(layout.radius)
       views.push(view)
+    }
+
+    const inspected = layout.devtools && this.#ctx.tabs.get(layout.devtools.tabId)
+    const devtoolsView = layout.devtools && this.#ctx.devtoolsView?.(layout.devtools.tabId)
+    if (layout.devtools && devtoolsView && inspected && views.includes(inspected)) {
+      devtoolsView.setBounds(layout.devtools.view)
+      devtoolsView.setBorderRadius(layout.radius)
+      views.push(devtoolsView)
     }
 
     const peekId =
@@ -250,6 +261,7 @@ export class WindowManager {
   readonly #ctx: WindowContext
   #focusOrder: Id[] = []
   #syncScheduled = false
+  readonly #syncListeners = new Set<() => void>()
 
   constructor(
     ctx: Omit<
@@ -378,5 +390,11 @@ export class WindowManager {
     const plans = ordered.map((window) => [window, window.plan(claimed)] as const)
     for (const [window, plan] of plans) window.detachStale(plan)
     for (const [window, plan] of plans) window.attach(plan)
+    for (const listener of this.#syncListeners) listener()
+  }
+
+  onSync(listener: () => void): () => void {
+    this.#syncListeners.add(listener)
+    return () => this.#syncListeners.delete(listener)
   }
 }

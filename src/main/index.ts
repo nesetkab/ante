@@ -19,6 +19,8 @@ import { DownloadManager } from './downloads'
 import { HistoryStore, recordHistory } from './history'
 import { registerLibraryIpc } from './libraryIpc'
 import { buildAppMenu } from './menu'
+import { DevtoolsDock } from './devtools'
+import { MediaController } from './media'
 import { PanelManager } from './panels'
 import { Privacy } from './privacy'
 import { AdBlocker } from './privacy/adblock'
@@ -77,7 +79,16 @@ async function start(): Promise<void> {
       })
     },
   })
-  const windows = new WindowManager({ store, tabs, surfaces, isQuitting: () => quitting })
+  const devtools = new DevtoolsDock(store, tabs, () => windows.scheduleSync())
+  const windows = new WindowManager({
+    store,
+    tabs,
+    surfaces,
+    isQuitting: () => quitting,
+    devtoolsView: (tabId) => devtools.viewFor(tabId),
+  })
+  const media = new MediaController(store, tabs)
+  windows.onSync(() => media.sync())
   const boosts = new BoostManager(store, tabs)
   boosts.start()
   const panels = new PanelManager(store, surfaces)
@@ -100,6 +111,8 @@ async function start(): Promise<void> {
     },
     runFeature: (window, command) => features.run(window, command),
     runPrivacy: (window, command) => privacy.run(window, command),
+    media,
+    devtools,
   })
   const privacy = new Privacy({
     store,

@@ -146,6 +146,8 @@ export const settingsSchema = z.object({
   peekExternalLinks: z.boolean().default(true),
   externalLinks: z.enum(['little', 'space']).default('little'),
   adblockAllowlist: z.array(z.string().min(1).max(253)).max(10000).default([]),
+  autoPip: z.boolean().default(true),
+  devtoolsWidth: z.number().min(280).max(1600).default(480),
 })
 export type Settings = z.infer<typeof settingsSchema>
 export const settingsPatchSchema = withoutDefaults(settingsSchema).partial()
@@ -224,7 +226,22 @@ export interface TabRuntime {
   blocked: number
   prompt: Prompt | null
   find: FindState | null
+  media: TabMedia | null
+  devtools: DevtoolsMode | null
 }
+
+export interface TabMedia {
+  playing: boolean
+  controllable: boolean
+  video: boolean
+  pip: boolean
+  title: string | null
+  artist: string | null
+  artwork: string | null
+  startedAt: number
+}
+
+export type DevtoolsMode = 'docked' | 'window'
 
 export const librarySectionSchema = z.enum(['history', 'archive', 'downloads'])
 export type LibrarySection = z.infer<typeof librarySectionSchema>

@@ -54,6 +54,8 @@ export function createInitialData(spaceId: Id): Data {
       peekExternalLinks: true,
       externalLinks: 'little',
       adblockAllowlist: [],
+      autoPip: true,
+      devtoolsWidth: 480,
     },
     boosts: {},
     routes: [],

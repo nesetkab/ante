@@ -98,6 +98,24 @@ export const commandSchema = z.discriminatedUnion('type', [
     storage: z.boolean(),
   }),
   z.object({ type: z.literal('window/newPrivate') }),
+  z.object({ type: z.literal('media/toggle'), tabId: idSchema }),
+  z.object({ type: z.literal('media/pip'), tabId: idSchema }),
+  z.object({
+    type: z.literal('tab/devtoolsMode'),
+    ...optionalTab.shape,
+    mode: z.enum(['docked', 'window']),
+  }),
+  z.object({
+    type: z.literal('tab/inspect'),
+    ...optionalTab.shape,
+    x: z.number().int(),
+    y: z.number().int(),
+  }),
+  z.object({
+    type: z.literal('extensions/menu'),
+    profileId: idSchema,
+    extensionId: z.string().regex(/^[a-p]{32}$/),
+  }),
 ])
 export type Command = z.infer<typeof commandSchema>
 export type CommandType = Command['type']

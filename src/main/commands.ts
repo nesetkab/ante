@@ -18,6 +18,8 @@ import { IPC, type UiEvent } from '@shared/ipc'
 import { copyText } from './clipboard'
 import { describeArcImport, importFromArc } from './importers/arc'
 import type { FeatureCommand } from './features'
+import type { DevtoolsDock } from './devtools'
+import type { MediaController } from './media'
 import type { PrivacyCommand } from './privacy'
 import { showSidebarMenu } from './sidebarMenu'
 import { deleteSpaceWithConfirm } from './spaceDelete'
@@ -33,6 +35,8 @@ interface Deps {
   openSettings: () => void
   runFeature: (window: AppWindow, command: FeatureCommand) => void
   runPrivacy: (window: AppWindow, command: PrivacyCommand) => void
+  media: Pick<MediaController, 'toggle' | 'togglePip'>
+  devtools: Pick<DevtoolsDock, 'toggle' | 'setMode' | 'inspect'>
 }
 
 export class CommandRunner {
@@ -42,6 +46,8 @@ export class CommandRunner {
   readonly #openSettings: () => void
   readonly #runFeature: (window: AppWindow, command: FeatureCommand) => void
   readonly #runPrivacy: (window: AppWindow, command: PrivacyCommand) => void
+  readonly #media: Deps['media']
+  readonly #devtools: Deps['devtools']
 
   constructor(deps: Deps) {
     this.#store = deps.store
@@ -50,6 +56,8 @@ export class CommandRunner {
     this.#openSettings = deps.openSettings
     this.#runFeature = deps.runFeature
     this.#runPrivacy = deps.runPrivacy
+    this.#media = deps.media
+    this.#devtools = deps.devtools
   }
 
   get #data() {
@@ -453,12 +461,26 @@ export class CommandRunner {
         return
       }
       case 'tab/devtools': {
-        const contents = contentsFor(command.tabId)
-        if (!contents) return
-        if (contents.isDevToolsOpened()) contents.closeDevTools()
-        else contents.openDevTools({ mode: 'detach' })
+        const tabId = tabFor(command.tabId)
+        if (tabId) this.#devtools.toggle(tabId)
         return
       }
+      case 'tab/devtoolsMode': {
+        const tabId = tabFor(command.tabId)
+        if (tabId) this.#devtools.setMode(tabId, command.mode)
+        return
+      }
+      case 'tab/inspect': {
+        const tabId = tabFor(command.tabId)
+        if (tabId) this.#devtools.inspect(tabId, command.x, command.y)
+        return
+      }
+      case 'media/toggle':
+        void this.#media.toggle(command.tabId)
+        return
+      case 'media/pip':
+        void this.#media.togglePip(command.tabId)
+        return
       case 'tab/contextMenu':
         showSidebarMenu(command.tabId, {
           state: this.#store.state,

@@ -136,7 +136,10 @@ export function buildContextMenu(
     )
   }
 
-  items.push({ label: 'Inspect', click: () => contents.inspectElement(params.x, params.y) })
+  items.push({
+    label: 'Inspect',
+    click: () => run({ type: 'tab/inspect', tabId, x: params.x, y: params.y }),
+  })
   return items
 }
 

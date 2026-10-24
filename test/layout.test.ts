@@ -148,6 +148,7 @@ describe('peek, little windows and fullscreen', () => {
     const content = { x: 6, y: LITTLE_TOOLBAR_HEIGHT, width: 588, height: 354 }
     expect(result).toEqual({
       sidebar: null,
+      devtools: null,
       content,
       panes: [{ tabId: 'little', rect: content }],
       split: null,
@@ -166,11 +167,31 @@ describe('peek, little windows and fullscreen', () => {
     const full = { x: 0, y: 0, width: 1200, height: 800 }
     expect(result).toEqual({
       sidebar: null,
+      devtools: null,
       content: full,
       panes: [{ tabId: 'c', rect: full }],
       split: null,
       peek: null,
       radius: 0,
     })
+  })
+})
+
+describe('docked devtools', () => {
+  it('splits the page and devtools side by side', () => {
+    const result = layout(active('a'), { devtoolsTabId: 'a' }, withSettings({ devtoolsWidth: 400 }))
+    const page = result.panes[0]?.rect
+    expect(result.devtools?.frame.width).toBe(400)
+    expect(page && page.x + page.width + 8).toBe(result.devtools?.frame.x)
+    expect(result.devtools?.view.y).toBe((result.devtools?.frame.y ?? 0) + 32)
+  })
+
+  it('skips devtools when the window is too narrow', () => {
+    const result = layout(active('a'), { devtoolsTabId: 'a', width: 600 })
+    expect(result.devtools).toBeNull()
+  })
+
+  it('ignores devtools for tabs that are not visible', () => {
+    expect(layout(active('a'), { devtoolsTabId: 'b' }).devtools).toBeNull()
   })
 })

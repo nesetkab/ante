@@ -1,0 +1,62 @@
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: none;
+}
+
+.player {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 44px;
+  padding: 0 6px 0 4px;
+  border-radius: var(--radius);
+  background: var(--item-active);
+  box-shadow: var(--item-active-shadow);
+}
+
+.info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 4px;
+  text-align: left;
+}
+
+.artwork {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: color-mix(in oklab, var(--fg) 7%, transparent);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.title,
+.subtitle {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.title {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.subtitle {
+  font-size: 11px;
+  color: var(--fg-muted);
+}

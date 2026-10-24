@@ -7,10 +7,19 @@ export const LITTLE_TOOLBAR_HEIGHT = 40
 export const PEEK_TOOLBAR_HEIGHT = 44
 export const PEEK_MAX_WIDTH = 1280
 export const CONTENT_RADIUS = 8
+export const DEVTOOLS_HEADER_HEIGHT = 32
+export const DEVTOOLS_MIN_WIDTH = 280
+export const DEVTOOLS_MIN_PAGE_WIDTH = 240
 
 export interface Pane {
   tabId: Id
   rect: Rect
+}
+
+export interface DevtoolsPane {
+  tabId: Id
+  frame: Rect
+  view: Rect
 }
 
 export interface Layout {
@@ -20,6 +29,7 @@ export interface Layout {
   split: Split | null
   peek: Rect | null
   radius: number
+  devtools: DevtoolsPane | null
 }
 
 export interface LayoutInput {
@@ -28,6 +38,7 @@ export interface LayoutInput {
   window: WindowData
   data: Data
   fullscreenTabId: Id | null
+  devtoolsTabId?: Id | null
 }
 
 const rect = (x: number, y: number, width: number, height: number): Rect => ({
@@ -75,12 +86,38 @@ export function splitPanes(content: Rect, split: Split, tabIds: readonly Id[]): 
   })
 }
 
+export function devtoolsWidth(contentWidth: number, preferred: number): number {
+  const max = contentWidth - DEVTOOLS_MIN_PAGE_WIDTH - SPLIT_GAP
+  if (max < DEVTOOLS_MIN_WIDTH) return 0
+  return Math.round(Math.min(Math.max(preferred, DEVTOOLS_MIN_WIDTH), max))
+}
+
+function withDevtools(content: Rect, tabId: Id | null, preferred: number) {
+  const width = tabId ? devtoolsWidth(content.width, preferred) : 0
+  if (!tabId || width === 0) return { page: content, devtools: null }
+  const frame = rect(content.x + content.width - width, content.y, width, content.height)
+  return {
+    page: rect(content.x, content.y, content.width - width - SPLIT_GAP, content.height),
+    devtools: {
+      tabId,
+      frame,
+      view: rect(
+        frame.x,
+        frame.y + DEVTOOLS_HEADER_HEIGHT,
+        frame.width,
+        frame.height - DEVTOOLS_HEADER_HEIGHT,
+      ),
+    },
+  }
+}
+
 export function computeLayout({
   width,
   height,
   window,
   data,
   fullscreenTabId,
+  devtoolsTabId = null,
 }: LayoutInput): Layout {
   if (fullscreenTabId) {
     return {
@@ -90,6 +127,7 @@ export function computeLayout({
       split: null,
       peek: null,
       radius: 0,
+      devtools: null,
     }
   }
 
@@ -103,6 +141,7 @@ export function computeLayout({
       split: null,
       peek: null,
       radius: CONTENT_RADIUS,
+      devtools: null,
     }
   }
 
@@ -110,10 +149,12 @@ export function computeLayout({
   const active = activeTabId(data, window)
   const split = active ? parentSplit(data, active) : null
   const visible = visibleTabIds(data, window)
+  const docked = devtoolsTabId && visible.includes(devtoolsTabId) ? devtoolsTabId : null
+  const { page, devtools } = withDevtools(content, docked, data.settings.devtoolsWidth)
   const panes =
     split && visible.length > 1
-      ? splitPanes(content, split, visible)
-      : visible.map((tabId) => ({ tabId, rect: content }))
+      ? splitPanes(page, split, visible)
+      : visible.map((tabId) => ({ tabId, rect: page }))
 
   let peek: Rect | null = null
   if (window.peekTabId) {
@@ -133,5 +174,6 @@ export function computeLayout({
     split: split && visible.length > 1 ? split : null,
     peek,
     radius: CONTENT_RADIUS,
+    devtools,
   }
 }

@@ -66,6 +66,12 @@ export default async function smoke({ store, run, waitFor, windows }) {
   run({ type: 'peek/close' }, window.id)
   await waitFor((state) => state.data.windows[window.id].peekTabId === null)
 
+  const devtoolsTab = store.state.data.windows[window.id].activeBySpace[spaceId()]
+  run({ type: 'tab/devtools', tabId: devtoolsTab }, window.id)
+  await waitFor((state) => state.runtime.tabs[devtoolsTab]?.devtools === 'docked')
+  run({ type: 'tab/devtools', tabId: devtoolsTab }, window.id)
+  await waitFor((state) => !state.runtime.tabs[devtoolsTab]?.devtools)
+
   run({ type: 'space/new' }, window.id)
   await waitFor((state) => state.data.spaceOrder.length === 2)
   assert(
