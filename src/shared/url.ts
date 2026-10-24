@@ -36,6 +36,24 @@ const LOCAL_HOST = /^(localhost|127(?:\.\d{1,3}){3}|\[::1\]|0\.0\.0\.0)(:\d+)?(\
 const IPV4 = /^\d{1,3}(\.\d{1,3}){3}(:\d+)?(\/.*)?$/
 const DOMAIN = /^([a-z0-9-]+\.)+[a-z][a-z0-9-]{1,62}\.?(:\d+)?([/?#].*)?$/i
 
+const FRAGMENT_WORDS = 4
+const MAX_EXACT_LENGTH = 80
+
+const fragmentPart = (text: string) =>
+  encodeURIComponent(text).replace(/-/g, '%2D').replace(/,/g, '%2C').replace(/&/g, '%26')
+
+export function highlightLink(pageUrl: string, selection: string): string | null {
+  const text = selection.replace(/\s+/g, ' ').trim()
+  if (!text || !isWebUrl(pageUrl)) return null
+  const base = pageUrl.split('#')[0] ?? pageUrl
+  const words = text.split(' ')
+  const directive =
+    text.length <= MAX_EXACT_LENGTH || words.length <= FRAGMENT_WORDS * 2
+      ? fragmentPart(text)
+      : `${fragmentPart(words.slice(0, FRAGMENT_WORDS).join(' '))},${fragmentPart(words.slice(-FRAGMENT_WORDS).join(' '))}`
+  return `${base}#:~:text=${directive}`
+}
+
 export function markdownLink(title: string, url: string): string {
   const text =
     title

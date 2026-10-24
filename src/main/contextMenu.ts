@@ -7,7 +7,7 @@ import {
 } from 'electron'
 import type { Command } from '@shared/commands'
 import type { Id } from '@shared/schema'
-import { isWebUrl, searchUrl } from '@shared/url'
+import { highlightLink, isWebUrl, searchUrl } from '@shared/url'
 import { copyText } from './clipboard'
 
 interface ContextMenuDeps {
@@ -95,6 +95,17 @@ export function buildContextMenu(
     const preview = text.length > 24 ? `${text.slice(0, 24)}…` : text
     items.push(
       { role: 'copy' },
+      ...(highlightLink(contents.getURL(), text)
+        ? [
+            {
+              label: 'Copy Link to Highlight',
+              click: () => {
+                const link = highlightLink(contents.getURL(), text)
+                if (link) copyText(link)
+              },
+            },
+          ]
+        : []),
       {
         label: `Search for “${preview}”`,
         click: () =>

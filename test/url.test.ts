@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { settingsPatchSchema } from '@shared/schema'
 import {
   displayUrl,
+  highlightLink,
   markdownLink,
   resolveInput,
   searchName,
@@ -113,5 +114,26 @@ describe('download folder', () => {
   it('cannot be set from the ui', () => {
     const parsed = settingsPatchSchema.safeParse({ downloadFolder: '/tmp' })
     expect(parsed.success && 'downloadFolder' in parsed.data).toBe(false)
+  })
+})
+
+describe('highlightLink', () => {
+  it('links short selections exactly and drops the old fragment', () => {
+    expect(highlightLink('https://a.test/page#top', '  Hello,  world-wide ')).toBe(
+      'https://a.test/page#:~:text=Hello%2C%20world%2Dwide',
+    )
+  })
+
+  it('uses a start and end for long selections', () => {
+    const text =
+      'one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen'
+    expect(highlightLink('https://a.test/', text)).toBe(
+      'https://a.test/#:~:text=one%20two%20three%20four,twelve%20thirteen%20fourteen%20fifteen',
+    )
+  })
+
+  it('skips pages that are not on the web', () => {
+    expect(highlightLink('ante:note/1', 'hello')).toBeNull()
+    expect(highlightLink('https://a.test/', '   ')).toBeNull()
   })
 })
