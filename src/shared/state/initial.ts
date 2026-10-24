@@ -58,6 +58,7 @@ export function createInitialData(spaceId: Id): Data {
       autoPip: true,
       checkUpdates: true,
       sleepAfter: '1h',
+      shortcuts: {},
       devtoolsWidth: 480,
       sync: { folder: null, deviceId: '', deviceName: '' },
     },

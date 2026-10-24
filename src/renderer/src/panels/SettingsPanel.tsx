@@ -1,5 +1,5 @@
-import { X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { RotateCcw, X } from 'lucide-react'
+import { useEffect, useState, type KeyboardEvent } from 'react'
 import { permissionLabels, sitePermissionSchema } from '@shared/permissions'
 import {
   customSearchSchema,
@@ -12,6 +12,7 @@ import {
   type SyncStatus,
   type UpdateStatus,
 } from '@shared/schema'
+import { acceleratorFor, conflictFor, withOverrides } from '@shared/keys'
 import { shortcuts, type Platform } from '@shared/shortcuts'
 import { isPrivateProfile } from '@shared/state/private'
 import { ante } from '../ante'
@@ -176,6 +177,114 @@ function CustomSearchRows({ current }: { current: CustomSearch | null }) {
         />
       </Row>
     </>
+  )
+}
+
+const platform = ante.platform as Platform
+
+function ShortcutsSection() {
+  const overrides = useAppState((state) => state.data.settings.shortcuts)
+  const [recording, setRecording] = useState<string | null>(null)
+  const [problem, setProblem] = useState<{ id: string; message: string } | null>(null)
+  const defaults = shortcuts(platform)
+  const all = withOverrides(defaults, overrides)
+
+  useEffect(() => {
+    if (!recording) return
+    ante.command({ type: 'shortcuts/recording', recording: true })
+    return () => ante.command({ type: 'shortcuts/recording', recording: false })
+  }, [recording])
+
+  const save = (id: string, accelerator: string | null) => {
+    const fallback = defaults.find((shortcut) => shortcut.id === id)?.accelerator ?? null
+    const rest = Object.fromEntries(Object.entries(overrides).filter(([key]) => key !== id))
+    update({ shortcuts: accelerator === fallback ? rest : { ...rest, [id]: accelerator } })
+    setRecording(null)
+    setProblem(null)
+  }
+
+  const onKeyDown = (id: string) => (event: KeyboardEvent<HTMLButtonElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    const plain = !event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey
+    if (event.key === 'Escape' && plain) {
+      setRecording(null)
+      setProblem(null)
+      return
+    }
+    if ((event.key === 'Backspace' || event.key === 'Delete') && plain) {
+      save(id, null)
+      return
+    }
+    const accelerator = acceleratorFor(event, platform)
+    if (!accelerator) return
+    const conflict = conflictFor(all, id, accelerator, platform)
+    if (conflict) {
+      setProblem({ id, message: `${formatAccelerator(accelerator)} is used by ${conflict.label}` })
+      return
+    }
+    save(id, accelerator)
+  }
+
+  return (
+    <Section title="Keyboard shortcuts">
+      {all
+        .filter((shortcut) => !shortcut.hidden)
+        .map((shortcut) => {
+          const active = recording === shortcut.id
+          const changed = Object.hasOwn(overrides, shortcut.id)
+          return (
+            <Row
+              key={shortcut.id}
+              label={shortcut.label}
+              hint={
+                problem?.id === shortcut.id
+                  ? problem.message
+                  : active
+                    ? 'Press the new keys. Delete removes it, Escape cancels.'
+                    : undefined
+              }
+            >
+              {changed && (
+                <IconButton
+                  size="sm"
+                  label="Use default shortcut"
+                  onClick={() =>
+                    save(
+                      shortcut.id,
+                      defaults.find((item) => item.id === shortcut.id)?.accelerator ?? null,
+                    )
+                  }
+                >
+                  <RotateCcw size={13} />
+                </IconButton>
+              )}
+              <button
+                type="button"
+                className={[styles.kbdButton, active && styles.kbdRecording]
+                  .filter(Boolean)
+                  .join(' ')}
+                aria-pressed={active}
+                aria-label={`Change shortcut for ${shortcut.label}`}
+                onClick={() => {
+                  setProblem(null)
+                  setRecording(shortcut.id)
+                }}
+                onKeyDown={active ? onKeyDown(shortcut.id) : undefined}
+                onBlur={() => {
+                  if (active) setRecording(null)
+                }}
+              >
+                {active
+                  ? 'Press keys…'
+                  : shortcut.accelerator
+                    ? formatAccelerator(shortcut.accelerator)
+                    : 'Add'}
+              </button>
+            </Row>
+          )
+        })}
+    </Section>
   )
 }
 
@@ -423,15 +532,7 @@ export function SettingsPanel() {
 
       <UpdatesSection />
 
-      <Section title="Keyboard shortcuts">
-        {shortcuts(ante.platform as Platform)
-          .filter((shortcut) => !shortcut.hidden && shortcut.accelerator)
-          .map((shortcut) => (
-            <Row key={shortcut.id} label={shortcut.label}>
-              <span className={styles.kbd}>{formatAccelerator(shortcut.accelerator ?? '')}</span>
-            </Row>
-          ))}
-      </Section>
+      <ShortcutsSection />
     </>
   )
 }

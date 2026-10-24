@@ -41,6 +41,7 @@ interface Deps {
   tabs: TabManager
   windows: WindowManager
   openSettings: () => void
+  recordShortcuts: (window: AppWindow, recording: boolean) => void
   runFeature: (window: AppWindow, command: FeatureCommand) => void
   runPrivacy: (window: AppWindow, command: PrivacyCommand) => void
   runSync: (window: AppWindow, command: SyncCommand) => void
@@ -56,6 +57,7 @@ export class CommandRunner {
   readonly #tabs: TabManager
   readonly #windows: WindowManager
   readonly #openSettings: () => void
+  readonly #recordShortcuts: (window: AppWindow, recording: boolean) => void
   readonly #runFeature: (window: AppWindow, command: FeatureCommand) => void
   readonly #runPrivacy: (window: AppWindow, command: PrivacyCommand) => void
   readonly #runSync: (window: AppWindow, command: SyncCommand) => void
@@ -70,6 +72,7 @@ export class CommandRunner {
     this.#tabs = deps.tabs
     this.#windows = deps.windows
     this.#openSettings = deps.openSettings
+    this.#recordShortcuts = deps.recordShortcuts
     this.#runFeature = deps.runFeature
     this.#runPrivacy = deps.runPrivacy
     this.#runSync = deps.runSync
@@ -662,6 +665,9 @@ export class CommandRunner {
       }
       case 'settings/open':
         this.#openSettings()
+        return
+      case 'shortcuts/recording':
+        this.#recordShortcuts(window, command.recording)
         return
       case 'import/arc': {
         const result = importFromArc(this.#store)

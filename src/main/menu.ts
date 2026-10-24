@@ -1,5 +1,6 @@
 import { app, Menu, type MenuItemConstructorOptions } from 'electron'
 import type { Command } from '@shared/commands'
+import { withOverrides, type ShortcutOverrides } from '@shared/keys'
 import { shortcuts, type MenuSection, type Platform } from '@shared/shortcuts'
 
 const sectionLabels: Record<Exclude<MenuSection, 'edit'>, string> = {
@@ -10,10 +11,13 @@ const sectionLabels: Record<Exclude<MenuSection, 'edit'>, string> = {
   space: 'Spaces',
 }
 
-export function buildAppMenu(run: (command: Command) => void): Menu {
+export function buildAppMenu(
+  run: (command: Command) => void,
+  overrides: ShortcutOverrides = {},
+): Menu {
   const platform = process.platform as Platform
   const isMac = platform === 'darwin'
-  const list = shortcuts(platform)
+  const list = withOverrides(shortcuts(platform), overrides)
   const itemsFor = (section: MenuSection): MenuItemConstructorOptions[] =>
     list
       .filter((shortcut) => shortcut.section === section)

@@ -117,6 +117,9 @@ async function start(): Promise<void> {
       const parent = windows.lastFocused('main') ?? windows.focused()
       if (parent) panels.show(parent, 'settings')
     },
+    recordShortcuts: (window, recording) => {
+      panels.get(window.id, 'settings')?.webContents.setIgnoreMenuShortcuts(recording)
+    },
     runFeature: (window, command) => features.run(window, command),
     runPrivacy: (window, command) => privacy.run(window, command),
     runSync: (window, command) => {
@@ -173,7 +176,14 @@ async function start(): Promise<void> {
   })
   const downloads = new DownloadManager(store, sessions)
   registerLibraryIpc({ store, surfaces, history, downloads })
-  Menu.setApplicationMenu(buildAppMenu(runInFocused))
+  let menuShortcuts = store.state.data.settings.shortcuts
+  Menu.setApplicationMenu(buildAppMenu(runInFocused, menuShortcuts))
+  store.subscribe(() => {
+    const next = store.state.data.settings.shortcuts
+    if (next === menuShortcuts) return
+    menuShortcuts = next
+    Menu.setApplicationMenu(buildAppMenu(runInFocused, next))
+  })
 
   const restored = Object.values(store.state.data.windows).filter(
     (window) => window.kind === 'main',

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { isAccelerator } from './keys'
 import type { LoadError } from './loadErrors'
 import { sitePermissionsSchema, type FindState, type Prompt } from './permissions'
 
@@ -195,6 +196,13 @@ export const settingsSchema = z.object({
   autoPip: z.boolean().default(true),
   checkUpdates: z.boolean().default(true),
   sleepAfter: z.enum(sleepOptions).default('1h'),
+  shortcuts: z
+    .record(
+      z.string().regex(/^[a-z0-9-]{1,60}$/),
+      z.string().max(80).refine(isAccelerator).nullable(),
+    )
+    .refine((overrides) => Object.keys(overrides).length <= 300)
+    .default({}),
   devtoolsWidth: z.number().min(280).max(1600).default(480),
   sync: syncSettingsSchema.prefault({}),
 })
