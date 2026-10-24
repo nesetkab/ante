@@ -1,0 +1,45 @@
+.note {
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  overflow-y: auto;
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--content-shadow);
+  user-select: text;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(720px, 100%);
+  padding: 72px 40px 40px;
+}
+
+.title,
+.body {
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--fg);
+}
+
+.title {
+  font-size: 30px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.body {
+  flex: 1;
+  min-height: 60vh;
+  resize: none;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.title::placeholder,
+.body::placeholder {
+  color: var(--fg-faint);
+}

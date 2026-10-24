@@ -3,6 +3,7 @@ import { useRef, type WheelEvent } from 'react'
 import { activeTabId, getTab } from '@shared/state/tree'
 import { displayUrl } from '@shared/url'
 import { profilePartition } from '@shared/extensions'
+import { isNoteUrl } from '@shared/notes'
 import { isPrivateProfile } from '@shared/state/private'
 import { ante, isMac } from '../ante'
 import { IconButton } from '../components/IconButton'
@@ -106,7 +107,11 @@ export function Sidebar({ floating = false }: { floating?: boolean }) {
           }
         >
           <span className={styles.addressText}>
-            {activeTab ? displayUrl(activeTab.url) : 'Search or enter address'}
+            {activeTab
+              ? isNoteUrl(activeTab.url)
+                ? 'Note'
+                : displayUrl(activeTab.url)
+              : 'Search or enter address'}
           </span>
         </button>
         {activeTab && /^https?:/.test(activeTab.url) && (

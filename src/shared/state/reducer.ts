@@ -11,6 +11,7 @@ import type {
   WindowRuntime,
 } from '../schema'
 import { applyImport } from '../importers/bundle'
+import { noteTabTitle, noteUrl } from '../notes'
 import { clearSitePermission, setSitePermissions } from '../permissions'
 import type { Action } from './actions'
 import { reduceBoosts } from './boosts'
@@ -678,5 +679,21 @@ export function reduce(state: AppState, action: Action): void {
     case 'private/remove':
       removePrivateProfile(state, action.profileId, { closeWindows: false })
       return
+    case 'note/update': {
+      const note = (data.notes[action.id] ??= {
+        id: action.id,
+        title: '',
+        body: '',
+        updatedAt: action.now,
+      })
+      if (action.title !== undefined) note.title = action.title
+      if (action.body !== undefined) note.body = action.body
+      note.updatedAt = action.now
+      const url = noteUrl(action.id)
+      for (const item of Object.values(data.items)) {
+        if (item.kind === 'tab' && item.url === url) item.title = noteTabTitle(note.title)
+      }
+      return
+    }
   }
 }

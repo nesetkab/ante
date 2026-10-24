@@ -301,6 +301,13 @@ export function shortcuts(platform: Platform): Shortcut[] {
       command: { type: 'routes/open' },
     },
     {
+      id: 'new-note',
+      label: 'New Note',
+      section: 'file',
+      accelerator: 'CmdOrCtrl+Alt+Shift+N',
+      command: { type: 'note/new' },
+    },
+    {
       id: 'capture',
       label: 'Capture',
       section: 'tab',

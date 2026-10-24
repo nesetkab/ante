@@ -14,6 +14,7 @@ import {
 } from '@shared/state/tree'
 import { hostOf, isWebUrl, resolveInput } from '@shared/url'
 import { nextZoom } from '@shared/zoom'
+import { noteTabTitle, noteUrl } from '@shared/notes'
 import { IPC, type UiEvent } from '@shared/ipc'
 import { captureRegion } from './capture'
 import { copyText } from './clipboard'
@@ -692,6 +693,16 @@ export class CommandRunner {
       case 'window/newPrivate':
         this.#runPrivacy(window, command)
         return
+      case 'note/new': {
+        const noteId = randomUUID()
+        const now = this.#now()
+        this.#store.dispatch({ type: 'note/update', id: noteId, title: '', body: '', now })
+        const spaceId = this.#windowData(window).spaceId
+        const tabId = this.createTab(noteUrl(noteId), { type: 'today', spaceId })
+        this.#store.dispatch({ type: 'tab/update', id: tabId, patch: { title: noteTabTitle('') } })
+        this.activate(this.#mainWindowFor(window), tabId)
+        return
+      }
       case 'capture/start':
         this.#store.dispatch({
           type: 'runtime/window',

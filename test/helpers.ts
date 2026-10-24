@@ -12,7 +12,7 @@ import {
   type SplitDirection,
   type Tab,
   type WindowData,
-  settingsSchema,
+  dataSchema,
 } from '@shared/schema'
 import type { Action } from '@shared/state/actions'
 import { createAppState, DEFAULT_PROFILE_ID, spaceColors } from '@shared/state/initial'
@@ -179,20 +179,21 @@ export function buildData(fixture: Fixture = {}): Data {
     })
   }
 
-  return {
+  const defaults = dataSchema.parse({
     version: DATA_VERSION,
+    profiles: {},
+    spaces: {},
+    spaceOrder: [],
+    items: {},
+  })
+  return {
+    ...defaults,
     profiles,
     spaces,
     spaceOrder: Object.keys(spaces),
     favorites,
     items,
     windows,
-    archive: [],
-    closed: [],
-    settings: settingsSchema.parse({}),
-    boosts: {},
-    routes: [],
-    sitePermissions: {},
   }
 }
 

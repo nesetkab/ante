@@ -1,12 +1,15 @@
 import { useRef, type PointerEvent as ReactPointerEvent } from 'react'
 import { computeLayout, SPLIT_GAP } from '@shared/layout'
-import { visibleTabIds } from '@shared/state/tree'
+import { getTab, visibleTabIds } from '@shared/state/tree'
+import { dockedDevtoolsTabId } from '@shared/devtools'
+import { noteIdOf } from '@shared/notes'
 import { ante, modKey } from '../ante'
 import { useViewportSize } from '../hooks'
 import { useAppState, useWindowData } from '../store'
 import { ArcImportPrompt } from './ArcImportPrompt'
 import styles from './ChromeSurface.module.css'
 import { LittleToolbar } from './LittleToolbar'
+import { NoteEditor } from './NoteEditor'
 import { Sidebar } from './Sidebar'
 import { Toasts } from './Toasts'
 
@@ -120,9 +123,18 @@ function SplitHandles() {
 function ContentFrames() {
   const window = useWindowData()
   const data = useAppState((state) => state.data)
+  const runtime = useAppState((state) => state.runtime)
   const { width, height } = useViewportSize()
   if (!window) return null
-  const layout = computeLayout({ width, height, window, data, fullscreenTabId: null })
+  const devtoolsTabId = dockedDevtoolsTabId(data, runtime, window)
+  const layout = computeLayout({
+    width,
+    height,
+    window,
+    data,
+    fullscreenTabId: null,
+    devtoolsTabId,
+  })
   const hasTabs = visibleTabIds(data, window).length > 0
 
   if (!hasTabs) {
@@ -147,18 +159,22 @@ function ContentFrames() {
 
   return (
     <>
-      {layout.panes.map((pane) => (
-        <div
-          key={pane.tabId}
-          className={styles.frame}
-          style={{
-            left: pane.rect.x,
-            top: pane.rect.y,
-            width: pane.rect.width,
-            height: pane.rect.height,
-          }}
-        />
-      ))}
+      {layout.panes.map((pane) => {
+        const noteId = noteIdOf(getTab(data, pane.tabId)?.url ?? '')
+        if (noteId) return <NoteEditor key={pane.tabId} noteId={noteId} rect={pane.rect} />
+        return (
+          <div
+            key={pane.tabId}
+            className={styles.frame}
+            style={{
+              left: pane.rect.x,
+              top: pane.rect.y,
+              width: pane.rect.width,
+              height: pane.rect.height,
+            }}
+          />
+        )
+      })}
     </>
   )
 }

@@ -60,6 +60,7 @@ export function createInitialData(spaceId: Id): Data {
     boosts: {},
     routes: [],
     sitePermissions: {},
+    notes: {},
   }
 }
 

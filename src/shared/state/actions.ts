@@ -104,6 +104,13 @@ export const uiActionSchema = z.discriminatedUnion('type', [
     permission: sitePermissionSchema.optional(),
   }),
   z.object({ type: z.literal('profile/rename'), id: idSchema, name: z.string().max(100) }),
+  z.object({
+    type: z.literal('note/update'),
+    id: idSchema,
+    title: z.string().max(500).optional(),
+    body: z.string().max(1_000_000).optional(),
+    now: z.number(),
+  }),
 ])
 export type UiAction = z.infer<typeof uiActionSchema>
 

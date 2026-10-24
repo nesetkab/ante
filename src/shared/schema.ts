@@ -195,6 +195,14 @@ export const routeSchema = z.object({
 })
 export type Route = z.infer<typeof routeSchema>
 
+export const noteSchema = z.object({
+  id: idSchema,
+  title: z.string().max(500).default(''),
+  body: z.string().max(1_000_000).default(''),
+  updatedAt: z.number(),
+})
+export type Note = z.infer<typeof noteSchema>
+
 export const DATA_VERSION = 1
 
 export const dataSchema = z.object({
@@ -211,6 +219,7 @@ export const dataSchema = z.object({
   boosts: z.record(idSchema, boostSchema).default({}),
   routes: z.array(routeSchema).max(500).default([]),
   sitePermissions: sitePermissionsSchema.default({}),
+  notes: z.record(idSchema, noteSchema).default({}),
 })
 export type Data = z.infer<typeof dataSchema>
 

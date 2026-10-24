@@ -99,6 +99,7 @@ export const commandSchema = z.discriminatedUnion('type', [
   }),
   z.object({ type: z.literal('window/newPrivate') }),
   z.object({ type: z.literal('capture/start') }),
+  z.object({ type: z.literal('note/new') }),
   z.object({
     type: z.literal('capture/region'),
     x: z.number(),

@@ -451,3 +451,8 @@
   font-weight: 600;
   color: var(--fg-muted);
 }
+
+.noteIcon {
+  flex: none;
+  color: var(--fg-muted);
+}
