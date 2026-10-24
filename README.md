@@ -21,7 +21,7 @@ Arc is being discontinued. Ante keeps the parts that made it good: a vertical si
 - **Built-in ad and tracker blocking**, Global Privacy Control, per-site permission prompts, private windows and per-profile data clearing.
 - **Media mini player** for tabs playing in the background, with automatic picture in picture.
 - **Sync without an account.** Point Ante at iCloud Drive, Dropbox or any synced folder and your spaces, pinned tabs, favorites, notes and boosts follow you to your other computers. No server, nothing leaves your own storage.
-- **Notes and Easels.** Write notes or build freeform boards with text, drawings, links, images and page captures. Both live in the sidebar like tabs.
+- **Notes and Easels.** Write notes or build freeform boards with text, drawings, links, images and page captures. Both live in the sidebar like tabs, and the Library keeps every one you've made until you delete it.
 - **Live folders.** Follow any site with a feed and keep its latest posts in a pinned folder.
 - **Capture** (`⌘⇧2`). Drag over any part of a page to copy and save it.
 - **Library** with history, downloads and archived tabs (`⌘Y`). A ring on the library button shows download progress.
