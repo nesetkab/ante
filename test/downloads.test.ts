@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { formatBytes, safeFileName, splitExtension, uniqueFileName } from '@shared/downloads'
+import {
+  formatBytes,
+  overallProgress,
+  safeFileName,
+  splitExtension,
+  uniqueFileName,
+} from '@shared/downloads'
+import type { DownloadRuntime } from '@shared/schema'
 import { parseSuggestions } from '@shared/suggest'
 
 describe('download file names', () => {
@@ -38,5 +45,42 @@ describe('parseSuggestions', () => {
 
   it('ignores unknown shapes', () => {
     expect(parseSuggestions({ nope: true })).toEqual([])
+  })
+})
+
+describe('overallProgress', () => {
+  const download = (patch: Partial<DownloadRuntime>): DownloadRuntime => ({
+    id: 'd',
+    url: 'https://a.test/file',
+    filename: 'file',
+    path: '/tmp/file',
+    state: 'progressing',
+    receivedBytes: 0,
+    totalBytes: 100,
+    startedAt: 0,
+    finishedAt: null,
+    profileId: 'default',
+    ...patch,
+  })
+
+  it('adds up active downloads', () => {
+    expect(
+      overallProgress([
+        download({ receivedBytes: 50 }),
+        download({ state: 'paused', receivedBytes: 25 }),
+        download({ state: 'completed', receivedBytes: 100 }),
+      ]),
+    ).toEqual({ active: 2, fraction: 0.375 })
+  })
+
+  it('reports unknown progress when a size is missing', () => {
+    expect(overallProgress([download({ totalBytes: 0 })])).toEqual({ active: 1, fraction: null })
+  })
+
+  it('is idle without active downloads', () => {
+    expect(overallProgress([download({ state: 'cancelled' })])).toEqual({
+      active: 0,
+      fraction: null,
+    })
   })
 })

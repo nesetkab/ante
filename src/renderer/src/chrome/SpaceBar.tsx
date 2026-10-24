@@ -5,6 +5,7 @@ import { ante } from '../ante'
 import { IconButton } from '../components/IconButton'
 import { useAppState, useWindowData } from '../store'
 import { useDragSource } from './drag'
+import { LibraryButton } from './LibraryButton'
 import { dropSpace } from './dropTargets'
 import styles from './Sidebar.module.css'
 
@@ -53,6 +54,7 @@ export function SpaceBar() {
 
   return (
     <footer className={styles.spaceBar}>
+      <LibraryButton />
       <div className={styles.spaceDots}>
         {order.map((id) => {
           const space = spaces[id]

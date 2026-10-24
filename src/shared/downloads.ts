@@ -45,3 +45,24 @@ export function downloadProgress(download: DownloadRuntime): number | null {
 export function isActiveDownload(download: DownloadRuntime): boolean {
   return download.state === 'progressing' || download.state === 'paused'
 }
+
+export interface OverallProgress {
+  active: number
+  fraction: number | null
+}
+
+export function overallProgress(downloads: Iterable<DownloadRuntime>): OverallProgress {
+  let active = 0
+  let received = 0
+  let total = 0
+  let unknown = false
+  for (const download of downloads) {
+    if (!isActiveDownload(download)) continue
+    active += 1
+    if (download.totalBytes <= 0) unknown = true
+    received += download.receivedBytes
+    total += download.totalBytes
+  }
+  if (active === 0) return { active, fraction: null }
+  return { active, fraction: unknown || total <= 0 ? null : Math.min(received / total, 1) }
+}

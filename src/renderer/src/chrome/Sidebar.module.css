@@ -354,6 +354,47 @@
   padding: 0 2px;
 }
 
+.libraryButton {
+  position: relative;
+}
+
+.ring {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 20px;
+  height: 20px;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  fill: none;
+  stroke-width: 2;
+}
+
+.ringTrack {
+  stroke: color-mix(in oklab, var(--fg) 14%, transparent);
+}
+
+.ringValue {
+  stroke: var(--accent);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 300ms ease;
+}
+
+.ringSpin {
+  transform-origin: 11px 11px;
+  animation: ring-spin 1s linear infinite;
+}
+
+@keyframes ring-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ringSpin {
+    animation: none;
+  }
+}
+
 .spaceDots {
   display: flex;
   align-items: center;
