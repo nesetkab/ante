@@ -6,7 +6,7 @@ import { homedir, hostname } from 'node:os'
 import { join } from 'node:path'
 import { dialog, type BrowserWindow, type OpenDialogOptions } from 'electron'
 import type { SyncCommand } from '@shared/commands'
-import type { SyncStatus } from '@shared/schema'
+import type { Id, SyncStatus } from '@shared/schema'
 import {
   createDeviceFile,
   diffEntities,
@@ -15,6 +15,7 @@ import {
   syncSnapshot,
   type SyncEntities,
   isFreshDevice,
+  movedTabs,
   touchesSyncedData,
 } from '@shared/sync'
 import type { Store } from './store'
@@ -59,6 +60,7 @@ const describeError = (error: unknown): string => {
 export class SyncManager {
   readonly #store: Store
   readonly #iCloudFolder: string | null
+  readonly #navigate: (id: Id, url: string) => void
   #folder: string | null = null
   #baseline: SyncEntities | null = null
   #baselineLoaded = false
@@ -74,8 +76,13 @@ export class SyncManager {
   #devices = 0
   #error: string | null = null
 
-  constructor(store: Store, iCloudFolder: string | null = iCloudSyncFolder()) {
+  constructor(
+    store: Store,
+    navigate: (id: Id, url: string) => void = () => undefined,
+    iCloudFolder: string | null = iCloudSyncFolder(),
+  ) {
     this.#store = store
+    this.#navigate = navigate
     this.#iCloudFolder = iCloudFolder
   }
 
@@ -265,12 +272,16 @@ export class SyncManager {
       remotes: files,
       now,
       apply: (entities, options) => {
+        const before = this.#store.state.data
         this.#store.dispatch({
           type: 'sync/apply',
           entities,
           dropSpaces: [...(options.dropSpaces ?? [])],
         })
-        return this.#store.state.data
+        const { data, runtime } = this.#store.state
+        for (const { id, url } of movedTabs(before, data, Object.keys(runtime.tabs)))
+          this.#navigate(id, url)
+        return data
       },
     })
     this.#baseline = result.entities

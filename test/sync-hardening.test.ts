@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import type { Data, Route } from '@shared/schema'
+import type { Data, Route, Tab } from '@shared/schema'
 import { createInitialData } from '@shared/state/initial'
 import {
   createDeviceFile,
   isFreshDevice,
   isSafeSyncedRoute,
+  movedTabs,
   syncCycle,
   syncSnapshot,
   TOMBSTONE_TTL_MS,
@@ -145,5 +146,23 @@ describe('touchesSyncedData', () => {
     expect(touchesSyncedData(['data', 'items', 't', 'savedUrl'])).toBe(true)
     expect(touchesSyncedData(['data', 'spaces', 's', 'pinned', 0])).toBe(true)
     expect(touchesSyncedData(['runtime', 'tabs', 't'])).toBe(false)
+  })
+})
+
+describe('movedTabs', () => {
+  const before = buildData({ spaces: { s1: { pinned: ['p', 'q'], today: ['t'] } } })
+  const moveTo = (data: Data, id: string, url: string): Data => ({
+    ...data,
+    items: { ...data.items, [id]: { ...(data.items[id] as Tab), url } },
+  })
+
+  it('reports loaded tabs whose address changed', () => {
+    const after = moveTo(moveTo(before, 'p', 'https://new.test/'), 'q', 'https://other.test/')
+    expect(movedTabs(before, after, ['p', 't'])).toEqual([{ id: 'p', url: 'https://new.test/' }])
+  })
+
+  it('skips missing tabs and non web addresses', () => {
+    const after = moveTo(before, 'p', 'javascript:alert(1)')
+    expect(movedTabs(before, after, ['p', 'gone'])).toEqual([])
   })
 })

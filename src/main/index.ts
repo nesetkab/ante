@@ -187,7 +187,7 @@ async function start(): Promise<void> {
 
   startArchiveSweeper(store)
   feeds.start()
-  const sync = new SyncManager(store)
+  const sync = new SyncManager(store, (id, url) => tabs.load(id, url))
   sync.start()
   updates.start()
 

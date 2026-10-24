@@ -24,7 +24,7 @@ import {
 } from './schema'
 import { isPrivateProfile, isPrivateSpace } from './state/private'
 import { repairLive } from './state/sanitize'
-import { descendantIds, sameIds } from './state/tree'
+import { descendantIds, getTab, sameIds } from './state/tree'
 
 export const SYNC_SCHEMA_VERSION = 1
 export const TOMBSTONE_TTL_MS = 30 * 24 * 60 * 60 * 1000
@@ -656,6 +656,21 @@ const SYNCED_ROOTS = new Set([
   'settings',
 ])
 const LOCAL_ITEM_FIELDS = new Set(['url', 'title', 'favicon', 'lastActiveAt'])
+
+export function movedTabs(
+  before: Data,
+  after: Data,
+  loaded: Iterable<Id>,
+): { id: Id; url: string }[] {
+  const moved: { id: Id; url: string }[] = []
+  for (const id of loaded) {
+    const previous = getTab(before, id)
+    const next = getTab(after, id)
+    if (previous && next && previous.url !== next.url && isWebUrl(next.url))
+      moved.push({ id, url: next.url })
+  }
+  return moved
+}
 
 export function touchesSyncedData(path: readonly (string | number)[]): boolean {
   if (path[0] !== 'data') return false
