@@ -53,6 +53,8 @@ export function createInitialData(spaceId: Id): Data {
       theme: 'system',
       adblock: true,
       globalPrivacyControl: true,
+      downloadFolder: null,
+      askWhereToSave: false,
       peekExternalLinks: true,
       externalLinks: 'little',
       adblockAllowlist: [],

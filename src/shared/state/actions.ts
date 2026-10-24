@@ -189,5 +189,6 @@ export type InternalAction =
   | { type: 'sync/configure'; patch: Partial<SyncSettings> }
   | { type: 'runtime/sync'; status: SyncStatus }
   | { type: 'runtime/update'; status: UpdateStatus }
+  | { type: 'settings/downloadFolder'; folder: string | null }
 
 export type Action = UiAction | InternalAction

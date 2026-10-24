@@ -646,6 +646,9 @@ export function reduce(state: AppState, action: Action): void {
     case 'settings/update':
       Object.assign(data.settings, action.patch)
       return
+    case 'settings/downloadFolder':
+      data.settings.downloadFolder = action.folder
+      return
 
     case 'window/create':
       data.windows[action.window.id] = action.window

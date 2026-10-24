@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { existsSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, statSync } from 'node:fs'
+import { basename, join } from 'node:path'
 import { app, shell, type DownloadItem, type Session } from 'electron'
 import { isActiveDownload, uniqueFileName } from '@shared/downloads'
 import type { DownloadCommand } from '@shared/library'
@@ -20,14 +20,26 @@ export class DownloadManager {
   readonly #store: Store
   readonly #tracked = new Map<Id, Tracked>()
   readonly #reserved = new Set<string>()
-  readonly #directory: () => string
+  readonly #fallback: () => string
 
-  constructor(store: Store, sessions: Sessions, directory = () => app.getPath('downloads')) {
+  constructor(store: Store, sessions: Sessions, fallback = () => app.getPath('downloads')) {
     this.#store = store
-    this.#directory = directory
+    this.#fallback = fallback
     sessions.onCreate((session, profileId) => {
       session.on('will-download', (_event, item) => this.#track(item, session, profileId))
     })
+  }
+
+  #directory(): string {
+    const folder = this.#store.state.data.settings.downloadFolder
+    if (folder) {
+      try {
+        if (statSync(folder).isDirectory()) return folder
+      } catch {
+        return this.#fallback()
+      }
+    }
+    return this.#fallback()
   }
 
   #download(id: Id): DownloadRuntime | undefined {
@@ -42,8 +54,10 @@ export class DownloadManager {
       return this.#reserved.has(path) || existsSync(path)
     })
     const path = join(directory, filename)
+    const ask = this.#store.state.data.settings.askWhereToSave
     this.#reserved.add(path)
-    item.setSavePath(path)
+    if (ask) item.setSaveDialogOptions({ defaultPath: path })
+    else item.setSavePath(path)
     this.#tracked.set(id, { item, session, lastUpdate: 0 })
     this.#store.dispatch({
       type: 'download/add',
@@ -64,6 +78,7 @@ export class DownloadManager {
     item.on('updated', (_event, state) => {
       const tracked = this.#tracked.get(id)
       if (!tracked) return
+      if (ask) this.#followChosenPath(id, item)
       const next: DownloadState =
         state === 'interrupted' ? 'interrupted' : item.isPaused() ? 'paused' : 'progressing'
       const now = Date.now()
@@ -74,8 +89,25 @@ export class DownloadManager {
     })
     item.once('done', (_event, state) => {
       this.#reserved.delete(path)
+      if (ask && state === 'cancelled' && !item.getSavePath()) {
+        this.#tracked.delete(id)
+        this.#store.dispatch({ type: 'download/remove', ids: [id] })
+        return
+      }
+      if (ask) this.#followChosenPath(id, item)
       this.#update(id, item, state, Date.now())
       if (state === 'completed' && process.platform === 'darwin') app.dock?.downloadFinished(path)
+    })
+  }
+
+  #followChosenPath(id: Id, item: DownloadItem): void {
+    const chosen = item.getSavePath()
+    const download = this.#download(id)
+    if (!chosen || !download || chosen === download.path) return
+    this.#store.dispatch({
+      type: 'download/update',
+      id,
+      patch: { path: chosen, filename: basename(chosen) },
     })
   }
 

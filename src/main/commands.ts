@@ -43,6 +43,7 @@ interface Deps {
   windows: WindowManager
   openSettings: () => void
   recordShortcuts: (window: AppWindow, recording: boolean) => void
+  chooseDownloadFolder: (window: AppWindow) => void
   runFeature: (window: AppWindow, command: FeatureCommand) => void
   runPrivacy: (window: AppWindow, command: PrivacyCommand) => void
   runSync: (window: AppWindow, command: SyncCommand) => void
@@ -59,6 +60,7 @@ export class CommandRunner {
   readonly #windows: WindowManager
   readonly #openSettings: () => void
   readonly #recordShortcuts: (window: AppWindow, recording: boolean) => void
+  readonly #chooseDownloadFolder: (window: AppWindow) => void
   readonly #runFeature: (window: AppWindow, command: FeatureCommand) => void
   readonly #runPrivacy: (window: AppWindow, command: PrivacyCommand) => void
   readonly #runSync: (window: AppWindow, command: SyncCommand) => void
@@ -74,6 +76,7 @@ export class CommandRunner {
     this.#windows = deps.windows
     this.#openSettings = deps.openSettings
     this.#recordShortcuts = deps.recordShortcuts
+    this.#chooseDownloadFolder = deps.chooseDownloadFolder
     this.#runFeature = deps.runFeature
     this.#runPrivacy = deps.runPrivacy
     this.#runSync = deps.runSync
@@ -688,6 +691,12 @@ export class CommandRunner {
         return
       case 'shortcuts/recording':
         this.#recordShortcuts(window, command.recording)
+        return
+      case 'downloads/chooseFolder':
+        this.#chooseDownloadFolder(window)
+        return
+      case 'downloads/useDefaultFolder':
+        this.#store.dispatch({ type: 'settings/downloadFolder', folder: null })
         return
       case 'import/arc': {
         const result = importFromArc(this.#store)

@@ -108,3 +108,10 @@ describe('custom search settings', () => {
     expect(parsed.success).toBe(valid)
   })
 })
+
+describe('download folder', () => {
+  it('cannot be set from the ui', () => {
+    const parsed = settingsPatchSchema.safeParse({ downloadFolder: '/tmp' })
+    expect(parsed.success && 'downloadFolder' in parsed.data).toBe(false)
+  })
+})

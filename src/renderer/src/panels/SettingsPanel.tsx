@@ -445,6 +445,24 @@ export function SettingsPanel() {
 
       <SyncSection />
 
+      <Section title="Downloads">
+        <Row label="Save downloads to" hint={settings.downloadFolder ?? 'Your Downloads folder'}>
+          {settings.downloadFolder && (
+            <Button onClick={() => ante.command({ type: 'downloads/useDefaultFolder' })}>
+              Use Default
+            </Button>
+          )}
+          <Button onClick={() => ante.command({ type: 'downloads/chooseFolder' })}>Choose…</Button>
+        </Row>
+        <Row label="Ask where to save each file">
+          <Toggle
+            label="Ask where to save"
+            checked={settings.askWhereToSave}
+            onChange={(askWhereToSave) => update({ askWhereToSave })}
+          />
+        </Row>
+      </Section>
+
       <Section title="Privacy">
         <Row label="Block ads and trackers">
           <Toggle

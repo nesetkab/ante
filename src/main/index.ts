@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
-import { app, Menu, nativeTheme, session } from 'electron'
+import { app, dialog, Menu, nativeTheme, session } from 'electron'
 import type { Command } from '@shared/commands'
 import type { Id } from '@shared/schema'
 import { createAppState, createInitialData, DEFAULT_PROFILE_ID } from '@shared/state/initial'
@@ -117,6 +117,18 @@ async function start(): Promise<void> {
     openSettings: () => {
       const parent = windows.lastFocused('main') ?? windows.focused()
       if (parent) panels.show(parent, 'settings')
+    },
+    chooseDownloadFolder: (window) => {
+      const parent = panels.get(window.id, 'settings') ?? window.win
+      void dialog
+        .showOpenDialog(parent, {
+          title: 'Save Downloads To',
+          properties: ['openDirectory', 'createDirectory'],
+        })
+        .then(({ canceled, filePaths }) => {
+          const folder = filePaths[0]
+          if (!canceled && folder) store.dispatch({ type: 'settings/downloadFolder', folder })
+        })
     },
     recordShortcuts: (window, recording) => {
       panels.get(window.id, 'settings')?.webContents.setIgnoreMenuShortcuts(recording)

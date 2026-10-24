@@ -191,6 +191,8 @@ export const settingsSchema = z.object({
   theme: themeModeSchema.default('system'),
   adblock: z.boolean().default(true),
   globalPrivacyControl: z.boolean().default(true),
+  downloadFolder: z.string().min(1).max(4096).nullable().default(null),
+  askWhereToSave: z.boolean().default(false),
   peekExternalLinks: z.boolean().default(true),
   externalLinks: z.enum(['little', 'space']).default('little'),
   adblockAllowlist: z.array(z.string().min(1).max(253)).max(10000).default([]),
@@ -208,7 +210,9 @@ export const settingsSchema = z.object({
   sync: syncSettingsSchema.prefault({}),
 })
 export type Settings = z.infer<typeof settingsSchema>
-export const settingsPatchSchema = withoutDefaults(settingsSchema.omit({ sync: true })).partial()
+export const settingsPatchSchema = withoutDefaults(
+  settingsSchema.omit({ sync: true, downloadFolder: true }),
+).partial()
 
 export const fontFamilySchema = z
   .string()
