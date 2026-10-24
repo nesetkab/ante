@@ -67,7 +67,7 @@ export class TabManager {
     this.#views.set(id, view)
     this.#profiles.set(id, profileId)
     this.#wire(id, view.webContents)
-    this.#runtime(id, { loading: true })
+    this.#store.dispatch({ type: 'runtime/tab', id, patch: { loading: true }, create: true })
     const saved = this.#histories.get(id)
     this.#histories.delete(id)
     if (saved?.profileId === profileId && restorableHistory(saved, tab.url)) {

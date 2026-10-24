@@ -96,15 +96,27 @@ describe('runtime', () => {
   const start = buildState({ spaces: { s1: { today: ['a'] } }, windows: { w1: {} } })
 
   it('creates tab runtime from defaults and merges later patches', () => {
-    const created = apply(start, { type: 'runtime/tab', id: 'a', patch: { loading: true } })
+    const created = apply(start, {
+      type: 'runtime/tab',
+      id: 'a',
+      patch: { loading: true },
+      create: true,
+    })
     expect(created.runtime.tabs.a).toEqual({ ...defaultTabRuntime, loading: true })
-    const merged = apply(created, { type: 'runtime/tab', id: 'a', patch: { zoom: 2 } })
+    const merged = apply(created, {
+      type: 'runtime/tab',
+      id: 'a',
+      patch: { zoom: 2 },
+      create: true,
+    })
     expect(merged.runtime.tabs.a).toEqual({ ...defaultTabRuntime, loading: true, zoom: 2 })
-    expect(apply(start, { type: 'runtime/tab', id: 'missing', patch: {} })).toBe(start)
+    expect(apply(start, { type: 'runtime/tab', id: 'missing', patch: {}, create: true })).toBe(
+      start,
+    )
   })
 
   it('unloads tab runtime', () => {
-    const created = apply(start, { type: 'runtime/tab', id: 'a', patch: {} })
+    const created = apply(start, { type: 'runtime/tab', id: 'a', patch: {}, create: true })
     expect(apply(created, { type: 'runtime/unload', id: 'a' }).runtime.tabs.a).toBeUndefined()
   })
 
@@ -127,7 +139,7 @@ describe('runtime', () => {
   it('replaces data and drops runtime for tabs that no longer exist', () => {
     const loaded = apply(
       start,
-      { type: 'runtime/tab', id: 'a', patch: {} },
+      { type: 'runtime/tab', id: 'a', patch: {}, create: true },
       { type: 'runtime/window', id: 'w1', patch: {} },
     )
     const data = buildData({ spaces: { s9: { today: ['z'] } } })
@@ -147,5 +159,20 @@ describe('leaving a tab', () => {
     const next = apply(state, { type: 'window/activate', id: 'w', tabId: 'b', now: 500 })
     expect(tabOf(next, 'a').lastActiveAt).toBe(500)
     expect(tabOf(next, 'b').lastActiveAt).toBe(500)
+  })
+})
+
+describe('runtime after unload', () => {
+  it('ignores late updates for a tab that was unloaded', () => {
+    const start = buildState({ spaces: { s1: { today: ['a'] } } })
+    const loaded = apply(start, {
+      type: 'runtime/tab',
+      id: 'a',
+      patch: { loading: true },
+      create: true,
+    })
+    const unloaded = apply(loaded, { type: 'runtime/unload', id: 'a' })
+    const late = apply(unloaded, { type: 'runtime/tab', id: 'a', patch: { loading: false } })
+    expect(late.runtime.tabs.a).toBeUndefined()
   })
 })

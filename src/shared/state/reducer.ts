@@ -701,7 +701,7 @@ export function reduce(state: AppState, action: Action): void {
       if (!getTab(data, action.id)) return
       const existing = runtime.tabs[action.id]
       if (existing) Object.assign(existing, action.patch)
-      else runtime.tabs[action.id] = { ...defaultTabRuntime, ...action.patch }
+      else if (action.create) runtime.tabs[action.id] = { ...defaultTabRuntime, ...action.patch }
       return
     }
     case 'runtime/unload':

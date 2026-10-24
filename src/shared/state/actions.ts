@@ -169,7 +169,7 @@ export type InternalAction =
       entries: { id: Id; url: string; title: string }[]
       now: number
     }
-  | { type: 'runtime/tab'; id: Id; patch: Partial<TabRuntime> }
+  | { type: 'runtime/tab'; id: Id; patch: Partial<TabRuntime>; create?: boolean }
   | { type: 'runtime/unload'; id: Id }
   | { type: 'runtime/window'; id: Id; patch: Partial<WindowRuntime> }
   | { type: 'data/import'; bundle: ImportBundle }

@@ -224,7 +224,12 @@ describe('tab/remove', () => {
   })
 
   it('records the closed tab with its location', () => {
-    const withRuntime = apply(start, { type: 'runtime/tab', id: 'a', patch: { loading: true } })
+    const withRuntime = apply(start, {
+      type: 'runtime/tab',
+      id: 'a',
+      patch: { loading: true },
+      create: true,
+    })
     const next = apply(withRuntime, { type: 'tab/remove', id: 'a', now: 42 })
     expect(itemOf(next, 'a')).toBeUndefined()
     expect(next.runtime.tabs.a).toBeUndefined()

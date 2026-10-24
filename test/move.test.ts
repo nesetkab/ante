@@ -212,7 +212,7 @@ describe('item/move across spaces', () => {
       state,
       { type: 'profile/create', id: 'work', name: 'Work' },
       { type: 'space/update', id: OTHER_SPACE, patch: { profileId: 'work' } },
-      { type: 'runtime/tab', id: 'a', patch: { loading: false } },
+      { type: 'runtime/tab', id: 'a', patch: { loading: false }, create: true },
     )
     expect(state.runtime.tabs.a).toEqual(defaultTabRuntime)
     apply(state, { type: 'item/move', id: 'a', to: today(OTHER_SPACE), index: 0 })
@@ -223,7 +223,7 @@ describe('item/move across spaces', () => {
     const state = withTabs('a')
     apply(
       state,
-      { type: 'runtime/tab', id: 'a', patch: { loading: false } },
+      { type: 'runtime/tab', id: 'a', patch: { loading: false }, create: true },
       { type: 'item/move', id: 'a', to: pinned(OTHER_SPACE), index: 0 },
     )
     expect(state.runtime.tabs.a).toBeDefined()
@@ -258,7 +258,7 @@ describe('profiles', () => {
     const state = withTabs('a')
     apply(
       state,
-      { type: 'runtime/tab', id: 'a', patch: {} },
+      { type: 'runtime/tab', id: 'a', patch: {}, create: true },
       { type: 'profile/create', id: 'work', name: 'Work' },
       { type: 'space/update', id: SPACE, patch: { profileId: 'work' } },
     )

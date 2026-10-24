@@ -69,7 +69,12 @@ describe('reducer regressions', () => {
   })
 
   it('unloads every tab once the last main window closes', () => {
-    const loaded = apply(setup(), { type: 'runtime/tab', id: 'two', patch: { audible: true } })
+    const loaded = apply(setup(), {
+      type: 'runtime/tab',
+      id: 'two',
+      patch: { audible: true },
+      create: true,
+    })
     expect(loaded.runtime.tabs.two).toBeDefined()
     const closed = apply(loaded, { type: 'window/remove', id: 'w' })
     expect(closed.runtime.tabs).toEqual({})
