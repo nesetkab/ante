@@ -11,7 +11,7 @@ const TIMEOUT_MS = 15_000
 const MAX_BYTES = 5 * 1024 * 1024
 
 async function readCapped(response: Response): Promise<string> {
-  const reader = response.body?.getReader()
+  const reader: ReadableStreamDefaultReader<Uint8Array> | undefined = response.body?.getReader()
   if (!reader) return ''
   const chunks: Uint8Array[] = []
   let size = 0
