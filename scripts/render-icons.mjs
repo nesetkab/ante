@@ -5,14 +5,7 @@ import { app, BrowserWindow } from 'electron'
 
 const jobs = [
   { source: 'build/icon.svg', output: 'build/icon.png', width: 1024, height: 1024 },
-  {
-    source: 'assets/logo.svg',
-    output: 'assets/logo-preview.png',
-    width: 900,
-    height: 336,
-    color: '#ffffff',
-    background: '#4d4662',
-  },
+  { source: 'assets/logo.svg', output: 'assets/logo-preview.png', width: 800, height: 400 },
 ]
 
 async function render(window, directory, job) {
