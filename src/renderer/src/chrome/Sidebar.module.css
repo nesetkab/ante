@@ -488,17 +488,26 @@
   white-space: nowrap;
 }
 
-.shield {
+.addressTools {
   position: absolute;
-  top: 50%;
+  top: 18px;
   right: 6px;
+  display: flex;
+  gap: 2px;
+  transform: translateY(-50%);
+}
+
+.addressWide {
+  padding-right: 100px;
+}
+
+.shield {
   display: flex;
   align-items: center;
   gap: 4px;
   height: 24px;
   padding: 0 7px;
   border-radius: 6px;
-  transform: translateY(-50%);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   color: var(--fg-muted);

@@ -59,6 +59,8 @@ export function Sidebar({ floating = false }: { floating?: boolean }) {
     (state) => !isMac && !floating && state.data.settings.sidebarSide === 'right',
   )
   const onWheel = useSpaceSwipe()
+  const zoom = activeRuntime?.zoom ?? 1
+  const zoomed = Math.abs(zoom - 1) > 0.001
   if (!window) return null
 
   return (
@@ -122,7 +124,7 @@ export function Sidebar({ floating = false }: { floating?: boolean }) {
       <div className={styles.addressSlot}>
         <button
           type="button"
-          className={styles.address}
+          className={[styles.address, zoomed && styles.addressWide].filter(Boolean).join(' ')}
           onClick={() =>
             ante.command({ type: 'commandBar/open', mode: activeTab ? 'edit' : 'new' })
           }
@@ -133,17 +135,29 @@ export function Sidebar({ floating = false }: { floating?: boolean }) {
               : 'Search or enter address'}
           </span>
         </button>
-        {activeTab && /^https?:/.test(activeTab.url) && (
-          <button
-            type="button"
-            className={styles.shield}
-            title="Site privacy"
-            onClick={() => ante.command({ type: 'privacy/siteMenu', tabId: activeTab.id })}
-          >
-            <Shield size={13} />
-            {(activeRuntime?.blocked ?? 0) > 0 && <span>{activeRuntime?.blocked}</span>}
-          </button>
-        )}
+        <div className={styles.addressTools}>
+          {activeTab && zoomed && (
+            <button
+              type="button"
+              className={styles.shield}
+              title="Reset zoom"
+              onClick={() => ante.command({ type: 'tab/zoom', tabId: activeTab.id, delta: 0 })}
+            >
+              {Math.round(zoom * 100)}%
+            </button>
+          )}
+          {activeTab && /^https?:/.test(activeTab.url) && (
+            <button
+              type="button"
+              className={styles.shield}
+              title="Site privacy"
+              onClick={() => ante.command({ type: 'privacy/siteMenu', tabId: activeTab.id })}
+            >
+              <Shield size={13} />
+              {(activeRuntime?.blocked ?? 0) > 0 && <span>{activeRuntime?.blocked}</span>}
+            </button>
+          )}
+        </div>
         {space && !hasFavorites && <FavoritesDrop profileId={space.profileId} />}
       </div>
 
