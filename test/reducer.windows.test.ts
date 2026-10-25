@@ -30,6 +30,23 @@ describe('windows', () => {
     expect(apply(start, { type: 'window/remove', id: 'missing' })).toBe(start)
   })
 
+  it('archives the tab of a closed little window like Arc', () => {
+    const web = apply(start, {
+      type: 'tab/update',
+      id: 'little',
+      patch: { url: 'https://example.com/' },
+    })
+    const closed = apply(web, { type: 'window/remove', id: 'w2', now: 9 })
+    expect(closed.data.archive[0]).toMatchObject({
+      id: 'little',
+      url: 'https://example.com/',
+      spaceId: 's1',
+      archivedAt: 9,
+    })
+    const peekClosed = apply(web, { type: 'window/remove', id: 'w1', now: 9 })
+    expect(peekClosed.data.archive).toEqual([])
+  })
+
   it('keeps a little window tab that was moved into a space', () => {
     const moved = apply(start, {
       type: 'item/move',

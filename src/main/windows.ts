@@ -128,7 +128,8 @@ export class AppWindow {
     })
     this.win.on('close', () => {
       ctx.onClosing(this.id)
-      if (!ctx.keepOnClose(this.id)) ctx.store.dispatch({ type: 'window/remove', id: this.id })
+      if (!ctx.keepOnClose(this.id))
+        ctx.store.dispatch({ type: 'window/remove', id: this.id, now: Date.now() })
     })
     this.win.on('closed', () => {
       if (!this.overlay.webContents.isDestroyed()) this.overlay.webContents.close()

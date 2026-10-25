@@ -155,7 +155,7 @@ export type InternalAction =
   | { type: 'archive/sweep'; now: number; thresholdMs: number; keep: Id[] }
   | { type: 'archive/restore'; id: Id; tabId: Id; spaceId: Id; now: number }
   | { type: 'window/create'; window: WindowData }
-  | { type: 'window/remove'; id: Id }
+  | { type: 'window/remove'; id: Id; now?: number }
   | {
       type: 'window/update'
       id: Id

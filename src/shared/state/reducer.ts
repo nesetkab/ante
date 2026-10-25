@@ -16,6 +16,7 @@ import {
 import { applyImport } from '../importers/bundle'
 import { bringToFront, easelUrl } from '../easels'
 import { noteTabTitle, noteUrl } from '../notes'
+import { isWebUrl } from '../url'
 import { clearSitePermission, setSitePermissions } from '../permissions'
 import { applySyncInPlace } from '../sync'
 import type { Action } from './actions'
@@ -669,6 +670,24 @@ export function reduce(state: AppState, action: Action): void {
     case 'window/remove': {
       const window = data.windows[action.id]
       if (!window) return
+      const little = getTab(data, window.littleTabId)
+      if (
+        little &&
+        action.now !== undefined &&
+        !locate(data, little.id) &&
+        !isPrivateSpace(data, window.spaceId) &&
+        isWebUrl(little.url)
+      ) {
+        data.archive.unshift({
+          id: little.id,
+          url: little.url,
+          title: displayTitle(little),
+          favicon: little.favicon,
+          spaceId: window.spaceId,
+          archivedAt: action.now,
+        })
+        if (data.archive.length > MAX_ARCHIVE) data.archive.length = MAX_ARCHIVE
+      }
       for (const loose of [window.littleTabId, window.peekTabId]) {
         if (loose && !locate(data, loose)) deleteItems(state, loose)
       }
