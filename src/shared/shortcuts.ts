@@ -416,18 +416,18 @@ export function shortcuts(platform: Platform): Shortcut[] {
     },
     {
       id: 'recent-tab',
-      label: 'Switch to Last Tab',
+      label: 'Tab Switcher',
       section: 'tab',
       accelerator: 'Ctrl+Tab',
-      command: { type: 'tab/recent' },
+      command: { type: 'tab/switch', delta: 1 },
       hidden: true,
     },
     {
       id: 'previous-tab-ctrl',
-      label: 'Previous Tab',
+      label: 'Tab Switcher Backwards',
       section: 'tab',
       accelerator: 'Ctrl+Shift+Tab',
-      command: { type: 'tab/previous' },
+      command: { type: 'tab/switch', delta: -1 },
       hidden: true,
     },
     ...numbered(8, (n) => ({

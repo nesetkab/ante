@@ -381,6 +381,7 @@ export type Overlay =
   | { kind: 'sidebar' }
   | { kind: 'library'; section: LibrarySection }
   | { kind: 'capture'; easelId?: Id; view?: Rect }
+  | { kind: 'switcher'; tabIds: Id[]; index: number }
 
 export interface WindowRuntime {
   overlay: Overlay | null

@@ -1,0 +1,73 @@
+.backdrop {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: appear 90ms ease-out 110ms both;
+}
+
+.panel {
+  width: min(460px, calc(100% - 48px));
+  max-height: calc(100% - 96px);
+  overflow-y: auto;
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 0.5px solid var(--panel-border);
+  box-shadow: var(--panel-shadow);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: default;
+}
+
+.row:hover {
+  background: var(--item-hover);
+}
+
+.row[aria-selected='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.host {
+  flex: none;
+  max-width: 40%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--fg-faint);
+  font-size: 12px;
+}
+
+.row[aria-selected='true'] .host {
+  color: color-mix(in oklab, var(--on-accent) 72%, transparent);
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+  }
+}

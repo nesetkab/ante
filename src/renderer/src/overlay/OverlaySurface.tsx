@@ -8,6 +8,7 @@ import styles from './OverlaySurface.module.css'
 import { CaptureOverlay } from './CaptureOverlay'
 import { PeekFrame } from './PeekFrame'
 import { Popover } from './Popover'
+import { TabSwitcher } from './TabSwitcher'
 
 export function OverlaySurface() {
   const window = useWindowData()
@@ -42,6 +43,9 @@ export function OverlaySurface() {
       {window?.peekTabId && <PeekFrame />}
       {overlay?.kind === 'commandBar' && <CommandBar key={overlay.mode} mode={overlay.mode} />}
       {overlay?.kind === 'capture' && <CaptureOverlay />}
+      {overlay?.kind === 'switcher' && (
+        <TabSwitcher tabIds={overlay.tabIds} index={overlay.index} />
+      )}
       {overlay?.kind === 'library' && (
         <LibraryPanel key={overlay.section} section={overlay.section} />
       )}

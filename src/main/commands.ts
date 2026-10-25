@@ -1,14 +1,14 @@
 import { randomUUID } from 'node:crypto'
-import { dialog } from 'electron'
+import { dialog, webContents, type WebContents } from 'electron'
 import { isAbsolute } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { Command, Disposition, SyncCommand } from '@shared/commands'
 import type { BrowserId } from '@shared/importers/chrome'
-import type { Container, Id, Rect, Tab, WindowData } from '@shared/schema'
+import type { Container, Id, Overlay, Rect, Tab, WindowData } from '@shared/schema'
 import { nextSpaceColor } from '@shared/state/initial'
 import { isPrivateSpace, samePrivacy } from '@shared/state/private'
 import { MAX_SPLIT } from '@shared/state/reducer'
-import { recentTab } from '@shared/state/recent'
+import { recentTab, stepSwitcher, switcherTabs } from '@shared/state/recent'
 import {
   activeTabId,
   displayTitle,
@@ -72,6 +72,7 @@ export class CommandRunner {
   readonly #importBrowser: (browser: BrowserId) => Promise<BrowserImportResult>
   readonly #importArc: () => Promise<ArcImportResult>
   #importing = false
+  readonly #controlWatch = new Map<Id, () => void>()
   readonly #runFeature: (window: AppWindow, command: FeatureCommand) => void
   readonly #runPrivacy: (window: AppWindow, command: PrivacyCommand) => void
   readonly #runSync: (window: AppWindow, command: SyncCommand) => void
@@ -321,6 +322,61 @@ export class CommandRunner {
     else this.#store.dispatch({ type: 'window/deactivate', id: window.id })
   }
 
+  #switch(window: AppWindow, delta: 1 | -1): void {
+    const overlay = this.#store.state.runtime.windows[window.id]?.overlay ?? null
+    if (overlay?.kind === 'switcher') {
+      const index = stepSwitcher(overlay.index, overlay.tabIds.length, delta)
+      this.#setOverlay(window, { ...overlay, index })
+      return
+    }
+    if (overlay) return
+    const data = this.#windowData(window)
+    const tabIds = switcherTabs(this.#data, data.spaceId, activeTabId(this.#data, data))
+    if (tabIds.length < 2) return
+    this.#setOverlay(window, {
+      kind: 'switcher',
+      tabIds,
+      index: stepSwitcher(0, tabIds.length, delta),
+    })
+    this.#watchControl(window)
+  }
+
+  #commitSwitcher(window: AppWindow, index: number | undefined): void {
+    const overlay = this.#store.state.runtime.windows[window.id]?.overlay ?? null
+    if (overlay?.kind !== 'switcher') return
+    this.#controlWatch.get(window.id)?.()
+    this.#setOverlay(window, null)
+    const tabId = overlay.tabIds[index ?? overlay.index]
+    if (tabId && getTab(this.#data, tabId)) this.activate(window, tabId)
+    else this.run(window.id, { type: 'overlay/close' })
+  }
+
+  #watchControl(window: AppWindow): void {
+    this.#controlWatch.get(window.id)?.()
+    const focused = webContents.getFocusedWebContents()
+    const targets = [focused, window.win.webContents, window.overlay.webContents].filter(
+      (contents): contents is WebContents => contents !== null && !contents.isDestroyed(),
+    )
+    const onInput = (event: Electron.Event, input: Electron.Input) => {
+      if (input.type === 'keyUp' && input.key === 'Control') {
+        this.run(window.id, { type: 'switcher/commit' })
+      } else if (input.type === 'keyDown' && input.key === 'Escape') {
+        event.preventDefault()
+        this.run(window.id, { type: 'overlay/close' })
+      }
+    }
+    for (const contents of new Set(targets)) contents.on('before-input-event', onInput)
+    this.#controlWatch.set(window.id, () => {
+      this.#controlWatch.delete(window.id)
+      for (const contents of new Set(targets))
+        if (!contents.isDestroyed()) contents.off('before-input-event', onInput)
+    })
+  }
+
+  #setOverlay(window: AppWindow, overlay: Overlay | null): void {
+    this.#store.dispatch({ type: 'runtime/window', id: window.id, patch: { overlay } })
+  }
+
   #resetSpace(spaceId: Id): void {
     const space = this.#data.spaces[spaceId]
     if (!space) return
@@ -527,6 +583,12 @@ export class CommandRunner {
         this.#cycle(window, -1)
         return
       }
+      case 'tab/switch':
+        this.#switch(window, command.delta)
+        return
+      case 'switcher/commit':
+        this.#commitSwitcher(window, command.index)
+        return
       case 'tab/recent': {
         const data = this.#windowData(window)
         const id = recentTab(this.#data, data.spaceId, activeTabId(this.#data, data))
@@ -750,6 +812,7 @@ export class CommandRunner {
         window.focusOverlay()
         return
       case 'overlay/close': {
+        this.#controlWatch.get(window.id)?.()
         this.#store.dispatch({ type: 'runtime/window', id: window.id, patch: { overlay: null } })
         const data = this.#windowData(window)
         this.#windows.syncNow()
