@@ -71,14 +71,19 @@ function FindBar({ tabId, find }: { tabId: Id; find: FindState }) {
 
 const ARM_DELAY_MS = 500
 
-function useArmed(): boolean {
+function useArmed(delay = ARM_DELAY_MS): boolean {
   const [armed, setArmed] = useState(false)
   useEffect(() => {
-    const timer = window.setTimeout(() => setArmed(true), ARM_DELAY_MS)
+    const timer = window.setTimeout(() => setArmed(true), delay)
     return () => window.clearTimeout(timer)
-  }, [])
+  }, [delay])
   return armed
 }
+
+const SHORT_NAME = 48
+
+const shortName = (name: string) =>
+  name.length > SHORT_NAME ? `${name.slice(0, SHORT_NAME - 1)}…` : name
 
 function siteName(origin: string): string {
   return origin.replace(/^https?:\/\//, '')
@@ -201,7 +206,9 @@ function PasswordCard({
       <div className={styles.prompt}>
         <p className={styles.message}>
           {prompt.update ? 'Update' : 'Save'} password for{' '}
-          <strong>{prompt.username || siteName(prompt.origin)}</strong>
+          <strong className={styles.clip}>
+            {shortName(prompt.username) || siteName(prompt.origin)}
+          </strong>
           {prompt.username ? ` on ${siteName(prompt.origin)}` : ''}?
         </p>
         <div className={styles.promptActions}>
@@ -224,7 +231,10 @@ function PasswordCard({
   )
 }
 
+const FILL_ARM_MS = 300
+
 function AutofillList({ tabId, autofill }: { tabId: Id; autofill: AutofillState }) {
+  const armed = useArmed(FILL_ARM_MS)
   return (
     <div className={styles.autofill}>
       <div className={[styles.card, styles.autofillCard].join(' ')} role="listbox">
@@ -237,7 +247,7 @@ function AutofillList({ tabId, autofill }: { tabId: Id; autofill: AutofillState 
             className={styles.autofillRow}
             onMouseDown={(event) => {
               event.preventDefault()
-              ante.command({ type: 'autofill/fill', tabId, loginId: login.id })
+              if (armed) ante.command({ type: 'autofill/fill', tabId, loginId: login.id })
             }}
           >
             <KeyRound size={14} className={styles.autofillIcon} />

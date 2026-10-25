@@ -13,14 +13,13 @@ export interface LoginChoice {
   username: string
 }
 
-const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
+export const MAX_USERNAME = 1_000
+export const MAX_PASSWORD = 4_096
 
 export function loginOrigin(url: string): string | null {
   try {
     const parsed = new URL(url)
-    if (parsed.protocol === 'https:') return parsed.origin
-    if (parsed.protocol === 'http:' && LOCAL_HOSTS.has(parsed.hostname)) return parsed.origin
-    return null
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? parsed.origin : null
   } catch {
     return null
   }

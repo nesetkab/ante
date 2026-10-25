@@ -60,7 +60,7 @@ export default async function passwords({ store, run, waitFor, windows, tabs, de
     await contents.loadURL(`${base}/login`)
     await waitFor((state) => state.data.items[tabId]?.title === 'Sign in')
     contents.focus()
-    await contents.executeJavaScript(`document.querySelector('[name=u]').focus()`)
+    await contents.executeJavaScript(`document.querySelector('[name=u]').focus()`, true)
     try {
       await waitFor((state) => state.runtime.tabs[tabId]?.autofill?.logins.length === 1, 5000)
     } catch {
@@ -68,6 +68,7 @@ export default async function passwords({ store, run, waitFor, windows, tabs, de
       throw new Error(`focusing the username should offer the saved login, focused ${focused}`)
     }
     const loginId = store.state.runtime.tabs[tabId].autofill.logins[0].id
+    await delay(400)
     run({ type: 'autofill/fill', tabId, loginId }, window.id)
     await waitFor((state) => state.runtime.tabs[tabId]?.autofill === null)
     let values = null

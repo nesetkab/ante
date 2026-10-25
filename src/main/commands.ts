@@ -26,7 +26,7 @@ import { noteTabTitle, noteUrl } from '@shared/notes'
 import { easelUrl, placeImage } from '@shared/easels'
 import { IPC, type UiEvent } from '@shared/ipc'
 import { captureFullPage, capturePng, captureRegion } from './capture'
-import { copyText } from './clipboard'
+import { copySecret, copyText } from './clipboard'
 import { describeArcImport, type ArcImportResult } from './importers/arc'
 import type { FeatureCommand } from './features'
 import type { DevtoolsDock } from './devtools'
@@ -960,8 +960,8 @@ export class CommandRunner {
       case 'password/copy':
         void this.#vault.secret(command.profileId, command.loginId, null).then((secret) => {
           if (secret === null) return
-          copyText(secret)
-          this.toast(window, 'Copied password')
+          copySecret(secret)
+          this.toast(window, 'Copied password for one minute')
         })
         return
       case 'password/remove':

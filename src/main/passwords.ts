@@ -1,8 +1,24 @@
 import { randomUUID } from 'node:crypto'
-import { readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  closeSync,
+  existsSync,
+  fsyncSync,
+  openSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeSync,
+} from 'node:fs'
 import { dirname, join } from 'node:path'
 import { z } from 'zod'
-import { loginOrigin, sameLoginSite, type LoginChoice, type LoginSummary } from '@shared/passwords'
+import {
+  loginOrigin,
+  MAX_PASSWORD,
+  MAX_USERNAME,
+  sameLoginSite,
+  type LoginChoice,
+  type LoginSummary,
+} from '@shared/passwords'
 import { idSchema, type Id } from '@shared/schema'
 import { isPrivateProfile } from '@shared/state/private'
 
@@ -26,7 +42,7 @@ const MAX_FILE_BYTES = 16 * 1024 * 1024
 const loginSchema = z.object({
   id: idSchema,
   origin: z.string().min(1).max(2_000),
-  username: z.string().max(1_000),
+  username: z.string().max(MAX_USERNAME),
   secret: z.string().min(1).max(20_000),
   createdAt: z.number(),
   updatedAt: z.number(),
@@ -34,20 +50,69 @@ const loginSchema = z.object({
 })
 type StoredLogin = z.infer<typeof loginSchema>
 
-const vaultSchema = z.object({
-  logins: z.record(idSchema, z.array(loginSchema).max(MAX_LOGINS)).catch({}),
-  never: z.record(idSchema, z.array(z.string().max(2_000)).max(MAX_LOGINS)).catch({}),
-})
-type VaultData = z.infer<typeof vaultSchema>
+interface VaultData {
+  logins: Record<Id, StoredLogin[]>
+  never: Record<Id, string[]>
+}
 
-function readVault(path: string): VaultData {
+const empty = (): VaultData => ({ logins: {}, never: {} })
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+function entriesOf<T>(value: unknown, parse: (entry: unknown) => T | null): Record<Id, T[]> {
+  if (!isRecord(value)) return {}
+  const result: Record<Id, T[]> = {}
+  for (const [profileId, list] of Object.entries(value)) {
+    if (!idSchema.safeParse(profileId).success || !Array.isArray(list)) continue
+    result[profileId] = list.slice(0, MAX_LOGINS).flatMap((entry) => parse(entry) ?? [])
+  }
+  return result
+}
+
+export function parseVault(raw: unknown): VaultData {
+  if (!isRecord(raw)) return empty()
+  return {
+    logins: entriesOf(raw.logins, (entry) => {
+      const parsed = loginSchema.safeParse(entry)
+      return parsed.success ? parsed.data : null
+    }),
+    never: entriesOf(raw.never, (entry) =>
+      typeof entry === 'string' && entry.length <= 2_000 ? entry : null,
+    ),
+  }
+}
+
+interface LoadResult {
+  data: VaultData
+  ok: boolean
+}
+
+function readVault(path: string): LoadResult {
+  if (!existsSync(path)) return { data: empty(), ok: true }
   try {
     const text = readFileSync(path, 'utf8')
-    if (text.length > MAX_FILE_BYTES) return { logins: {}, never: {} }
-    const parsed = vaultSchema.safeParse(JSON.parse(text))
-    return parsed.success ? parsed.data : { logins: {}, never: {} }
+    if (text.length > MAX_FILE_BYTES) return { data: empty(), ok: false }
+    return { data: parseVault(JSON.parse(text)), ok: true }
   } catch {
-    return { logins: {}, never: {} }
+    return { data: empty(), ok: false }
+  }
+}
+
+function writeDurably(path: string, text: string): void {
+  const temp = join(dirname(path), `.passwords.${randomUUID()}.tmp`)
+  try {
+    const fd = openSync(temp, 'w', 0o600)
+    try {
+      writeSync(fd, text)
+      fsyncSync(fd)
+    } finally {
+      closeSync(fd)
+    }
+    renameSync(temp, path)
+  } catch (error) {
+    rmSync(temp, { force: true })
+    throw error
   }
 }
 
@@ -63,7 +128,17 @@ export class PasswordVault {
     this.#cipher = cipher
     this.#onChange = onChange
     this.#now = now
-    this.#data = readVault(path)
+    const loaded = readVault(path)
+    if (!loaded.ok) this.#setAside()
+    this.#data = loaded.data
+  }
+
+  #setAside(): void {
+    try {
+      renameSync(this.#path, `${this.#path}.unreadable-${this.#now()}`)
+    } catch (error) {
+      console.error('[passwords] could not set aside unreadable vault', error)
+    }
   }
 
   get available(): boolean {
@@ -101,7 +176,7 @@ export class PasswordVault {
     password: string,
   ): Promise<LoginVerdict> {
     if (isPrivateProfile(profileId) || !this.available || !password) return 'blocked'
-    if (this.#data.never[profileId]?.includes(origin)) return 'blocked'
+    if (this.#data.never[profileId]?.some((site) => sameLoginSite(site, origin))) return 'blocked'
     const existing = this.#matching(profileId, origin).find((login) => login.username === username)
     if (!existing) return 'new'
     return (await this.#cipher.decrypt(existing.secret)) === password ? 'known' : 'update'
@@ -146,7 +221,8 @@ export class PasswordVault {
     let count = 0
     for (const entry of entries) {
       const origin = loginOrigin(entry.url)
-      if (!origin || !entry.password) continue
+      if (!origin || !entry.password || entry.password.length > MAX_PASSWORD) continue
+      if (entry.username.length > MAX_USERNAME) continue
       const verdict = await this.verdict(profileId, origin, entry.username, entry.password)
       if (verdict === 'known') continue
       await this.#store(profileId, origin, entry.username, entry.password)
@@ -157,6 +233,7 @@ export class PasswordVault {
   }
 
   async #store(profileId: Id, origin: string, username: string, password: string): Promise<void> {
+    if (username.length > MAX_USERNAME || password.length > MAX_PASSWORD) return
     const secret = await this.#cipher.encrypt(password)
     const now = this.#now()
     const logins = (this.#data.logins[profileId] ??= [])
@@ -187,12 +264,9 @@ export class PasswordVault {
   }
 
   #write(notify = true): void {
-    const temp = join(dirname(this.#path), `.passwords.${randomUUID()}.tmp`)
     try {
-      writeFileSync(temp, JSON.stringify(this.#data), { encoding: 'utf8', mode: 0o600 })
-      renameSync(temp, this.#path)
+      writeDurably(this.#path, JSON.stringify(this.#data))
     } catch (error) {
-      rmSync(temp, { force: true })
       console.error('[passwords] could not save', error)
     }
     if (notify) this.#onChange()

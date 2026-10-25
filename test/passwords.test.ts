@@ -1,5 +1,5 @@
 import { createCipheriv } from 'node:crypto'
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
@@ -39,13 +39,13 @@ const vaultIn = (dir: string, available = true) => {
 }
 
 describe('login helpers', () => {
-  it('only keeps secure origins and local servers', () => {
+  it('keeps web origins only', () => {
     expect(loginOrigin('https://accounts.example.com/login?x=1')).toBe(
       'https://accounts.example.com',
     )
     expect(loginOrigin('http://127.0.0.1:5173/sign-in')).toBe('http://127.0.0.1:5173')
-    expect(loginOrigin('http://example.com/login')).toBeNull()
     expect(loginOrigin('file:///tmp/a.html')).toBeNull()
+    expect(loginOrigin('data:text/html,x')).toBeNull()
   })
 
   it('treats www and the bare domain as the same site', () => {
@@ -107,7 +107,8 @@ describe('PasswordVault', () => {
       await first.importLogins('default', [
         { url: 'https://a.test/login', username: 'me', password: 'pw' },
         { url: 'https://a.test/other', username: 'me', password: 'pw' },
-        { url: 'http://insecure.test/', username: 'me', password: 'pw' },
+        { url: 'ftp://odd.test/', username: 'me', password: 'pw' },
+        { url: 'https://long.test/', username: 'x'.repeat(5000), password: 'pw' },
         { url: 'https://b.test/', username: 'you', password: '' },
       ]),
     ).toBe(1)
@@ -116,6 +117,48 @@ describe('PasswordVault', () => {
     const id = second.summaries()[0]?.id ?? ''
     second.remove('default', id)
     expect(vaultIn(dir).vault.summaries()).toEqual([])
+  })
+})
+
+describe('vault safety', () => {
+  it('keeps good logins when one stored entry is bad', () => {
+    const dir = tempDir()
+    const good = {
+      id: 'a',
+      origin: 'https://a.test',
+      username: 'me',
+      secret: Buffer.from('sealed:pw').toString('base64'),
+      createdAt: 1,
+      updatedAt: 1,
+      lastUsedAt: null,
+    }
+    writeFileSync(
+      join(dir, 'passwords.json'),
+      JSON.stringify({
+        logins: { default: [good, { ...good, id: 'b', username: 'x'.repeat(2000) }] },
+      }),
+    )
+    expect(
+      vaultIn(dir)
+        .vault.summaries()
+        .map((login) => login.id),
+    ).toEqual(['a'])
+  })
+
+  it('sets an unreadable vault aside instead of overwriting it', async () => {
+    const dir = tempDir()
+    writeFileSync(join(dir, 'passwords.json'), '{ half written')
+    const { vault } = vaultIn(dir)
+    await vault.save('default', 'https://a.test', 'me', 'pw')
+    const files = readdirSync(dir)
+    expect(files.some((name) => name.startsWith('passwords.json.unreadable-'))).toBe(true)
+    expect(vault.summaries()).toHaveLength(1)
+  })
+
+  it('treats never for www and the bare domain alike', async () => {
+    const { vault } = vaultIn(tempDir())
+    vault.never('default', 'https://www.b.test')
+    expect(await vault.verdict('default', 'https://b.test', 'me', 'pw')).toBe('blocked')
   })
 })
 

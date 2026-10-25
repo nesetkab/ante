@@ -240,7 +240,12 @@ async function start(): Promise<void> {
   sessions.onCreate((profileSession, profileId) => extensions.attach(profileSession, profileId))
   sessions.onCreate((profileSession) => registerPagePreloads(profileSession))
   listenForSwipes(tabs)
-  listenForNotificationClicks(tabs, (tabId) => runner.reveal(tabId))
+  listenForNotificationClicks({
+    tabs,
+    allowed: (tabId, origin) =>
+      store.state.data.sitePermissions[profileFor(tabId)]?.[origin]?.notifications === 'allow',
+    reveal: (tabId) => runner.reveal(tabId),
+  })
   for (const profileId of Object.keys(store.state.data.profiles)) {
     if (!isPrivateProfile(profileId)) sessions.forProfile(profileId)
   }

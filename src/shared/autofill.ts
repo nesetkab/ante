@@ -2,6 +2,9 @@ export const AUTOFILL_FOCUS = 'ante:autofill:focus'
 export const AUTOFILL_BLUR = 'ante:autofill:blur'
 export const AUTOFILL_FILL = 'ante:autofill:fill'
 export const AUTOFILL_SUBMIT = 'ante:autofill:submit'
+export const AUTOFILL_USERNAME = 'ante:autofill:username'
+export const AUTOFILL_PROBE = 'ante:autofill:probe'
+export const AUTOFILL_PAGE = 'ante:autofill:page'
 
 export interface FieldRect {
   x: number

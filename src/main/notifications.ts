@@ -3,25 +3,37 @@ import { NOTIFICATION_CLICK, NOTIFICATION_WINDOW_MS } from '@shared/notification
 import type { Id } from '@shared/schema'
 import type { TabManager } from './tabs'
 
-export function listenForNotificationClicks(tabs: TabManager, reveal: (tabId: Id) => void): void {
+interface NotificationDeps {
+  tabs: TabManager
+  allowed: (tabId: Id, origin: string) => boolean
+  reveal: (tabId: Id) => void
+}
+
+export function listenForNotificationClicks({ tabs, allowed, reveal }: NotificationDeps): void {
   let activatedAt = 0
+  let used = true
   let waiting: { tabId: Id; at: number } | null = null
-  const activated = () => {
-    activatedAt = Date.now()
-    if (waiting && activatedAt - waiting.at <= NOTIFICATION_WINDOW_MS) reveal(waiting.tabId)
-    waiting = null
+  const revealOnce = (tabId: Id) => {
+    if (used) return
+    used = true
+    reveal(tabId)
   }
-  app.on('did-become-active', activated)
-  app.on('browser-window-focus', activated)
+  app.on('did-become-active', () => {
+    activatedAt = Date.now()
+    used = false
+    if (waiting && activatedAt - waiting.at <= NOTIFICATION_WINDOW_MS) revealOnce(waiting.tabId)
+    waiting = null
+  })
   ipcMain.on(NOTIFICATION_CLICK, (event) => {
-    if (event.senderFrame !== event.sender.mainFrame) return
+    const frame = event.senderFrame
+    if (!frame || frame !== event.sender.mainFrame) return
     const tabId = tabs.tabIdFor(event.sender)
-    if (!tabId) return
+    if (!tabId || !allowed(tabId, frame.origin)) return
     const now = Date.now()
     if (BaseWindow.getFocusedWindow() === null) {
       waiting = { tabId, at: now }
       return
     }
-    if (now - activatedAt <= NOTIFICATION_WINDOW_MS) reveal(tabId)
+    if (now - activatedAt <= NOTIFICATION_WINDOW_MS) revealOnce(tabId)
   })
 }

@@ -3,7 +3,10 @@ import {
   AUTOFILL_BLUR,
   AUTOFILL_FILL,
   AUTOFILL_FOCUS,
+  AUTOFILL_PAGE,
+  AUTOFILL_PROBE,
   AUTOFILL_SUBMIT,
+  AUTOFILL_USERNAME,
   pickPassword,
   type FillValues,
 } from '@shared/autofill'
@@ -62,19 +65,44 @@ function setValue(input: HTMLInputElement, value: string): void {
   input.dispatchEvent(new Event('change', { bubbles: true }))
 }
 
+const FILL_QUIET_MS = 1000
+let quietUntil = 0
+
+const inViewport = (rect: DOMRect) =>
+  rect.width > 0 &&
+  rect.height > 0 &&
+  rect.left >= 0 &&
+  rect.top >= 0 &&
+  rect.right <= window.innerWidth &&
+  rect.bottom <= window.innerHeight
+
+function offer(target: EventTarget | null): void {
+  if (Date.now() < quietUntil || !navigator.userActivation.isActive) return
+  const fields = loginFieldsFor(target)
+  if (!fields || !(target instanceof HTMLInputElement)) return
+  const rect = target.getBoundingClientRect()
+  if (!inViewport(rect)) return
+  current = fields
+  ipcRenderer.send(AUTOFILL_FOCUS, {
+    x: rect.left,
+    y: rect.top,
+    width: rect.width,
+    height: rect.height,
+  })
+}
+
 document.addEventListener(
   'focusin',
   (event) => {
-    const fields = loginFieldsFor(event.target)
-    if (!fields || !(event.target instanceof HTMLInputElement)) return
-    current = fields
-    const rect = event.target.getBoundingClientRect()
-    ipcRenderer.send(AUTOFILL_FOCUS, {
-      x: rect.left,
-      y: rect.top,
-      width: rect.width,
-      height: rect.height,
-    })
+    if (event.isTrusted) offer(event.target)
+  },
+  true,
+)
+
+document.addEventListener(
+  'mousedown',
+  (event) => {
+    if (event.isTrusted && event.target === document.activeElement) offer(event.target)
   },
   true,
 )
@@ -101,6 +129,7 @@ document.addEventListener(
 ipcRenderer.on(AUTOFILL_FILL, (_event, values: FillValues) => {
   const fields = current
   if (!fields) return
+  quietUntil = Date.now() + FILL_QUIET_MS
   if (fields.username && values.username) setValue(fields.username, values.username)
   if (fields.password) {
     setValue(fields.password, values.password)
@@ -108,8 +137,23 @@ ipcRenderer.on(AUTOFILL_FILL, (_event, values: FillValues) => {
   }
 })
 
+ipcRenderer.on(AUTOFILL_PROBE, () => {
+  ipcRenderer.send(AUTOFILL_PAGE, passwordsIn(document).length > 0)
+})
+
+function rememberUsername(scope: ParentNode): void {
+  const field = inputsIn(scope).find(
+    (input) => usable(input) && looksLikeUsername(input) && input.value.trim(),
+  )
+  if (field) ipcRenderer.send(AUTOFILL_USERNAME, field.value.trim())
+}
+
 function capture(scope: ParentNode): void {
   const fields = passwordsIn(scope)
+  if (fields.length === 0) {
+    rememberUsername(scope)
+    return
+  }
   const password = pickPassword(fields.map((field) => field.value))
   if (!password) return
   const field = fields.find((candidate) => candidate.value === password)
@@ -134,7 +178,7 @@ document.addEventListener(
 document.addEventListener(
   'keydown',
   (event) => {
-    if (event.key === 'Enter' && event.target instanceof HTMLInputElement)
+    if (event.isTrusted && event.key === 'Enter' && event.target instanceof HTMLInputElement)
       capture(scopeOf(event.target))
   },
   true,
@@ -143,6 +187,7 @@ document.addEventListener(
 document.addEventListener(
   'click',
   (event) => {
+    if (!event.isTrusted) return
     const button =
       event.target instanceof Element
         ? event.target.closest('button, input[type=submit], [role=button]')
