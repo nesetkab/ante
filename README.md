@@ -8,8 +8,8 @@ Arc is being discontinued. Ante keeps the parts that made it good: a vertical si
 
 ## Features
 
-- **Bring your Arc sidebar with you.** Ante finds Arc on your Mac and imports your spaces, pinned tabs, folders and favorites in one click.
-- **Coming from Chrome, Brave or Edge?** Import your bookmarks as a space and bring your history along.
+- **Switch from Arc without losing anything.** One click brings over your spaces with their icons and gradients, pinned tabs, folders, favorites, archive, Air Traffic Control rules, history, profiles, custom shortcuts, extensions and their settings, and your sign-ins, so you stay logged in everywhere.
+- **Coming from Chrome, Brave or Edge?** Import your bookmarks as a space and bring your history and sign-ins along.
 - **Sidebar with spaces.** Each space has its own pinned tabs, today tabs, color, icon and profile. Swipe sideways or press `Ctrl+1…9` to switch.
 - **Favorites, pinned and today tabs.** Pinned tabs remember their home URL. Today tabs archive themselves after 12 hours (configurable). Drag anything anywhere.
 - **Folders and split view.** Group pinned tabs into folders. Put up to four tabs side by side.
@@ -24,10 +24,11 @@ Arc is being discontinued. Ante keeps the parts that made it good: a vertical si
 - **Notes and Easels.** Write notes or build freeform boards with text, drawings, links, images and page captures. Both live in the sidebar like tabs, and the Library keeps every one you've made until you delete it.
 - **Live folders.** Follow any site with a feed and keep its latest posts in a pinned folder.
 - **Capture** (`⌘⇧2`). Drag over any part of a page to copy and save it.
-- **Library** with history, downloads and archived tabs (`⌘Y`). A ring on the library button shows download progress.
+- **Library** with history (`⌘Y`), downloads (`⌘⇧J`) and archived tabs. Closed tabs land in the archive like in Arc. A ring on the library button shows download progress.
 - **Favorites show unread counts** for sites like Gmail, Slack and Discord.
 - **Tabs go to sleep.** Today tabs you haven't touched in an hour free their memory and reload when you come back. Calls, music and anything on screen stay awake.
-- **Keyboard friendly.** Move through the sidebar with the arrow keys. Change any shortcut in Settings. `⌘⇧⌥C` copies the page as a Markdown link.
+- **Arc's keyboard shortcuts and menus.** Every default shortcut matches Arc on macOS, `Ctrl+Tab` opens the recent-tab switcher, and arrow keys move through the sidebar. Change any shortcut in Settings. `⌘⇧⌥C` copies the page as a Markdown link.
+- **Swipe** sideways on a page to go back or forward, or on the sidebar to change spaces.
 - **Drop links or files on the sidebar** to open them, and see where a link goes before you click it.
 - **Tabs remember where you were.** Back and forward history and scroll position come back after a tab sleeps or Ante restarts.
 - **Developer tools** docked next to the page.
