@@ -191,6 +191,24 @@ export class CommandRunner {
     window.focusContent(tabId)
   }
 
+  reveal(tabId: Id): void {
+    const contents = this.#tabs.contents(tabId)
+    const showing = contents ? this.#windows.windowFor(contents) : undefined
+    const spaceId = rootOf(this.#data, tabId)?.spaceId ?? null
+    const target =
+      showing ??
+      this.#windows.lastFocusedWhere(
+        (candidate) =>
+          candidate.kind === 'main' &&
+          spaceId !== null &&
+          samePrivacy(this.#data, candidate.data?.spaceId ?? spaceId, spaceId),
+      )
+    if (!target) return
+    if (target.win.isMinimized()) target.win.restore()
+    this.activate(target, tabId)
+    target.win.focus()
+  }
+
   #mainWindowFor(window: AppWindow): AppWindow {
     if (window.kind === 'main') return window
     return (

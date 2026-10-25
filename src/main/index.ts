@@ -34,6 +34,7 @@ import { Persistence } from './persistence'
 import { Autofill } from './autofill'
 import { PasswordVault } from './passwords'
 import { Sessions } from './sessions'
+import { listenForNotificationClicks } from './notifications'
 import { listenForSwipes, registerPagePreloads } from './swipe'
 import { Store } from './store'
 import { PrivacySignals } from './privacy/signals'
@@ -239,6 +240,7 @@ async function start(): Promise<void> {
   sessions.onCreate((profileSession, profileId) => extensions.attach(profileSession, profileId))
   sessions.onCreate((profileSession) => registerPagePreloads(profileSession))
   listenForSwipes(tabs)
+  listenForNotificationClicks(tabs, (tabId) => runner.reveal(tabId))
   for (const profileId of Object.keys(store.state.data.profiles)) {
     if (!isPrivateProfile(profileId)) sessions.forProfile(profileId)
   }

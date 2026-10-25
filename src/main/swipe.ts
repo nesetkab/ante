@@ -3,7 +3,7 @@ import { ipcMain, type Session, type WebContents } from 'electron'
 import { SWIPE_CHANNEL } from '@shared/swipe'
 import type { TabManager } from './tabs'
 
-const pagePreloads = ['swipe.cjs', 'autofill.cjs'].map((name) =>
+const pagePreloads = ['swipe.cjs', 'autofill.cjs', 'notifications.cjs'].map((name) =>
   join(import.meta.dirname, '../preload', name),
 )
 
