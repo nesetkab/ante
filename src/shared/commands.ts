@@ -111,7 +111,19 @@ export const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('peek/close') }),
   z.object({ type: z.literal('little/moveToSpace'), spaceId: idSchema.optional() }),
   z.object({ type: z.literal('archive/restore'), id: idSchema }),
-  z.object({ type: z.literal('settings/open') }),
+  z.object({
+    type: z.literal('settings/open'),
+    section: z.enum(['passwords', 'shortcuts']).optional(),
+  }),
+  z.object({
+    type: z.literal('password/respond'),
+    tabId: idSchema,
+    promptId: idSchema,
+    action: z.enum(['save', 'never', 'dismiss']),
+  }),
+  z.object({ type: z.literal('autofill/fill'), tabId: idSchema, loginId: idSchema }),
+  z.object({ type: z.literal('password/copy'), profileId: idSchema, loginId: idSchema }),
+  z.object({ type: z.literal('password/remove'), profileId: idSchema, loginId: idSchema }),
   z.object({ type: z.literal('import/arc') }),
   z.object({ type: z.literal('import/browser'), browser: z.enum(browserIds) }),
   z.object({ type: z.literal('space/delete'), spaceId: idSchema }),
@@ -213,3 +225,5 @@ export const syncCommandTypes = [
   'sync/now',
 ] as const
 export type SyncCommand = Extract<Command, { type: (typeof syncCommandTypes)[number] }>
+
+export type SettingsSection = NonNullable<Extract<Command, { type: 'settings/open' }>['section']>

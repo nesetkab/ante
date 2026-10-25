@@ -1,5 +1,6 @@
 import type { BrowserId } from '../importers/chrome'
 import { z } from 'zod'
+import type { LoginSummary } from '../passwords'
 import {
   originSchema,
   sitePermissionSchema,
@@ -182,6 +183,7 @@ export type InternalAction =
   | { type: 'data/import'; bundle: ImportBundle }
   | { type: 'runtime/arcImport'; available: boolean }
   | { type: 'runtime/browsers'; browsers: BrowserId[] }
+  | { type: 'runtime/passwords'; available: boolean; logins: LoginSummary[] }
   | { type: 'download/add'; download: DownloadRuntime }
   | { type: 'download/update'; id: Id; patch: Partial<Omit<DownloadRuntime, 'id'>> }
   | { type: 'download/remove'; ids: Id[] }

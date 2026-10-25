@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { dialog, webContents, type WebContents } from 'electron'
 import { isAbsolute } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import type { Command, Disposition, SyncCommand } from '@shared/commands'
+import type { Command, Disposition, SettingsSection, SyncCommand } from '@shared/commands'
 import type { BrowserId } from '@shared/importers/chrome'
 import type { Container, Id, Overlay, Rect, Tab, WindowData } from '@shared/schema'
 import { nextSpaceColor } from '@shared/state/initial'
@@ -43,12 +43,14 @@ import type { BrowserImportResult } from './importers/chrome'
 import type { Store } from './store'
 import type { UpdateChecker } from './updates'
 import type { AppWindow, WindowManager } from './windows'
+import type { Autofill } from './autofill'
+import type { PasswordVault } from './passwords'
 
 interface Deps {
   store: Store
   tabs: TabManager
   windows: WindowManager
-  openSettings: () => void
+  openSettings: (section?: SettingsSection) => void
   recordShortcuts: (window: AppWindow, recording: boolean) => void
   chooseDownloadFolder: (window: AppWindow) => void
   importBrowser: (browser: BrowserId) => Promise<BrowserImportResult>
@@ -61,13 +63,15 @@ interface Deps {
   feeds: Pick<FeedManager, 'follow' | 'refresh'>
   assets: Pick<EaselAssets, 'save'>
   updates: Pick<UpdateChecker, 'check' | 'release'>
+  autofill: Pick<Autofill, 'fill' | 'respond'>
+  vault: Pick<PasswordVault, 'secret' | 'remove'>
 }
 
 export class CommandRunner {
   readonly #store: Store
   readonly #tabs: TabManager
   readonly #windows: WindowManager
-  readonly #openSettings: () => void
+  readonly #openSettings: (section?: SettingsSection) => void
   readonly #recordShortcuts: (window: AppWindow, recording: boolean) => void
   readonly #chooseDownloadFolder: (window: AppWindow) => void
   readonly #importBrowser: (browser: BrowserId) => Promise<BrowserImportResult>
@@ -79,6 +83,8 @@ export class CommandRunner {
   readonly #runSync: (window: AppWindow, command: SyncCommand) => void
   readonly #media: Deps['media']
   readonly #devtools: Deps['devtools']
+  readonly #autofill: Deps['autofill']
+  readonly #vault: Deps['vault']
   readonly #feeds: Deps['feeds']
   readonly #assets: Deps['assets']
   readonly #updates: Deps['updates']
@@ -92,6 +98,8 @@ export class CommandRunner {
     this.#chooseDownloadFolder = deps.chooseDownloadFolder
     this.#importBrowser = deps.importBrowser
     this.#importArc = deps.importArc
+    this.#autofill = deps.autofill
+    this.#vault = deps.vault
     this.#runFeature = deps.runFeature
     this.#runPrivacy = deps.runPrivacy
     this.#runSync = deps.runSync
@@ -909,7 +917,23 @@ export class CommandRunner {
         return
       }
       case 'settings/open':
-        this.#openSettings()
+        this.#openSettings(command.section)
+        return
+      case 'autofill/fill':
+        void this.#autofill.fill(command.tabId, command.loginId)
+        return
+      case 'password/respond':
+        void this.#autofill.respond(command.tabId, command.promptId, command.action)
+        return
+      case 'password/copy':
+        void this.#vault.secret(command.profileId, command.loginId, null).then((secret) => {
+          if (secret === null) return
+          copyText(secret)
+          this.toast(window, 'Copied password')
+        })
+        return
+      case 'password/remove':
+        this.#vault.remove(command.profileId, command.loginId)
         return
       case 'shortcuts/recording':
         this.#recordShortcuts(window, command.recording)

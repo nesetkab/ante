@@ -553,7 +553,7 @@ export function shortcuts(platform: Platform): Shortcut[] {
       id: 'help-shortcuts',
       label: 'Keyboard Shortcuts',
       section: 'help',
-      command: { type: 'settings/open' },
+      command: { type: 'settings/open', section: 'shortcuts' },
     },
     {
       id: 'help-repo',

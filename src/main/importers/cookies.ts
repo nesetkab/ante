@@ -1,6 +1,5 @@
 import { execFile } from 'node:child_process'
 import { createDecipheriv, pbkdf2Sync } from 'node:crypto'
-import { existsSync } from 'node:fs'
 import { copyFile, mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -183,37 +182,4 @@ export async function importCookies(
   }
   await jar.cookies.flushStore()
   return count
-}
-
-export interface CookieSource {
-  dir: string
-  jar: () => CookieJar
-}
-
-export interface CookieImport {
-  count: number
-  skipped: boolean
-}
-
-export async function importBrowserCookies(
-  service: string,
-  sources: readonly CookieSource[],
-): Promise<CookieImport> {
-  const files = sources.filter((source) => existsSync(join(source.dir, 'Cookies')))
-  if (files.length === 0) return { count: 0, skipped: false }
-  const password = await safeStoragePassword(service)
-  if (!password) return { count: 0, skipped: true }
-  const key = cookieKey(password)
-  let count = 0
-  for (const source of files) {
-    try {
-      count += await importCookies(
-        source.jar(),
-        await readChromiumCookies(join(source.dir, 'Cookies'), key),
-      )
-    } catch (error) {
-      console.error('[import] could not read cookies', source.dir, error)
-    }
-  }
-  return { count, skipped: false }
 }

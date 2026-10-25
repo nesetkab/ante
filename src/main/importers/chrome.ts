@@ -17,7 +17,9 @@ import type { Id } from '@shared/schema'
 import { DEFAULT_PROFILE_ID } from '@shared/state/initial'
 import type { HistoryStore, ImportedVisit } from '../history'
 import type { Store } from '../store'
-import { importBrowserCookies, type CookieJar } from './cookies'
+import type { CookieJar } from './cookies'
+import { describeSecrets, importBrowserSecrets } from './secrets'
+import type { ImportedLogin } from '../passwords'
 
 const MAX_VISITS = 20_000
 
@@ -110,6 +112,7 @@ export async function importFromBrowser(
   history: HistoryStore,
   browser: BrowserId,
   jar: () => CookieJar,
+  saveLogins: (logins: readonly ImportedLogin[]) => Promise<number>,
 ): Promise<BrowserImportResult> {
   const name = browserNames[browser]
   const dir = profileDir(browser)
@@ -142,16 +145,16 @@ export async function importFromBrowser(
       historyBusy = true
     }
   }
-  const cookies = await importBrowserCookies(safeStorage[browser], [{ dir, jar }])
-  if (historyBusy && tabCount === 0 && cookies.count === 0)
-    return { message: `Quit ${name} and try again to import its history`, spaceId }
-  const skipped = cookies.skipped ? '. Sign-ins were skipped' : ''
-  if (tabCount === 0 && visitCount === 0 && cookies.count === 0)
-    return { message: `Nothing to import from ${name}${skipped}`, spaceId: null }
+  const secrets = await importBrowserSecrets(safeStorage[browser], [{ dir, jar, saveLogins }])
+  const described = describeSecrets(secrets)
   const parts = [
     tabCount > 0 ? `${tabCount} bookmark${tabCount === 1 ? '' : 's'}` : null,
     visitCount > 0 ? `${visitCount} history entr${visitCount === 1 ? 'y' : 'ies'}` : null,
-    cookies.count > 0 ? 'your sign-ins' : null,
+    ...described.parts,
   ].filter((part) => part !== null)
-  return { message: `Imported ${parts.join(', ')} from ${name}${skipped}`, spaceId }
+  if (historyBusy && parts.length === 0)
+    return { message: `Quit ${name} and try again to import its history`, spaceId }
+  if (parts.length === 0)
+    return { message: `Nothing to import from ${name}${described.note}`, spaceId: null }
+  return { message: `Imported ${parts.join(', ')} from ${name}${described.note}`, spaceId }
 }

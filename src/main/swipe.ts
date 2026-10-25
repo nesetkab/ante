@@ -3,10 +3,12 @@ import { ipcMain, type Session, type WebContents } from 'electron'
 import { SWIPE_CHANNEL } from '@shared/swipe'
 import type { TabManager } from './tabs'
 
-const swipePreloadPath = join(import.meta.dirname, '../preload/swipe.cjs')
+const pagePreloads = ['swipe.cjs', 'autofill.cjs'].map((name) =>
+  join(import.meta.dirname, '../preload', name),
+)
 
-export function enableSwipes(session: Session): void {
-  session.registerPreloadScript({ type: 'frame', filePath: swipePreloadPath })
+export function registerPagePreloads(session: Session): void {
+  for (const filePath of pagePreloads) session.registerPreloadScript({ type: 'frame', filePath })
 }
 
 const COOLDOWN_MS = 800

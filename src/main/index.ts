@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
-import { app, dialog, Menu, nativeTheme, session } from 'electron'
+import { app, dialog, Menu, nativeTheme, safeStorage, session } from 'electron'
 import type { Command } from '@shared/commands'
 import type { Id } from '@shared/schema'
 import { createAppState, createInitialData, DEFAULT_PROFILE_ID } from '@shared/state/initial'
@@ -31,8 +31,10 @@ import { PanelManager } from './panels'
 import { Privacy } from './privacy'
 import { AdBlocker } from './privacy/adblock'
 import { Persistence } from './persistence'
+import { Autofill } from './autofill'
+import { PasswordVault } from './passwords'
 import { Sessions } from './sessions'
-import { enableSwipes, listenForSwipes } from './swipe'
+import { listenForSwipes, registerPagePreloads } from './swipe'
 import { Store } from './store'
 import { PrivacySignals } from './privacy/signals'
 import { detectBrowsers, importFromBrowser } from './importers/chrome'
@@ -70,6 +72,31 @@ async function start(): Promise<void> {
   const profileFor = (tabId: Id): Id =>
     profileIndex(store.state.data).get(tabId) ?? DEFAULT_PROFILE_ID
 
+  const publishPasswords = () =>
+    store.dispatch({
+      type: 'runtime/passwords',
+      available: vault.available,
+      logins: vault.summaries(),
+    })
+  const encryption = await safeStorage.isAsyncEncryptionAvailable()
+  const vault: PasswordVault = new PasswordVault(
+    join(app.getPath('userData'), 'passwords.json'),
+    {
+      available: () => encryption,
+      encrypt: async (plain) => (await safeStorage.encryptStringAsync(plain)).toString('base64'),
+      decrypt: async (secret) => {
+        try {
+          const { result } = await safeStorage.decryptStringAsync(Buffer.from(secret, 'base64'))
+          return result
+        } catch {
+          return null
+        }
+      },
+    },
+    publishPasswords,
+  )
+  publishPasswords()
+
   const historiesPath = join(app.getPath('userData'), 'tab-histories.json')
   const keepsHistory = (tabId: Id, profileId: Id) =>
     getTab(store.state.data, tabId) !== null &&
@@ -78,6 +105,7 @@ async function start(): Promise<void> {
   const tabs: TabManager = new TabManager(store, sessions, {
     profileFor,
     onOpen: (openerId, url, disposition) => runner.openFromTab(openerId, url, disposition),
+    onCreate: (tabId, contents) => autofill.watch(tabId, contents),
     onContextMenu: (tabId, params) => {
       const contents = tabs.contents(tabId)
       if (!contents) return
@@ -132,21 +160,32 @@ async function start(): Promise<void> {
     panels,
     runner: () => runner,
   })
+  const autofill: Autofill = new Autofill({ store, tabs, vault, profileFor })
+  autofill.listen()
   const runner = new CommandRunner({
     store,
     tabs,
     windows,
-    openSettings: () => {
+    autofill,
+    vault,
+    openSettings: (section) => {
       const parent = windows.lastFocused('main') ?? windows.focused()
-      if (parent) panels.show(parent, 'settings')
+      if (parent) panels.show(parent, 'settings', section ? { section } : {})
     },
     importBrowser: (browser) =>
-      importFromBrowser(store, history, browser, () => sessions.forProfile(DEFAULT_PROFILE_ID)),
+      importFromBrowser(
+        store,
+        history,
+        browser,
+        () => sessions.forProfile(DEFAULT_PROFILE_ID),
+        (logins) => vault.importLogins(DEFAULT_PROFILE_ID, logins),
+      ),
     importArc: () =>
       importFromArc({
         store,
         history,
         jarFor: (profileId) => sessions.forProfile(profileId),
+        saveLogins: (profileId, logins) => vault.importLogins(profileId, logins),
         importExtensions: (profileId, dir): Promise<number> => {
           sessions.forProfile(profileId)
           return extensions.importFrom(profileId, dir)
@@ -198,7 +237,7 @@ async function start(): Promise<void> {
   })
   const extensions: Extensions = new Extensions({ store, tabs, windows, runner: () => runner })
   sessions.onCreate((profileSession, profileId) => extensions.attach(profileSession, profileId))
-  sessions.onCreate((profileSession) => enableSwipes(profileSession))
+  sessions.onCreate((profileSession) => registerPagePreloads(profileSession))
   listenForSwipes(tabs)
   for (const profileId of Object.keys(store.state.data.profiles)) {
     if (!isPrivateProfile(profileId)) sessions.forProfile(profileId)

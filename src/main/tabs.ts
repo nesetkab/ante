@@ -16,6 +16,7 @@ export interface TabHooks {
   profileFor(tabId: Id): Id
   onOpen(openerId: Id, url: string, disposition: OpenDisposition): void
   onContextMenu(tabId: Id, params: ContextMenuParams): void
+  onCreate(tabId: Id, contents: WebContents): void
 }
 
 export class TabManager {
@@ -68,6 +69,7 @@ export class TabManager {
     this.#views.set(id, view)
     this.#profiles.set(id, profileId)
     this.#wire(id, view.webContents)
+    this.#hooks.onCreate(id, view.webContents)
     this.#store.dispatch({ type: 'runtime/tab', id, patch: { loading: true }, create: true })
     const saved = this.#histories.get(id)
     this.#histories.delete(id)

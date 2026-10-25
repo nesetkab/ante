@@ -18,7 +18,9 @@ import { isPrivateProfile } from '@shared/state/private'
 import type { HistoryStore } from '../history'
 import type { Store } from '../store'
 import { readVisits } from './chrome'
-import { importBrowserCookies, type CookieImport, type CookieJar } from './cookies'
+import type { CookieJar } from './cookies'
+import { describeSecrets, importBrowserSecrets, type SecretImport } from './secrets'
+import type { ImportedLogin } from '../passwords'
 
 const SIDEBAR_FILE = 'StorableSidebar.json'
 const ARCHIVE_FILE = 'StorableArchiveItems.json'
@@ -63,7 +65,7 @@ export type ArcImportResult =
       spaceIds: Id[]
       tabCount: number
       visitCount: number
-      cookies: CookieImport
+      secrets: SecretImport
       extensionCount: number
     }
   | { ok: false; message: string }
@@ -78,11 +80,11 @@ export function describeArcImport(result: ArcImportResult): string {
     result.tabCount > 0 ? plural(result.tabCount, 'tab') : null,
     result.visitCount > 0 ? plural(result.visitCount, 'history entry', 'history entries') : null,
     result.extensionCount > 0 ? plural(result.extensionCount, 'extension') : null,
-    result.cookies.count > 0 ? 'your sign-ins' : null,
   ].filter((part) => part !== null)
-  const skipped = result.cookies.skipped ? '. Sign-ins were skipped' : ''
-  if (parts.length === 0) return `Nothing new to import from Arc${skipped}`
-  return `Imported ${parts.join(', ')} from Arc${skipped}`
+  const secrets = describeSecrets(result.secrets)
+  const all = [...parts, ...secrets.parts]
+  if (all.length === 0) return `Nothing new to import from Arc${secrets.note}`
+  return `Imported ${all.join(', ')} from Arc${secrets.note}`
 }
 
 async function readJson(file: string): Promise<unknown> {
@@ -141,6 +143,7 @@ export interface ArcImportDeps {
   store: Store
   history: HistoryStore
   jarFor: (profileId: Id) => CookieJar
+  saveLogins: (profileId: Id, logins: readonly ImportedLogin[]) => Promise<number>
   importExtensions: (profileId: Id, profileDir: string) => Promise<number>
 }
 
@@ -148,6 +151,7 @@ export async function importFromArc({
   store,
   history,
   jarFor,
+  saveLogins,
   importExtensions,
 }: ArcImportDeps): Promise<ArcImportResult> {
   const file = findArcSidebar()
@@ -172,14 +176,18 @@ export async function importFromArc({
     const data = store.state.data
     const dirs = profileDirs(userData, profileNames, store)
     const visitCount = await importHistory(history, dirs)
-    const cookies = await importBrowserCookies(
+    const secrets = await importBrowserSecrets(
       ARC_SAFE_STORAGE,
-      dirs.map(({ dir, profileId }) => ({ dir, jar: () => jarFor(profileId) })),
+      dirs.map(({ dir, profileId }) => ({
+        dir,
+        jar: () => jarFor(profileId),
+        saveLogins: (logins) => saveLogins(profileId, logins),
+      })),
     )
     let extensionCount = 0
     for (const { dir, profileId } of dirs) extensionCount += await importExtensions(profileId, dir)
     return {
-      cookies,
+      secrets,
       extensionCount,
       ok: true,
       spaceIds: bundle.spaces.map((space) => space.id).filter((id) => data.spaces[id]),

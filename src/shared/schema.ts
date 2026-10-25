@@ -2,6 +2,7 @@ import { z } from 'zod'
 import type { BrowserId } from './importers/chrome'
 import { isAccelerator } from './keys'
 import type { LoadError } from './loadErrors'
+import type { LoginChoice, LoginSummary } from './passwords'
 import { sitePermissionsSchema, type FindState, type Prompt } from './permissions'
 
 type DefaultedShape = Record<string, z.ZodDefault>
@@ -362,6 +363,7 @@ export interface TabRuntime {
   error: LoadError | null
   capturing: boolean
   hoverUrl: string | null
+  autofill: AutofillState | null
 }
 
 export interface TabMedia {
@@ -424,6 +426,16 @@ export interface UpdateStatus {
   checkedAt: number | null
 }
 
+export interface AutofillState {
+  rect: Rect
+  logins: LoginChoice[]
+}
+
+export interface PasswordsRuntime {
+  available: boolean
+  logins: LoginSummary[]
+}
+
 export interface Runtime {
   tabs: Record<Id, TabRuntime>
   windows: Record<Id, WindowRuntime>
@@ -432,6 +444,7 @@ export interface Runtime {
   browsers?: BrowserId[]
   sync?: SyncStatus
   update?: UpdateStatus
+  passwords?: PasswordsRuntime
 }
 
 export interface AppState {

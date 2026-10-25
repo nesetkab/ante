@@ -160,3 +160,53 @@
 .findInput:focus-visible {
   outline: none;
 }
+
+.quiet {
+  margin-right: auto;
+  color: var(--fg-muted);
+}
+
+.autofill {
+  height: 100%;
+  padding: 6px;
+}
+
+.autofillCard {
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.autofillRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 7px;
+  text-align: left;
+}
+
+.autofillRow:hover {
+  background: var(--item-hover);
+}
+
+.autofillIcon {
+  flex: none;
+  color: var(--fg-faint);
+}
+
+.autofillName {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.autofillManage {
+  color: var(--fg-muted);
+  font-size: 12px;
+}

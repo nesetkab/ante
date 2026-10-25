@@ -1,9 +1,17 @@
 import type { ReactNode } from 'react'
 import styles from './Form.module.css'
 
-export function Section({ title, children }: { title: string; children: ReactNode }) {
+export function Section({
+  title,
+  id,
+  children,
+}: {
+  title: string
+  id?: string
+  children: ReactNode
+}) {
   return (
-    <section className={styles.section}>
+    <section className={styles.section} id={id}>
       <h2 className={styles.sectionTitle}>{title}</h2>
       <div className={styles.card}>{children}</div>
     </section>

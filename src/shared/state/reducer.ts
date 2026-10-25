@@ -77,6 +77,7 @@ export const defaultTabRuntime: TabRuntime = {
   error: null,
   capturing: false,
   hoverUrl: null,
+  autofill: null,
 }
 
 export const defaultWindowRuntime: WindowRuntime = {
@@ -754,6 +755,9 @@ export function reduce(state: AppState, action: Action): void {
       return
     case 'runtime/arcImport':
       runtime.arcImportAvailable = action.available
+      return
+    case 'runtime/passwords':
+      runtime.passwords = { available: action.available, logins: [...action.logins] }
       return
     case 'runtime/browsers':
       runtime.browsers = [...action.browsers]

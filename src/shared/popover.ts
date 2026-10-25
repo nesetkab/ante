@@ -1,5 +1,5 @@
 import type { FindState, Prompt } from './permissions'
-import type { Data, Id, Rect, Runtime, WindowData } from './schema'
+import type { AutofillState, Data, Id, Rect, Runtime, WindowData } from './schema'
 import { activeTabId, visibleTabIds } from './state/tree'
 
 export const POPOVER_INSET = 10
@@ -16,11 +16,18 @@ const LINK_MAX_WIDTH = 560
 const LINK_CHAR_WIDTH = 6.6
 const LINK_PADDING = 22
 
+export const AUTOFILL_ROW = 34
+export const AUTOFILL_PAD = 6
+export const AUTOFILL_MARGIN = 6
+const AUTOFILL_MIN_WIDTH = 240
+const AUTOFILL_MAX_ROWS = 6
+
 export interface Popover {
   tabId: Id
   find: FindState | null
   prompt: Prompt | null
   link?: string | null
+  autofill?: AutofillState | null
 }
 
 export function popoverFor(data: Data, runtime: Runtime, window: WindowData): Popover | null {
@@ -38,6 +45,9 @@ export function popoverFor(data: Data, runtime: Runtime, window: WindowData): Po
     }
   }
   if (activeVisible && find) return { tabId: active, find, prompt: null }
+  const filling = ordered.find((id) => runtime.tabs[id]?.autofill)
+  const autofill = filling ? runtime.tabs[filling]?.autofill : null
+  if (filling && autofill) return { tabId: filling, find: null, prompt: null, autofill }
   const hovering = ordered.find((id) => runtime.tabs[id]?.hoverUrl)
   const link = hovering ? runtime.tabs[hovering]?.hoverUrl : null
   if (hovering && link) return { tabId: hovering, find: null, prompt: null, link }
@@ -69,6 +79,30 @@ export function linkRect(pane: Rect, link: string, cursor: Point | null = null):
   return { ...left, x: Math.round(pane.x + pane.width - LINK_INSET - width) }
 }
 
+export function autofillRect(pane: Rect, autofill: AutofillState): Rect {
+  const rows = Math.min(autofill.logins.length, AUTOFILL_MAX_ROWS) + 1
+  const cardHeight = rows * AUTOFILL_ROW + AUTOFILL_PAD * 2
+  const height = cardHeight + AUTOFILL_MARGIN * 2
+  const field = autofill.rect
+  const width = Math.min(
+    Math.max(field.width, AUTOFILL_MIN_WIDTH) + AUTOFILL_MARGIN * 2,
+    Math.max(0, pane.width),
+  )
+  const x = Math.min(
+    Math.max(pane.x, pane.x + field.x - AUTOFILL_MARGIN),
+    pane.x + pane.width - width,
+  )
+  const below = pane.y + field.y + field.height
+  const above = pane.y + field.y - height
+  const fitsBelow = below + height <= pane.y + pane.height
+  return {
+    x: Math.round(x),
+    y: Math.round(Math.max(pane.y, fitsBelow || above < pane.y ? below : above)),
+    width: Math.round(width),
+    height: Math.round(height),
+  }
+}
+
 export function promptSize(prompt: Prompt): { width: number; height: number } {
   return prompt.kind === 'screen' ? SCREEN_PROMPT_SIZE : PROMPT_SIZE
 }
@@ -87,6 +121,8 @@ export function popoverContentSize(popover: Popover): { width: number; height: n
 }
 
 export function popoverRect(pane: Rect, popover: Popover, cursor: Point | null = null): Rect {
+  if (popover.autofill && !popover.find && !popover.prompt)
+    return autofillRect(pane, popover.autofill)
   if (popover.link && !popover.find && !popover.prompt) return linkRect(pane, popover.link, cursor)
   const content = popoverContentSize(popover)
   const width = Math.min(content.width, Math.max(0, pane.width - POPOVER_INSET * 2))

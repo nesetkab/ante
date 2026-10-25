@@ -1,8 +1,8 @@
-import { ChevronDown, ChevronUp, Monitor, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, KeyRound, Monitor, X } from 'lucide-react'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { describeRequest, type FindState, type Prompt } from '@shared/permissions'
 import { popoverFor, type Popover as PopoverState } from '@shared/popover'
-import type { Id } from '@shared/schema'
+import type { AutofillState, Id } from '@shared/schema'
 import { ante, windowId } from '../ante'
 import { IconButton } from '../components/IconButton'
 import { useAppSelector } from '../store'
@@ -185,9 +185,89 @@ function ScreenCard({ tabId, prompt }: { tabId: Id; prompt: Extract<Prompt, { ki
   )
 }
 
+function PasswordCard({
+  tabId,
+  prompt,
+}: {
+  tabId: Id
+  prompt: Extract<Prompt, { kind: 'password' }>
+}) {
+  const armed = useArmed()
+  const respond = (action: 'save' | 'never' | 'dismiss') => {
+    if (armed) ante.command({ type: 'password/respond', tabId, promptId: prompt.id, action })
+  }
+  return (
+    <div className={styles.card}>
+      <div className={styles.prompt}>
+        <p className={styles.message}>
+          {prompt.update ? 'Update' : 'Save'} password for{' '}
+          <strong>{prompt.username || siteName(prompt.origin)}</strong>
+          {prompt.username ? ` on ${siteName(prompt.origin)}` : ''}?
+        </p>
+        <div className={styles.promptActions}>
+          <button
+            type="button"
+            className={[styles.secondary, styles.quiet].join(' ')}
+            onClick={() => respond('never')}
+          >
+            Never
+          </button>
+          <button type="button" className={styles.secondary} onClick={() => respond('dismiss')}>
+            Not Now
+          </button>
+          <button type="button" className={styles.primary} onClick={() => respond('save')}>
+            {prompt.update ? 'Update' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function AutofillList({ tabId, autofill }: { tabId: Id; autofill: AutofillState }) {
+  return (
+    <div className={styles.autofill}>
+      <div className={[styles.card, styles.autofillCard].join(' ')} role="listbox">
+        {autofill.logins.map((login) => (
+          <button
+            key={login.id}
+            type="button"
+            role="option"
+            aria-selected={false}
+            className={styles.autofillRow}
+            onMouseDown={(event) => {
+              event.preventDefault()
+              ante.command({ type: 'autofill/fill', tabId, loginId: login.id })
+            }}
+          >
+            <KeyRound size={14} className={styles.autofillIcon} />
+            <span className={styles.autofillName}>{login.username || 'No username'}</span>
+          </button>
+        ))}
+        <button
+          type="button"
+          className={[styles.autofillRow, styles.autofillManage].join(' ')}
+          onMouseDown={(event) => {
+            event.preventDefault()
+            ante.command({ type: 'settings/open', section: 'passwords' })
+          }}
+        >
+          Manage Passwords…
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function samePopover(a: PopoverState | null, b: PopoverState | null): boolean {
   if (a === null || b === null) return a === b
-  return a.tabId === b.tabId && a.find === b.find && a.prompt === b.prompt && a.link === b.link
+  return (
+    a.tabId === b.tabId &&
+    a.find === b.find &&
+    a.prompt === b.prompt &&
+    a.link === b.link &&
+    a.autofill === b.autofill
+  )
 }
 
 export function Popover() {
@@ -196,6 +276,8 @@ export function Popover() {
     return window ? popoverFor(state.data, state.runtime, window) : null
   }, samePopover)
   if (!popover) return null
+  if (popover.autofill && !popover.find && !popover.prompt)
+    return <AutofillList tabId={popover.tabId} autofill={popover.autofill} />
   if (popover.link && !popover.find && !popover.prompt)
     return (
       <div className={styles.link} role="status">
@@ -210,6 +292,9 @@ export function Popover() {
       )}
       {popover.prompt?.kind === 'screen' && (
         <ScreenCard key={popover.prompt.id} tabId={popover.tabId} prompt={popover.prompt} />
+      )}
+      {popover.prompt?.kind === 'password' && (
+        <PasswordCard key={popover.prompt.id} tabId={popover.tabId} prompt={popover.prompt} />
       )}
     </div>
   )

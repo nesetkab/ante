@@ -1,5 +1,6 @@
-import { RotateCcw, X } from 'lucide-react'
+import { Copy, RotateCcw, X } from 'lucide-react'
 import { useEffect, useState, type KeyboardEvent } from 'react'
+import { siteName } from '@shared/passwords'
 import { permissionLabels, sitePermissionSchema } from '@shared/permissions'
 import {
   customSearchSchema,
@@ -16,7 +17,7 @@ import { browserNames, type BrowserId } from '@shared/importers/chrome'
 import { acceleratorFor, conflictFor, reservedShortcuts, withOverrides } from '@shared/keys'
 import { shortcuts, type Platform } from '@shared/shortcuts'
 import { isPrivateProfile } from '@shared/state/private'
-import { ante } from '../ante'
+import { ante, panelParams } from '../ante'
 import { Button, Row, Section, Segmented, Select, Toggle } from '../components/Form'
 import { IconButton } from '../components/IconButton'
 import { useConfirm } from '../library/useConfirm'
@@ -235,7 +236,7 @@ function ShortcutsSection() {
   }
 
   return (
-    <Section title="Keyboard shortcuts">
+    <Section title="Keyboard shortcuts" id="section-shortcuts">
       {all
         .filter((shortcut) => !shortcut.hidden)
         .map((shortcut) => {
@@ -363,6 +364,7 @@ function ClearDataRow({ profileId, label }: { profileId: string; label: string }
 }
 
 export function SettingsPanel() {
+  useScrollToSection()
   const settings = useAppState((state) => state.data.settings)
   const profiles = useAppState((state) => state.data.profiles)
   const sitePermissions = useAppState((state) => state.data.sitePermissions)
@@ -537,6 +539,8 @@ export function SettingsPanel() {
         ))}
       </Section>
 
+      <PasswordsSection profiles={visibleProfiles} />
+
       <Section title="Site permissions">
         {sites.length === 0 && (
           <p className={styles.empty}>Sites you allow or block will show up here.</p>
@@ -589,5 +593,93 @@ export function SettingsPanel() {
 
       <ShortcutsSection />
     </>
+  )
+}
+
+function useScrollToSection() {
+  useEffect(() => {
+    const section = panelParams.get('section')
+    if (section) document.getElementById(`section-${section}`)?.scrollIntoView()
+  }, [])
+}
+
+function PasswordsSection({ profiles }: { profiles: readonly { id: string; name: string }[] }) {
+  const passwords = useAppState((state) => state.runtime.passwords)
+  const [filter, setFilter] = useState('')
+  const needle = filter.trim().toLowerCase()
+  const names = new Map(profiles.map((profile) => [profile.id, profile.name]))
+  const logins = (passwords?.logins ?? [])
+    .filter((login) => names.has(login.profileId))
+    .filter(
+      (login) =>
+        !needle ||
+        login.origin.toLowerCase().includes(needle) ||
+        login.username.toLowerCase().includes(needle),
+    )
+    .sort((a, b) => siteName(a.origin).localeCompare(siteName(b.origin)))
+  const total = passwords?.logins.length ?? 0
+
+  return (
+    <Section title="Passwords" id="section-passwords">
+      {passwords?.available === false && (
+        <p className={styles.empty}>
+          Passwords can't be saved because this computer has no secure storage available.
+        </p>
+      )}
+      {passwords?.available !== false && total === 0 && (
+        <p className={styles.empty}>
+          Ante offers to save passwords when you sign in, and fills them in next time. Importing
+          from Arc or Chrome brings your saved passwords too.
+        </p>
+      )}
+      {total > 8 && (
+        <Row label="Search">
+          <input
+            className={styles.input}
+            value={filter}
+            placeholder="Site or username"
+            aria-label="Search passwords"
+            onChange={(event) => setFilter(event.target.value)}
+          />
+        </Row>
+      )}
+      <div className={styles.list}>
+        {logins.map((login) => (
+          <div key={login.id} className={styles.listItem}>
+            <span className={styles.mono} title={login.origin}>
+              {siteName(login.origin)}
+              {profiles.length > 1 ? ` · ${names.get(login.profileId) ?? ''}` : ''}
+            </span>
+            <span className={styles.kbd}>{login.username || 'No username'}</span>
+            <IconButton
+              size="sm"
+              label="Copy password"
+              onClick={() =>
+                ante.command({
+                  type: 'password/copy',
+                  profileId: login.profileId,
+                  loginId: login.id,
+                })
+              }
+            >
+              <Copy size={13} />
+            </IconButton>
+            <IconButton
+              size="sm"
+              label="Delete password"
+              onClick={() =>
+                ante.command({
+                  type: 'password/remove',
+                  profileId: login.profileId,
+                  loginId: login.id,
+                })
+              }
+            >
+              <X size={13} />
+            </IconButton>
+          </div>
+        ))}
+      </div>
+    </Section>
   )
 }

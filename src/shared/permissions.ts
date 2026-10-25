@@ -168,6 +168,7 @@ export type Prompt =
       detail: string | null
     }
   | { id: string; kind: 'screen'; origin: string; sources: ScreenSource[] }
+  | { id: string; kind: 'password'; origin: string; username: string; update: boolean }
 
 export interface FindState {
   query: string
