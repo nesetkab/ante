@@ -37,11 +37,20 @@ export default async function switcher({ store, run, waitFor, windows, tabs, del
   const target = overlay().tabIds[1]
   const contents = tabs.contents(one)
   assert(contents, 'the active tab should be live')
+  const seen = []
+  const record = (_event, input) => seen.push(`${input.type}:${input.key}:${input.control}`)
+  contents.on('before-input-event', record)
+  contents.focus()
+  contents.sendInputEvent({ type: 'keyDown', keyCode: 'Control', modifiers: ['control'] })
   contents.sendInputEvent({ type: 'keyUp', keyCode: 'Control' })
   try {
     await waitFor(() => overlay() === null, 3000)
   } catch {
-    throw new Error(`releasing control should commit: ${JSON.stringify(overlay())}`)
+    throw new Error(
+      `releasing control should commit: ${JSON.stringify(overlay())} inputs ${JSON.stringify(seen)} focused ${contents.isFocused()}`,
+    )
+  } finally {
+    contents.off('before-input-event', record)
   }
   assert(active() === target, 'releasing control picks the highlighted tab')
 

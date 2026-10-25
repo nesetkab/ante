@@ -358,7 +358,7 @@ export class CommandRunner {
       (contents): contents is WebContents => contents !== null && !contents.isDestroyed(),
     )
     const onInput = (event: Electron.Event, input: Electron.Input) => {
-      if (input.type === 'keyUp' && input.key === 'Control') {
+      if (input.type === 'keyUp' && (input.key === 'Control' || !input.control)) {
         this.run(window.id, { type: 'switcher/commit' })
       } else if (input.type === 'keyDown' && input.key === 'Escape') {
         event.preventDefault()
