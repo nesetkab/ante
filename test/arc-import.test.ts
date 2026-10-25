@@ -2,8 +2,12 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
+  APPLE_EPOCH_OFFSET_MS,
   arcImportToBundle,
   flattenArcTabs,
+  parseArcArchive,
+  parseArcProfileNames,
+  parseArcRouting,
   parseArcSidebar,
   type ArcImport,
   type ArcNode,
@@ -15,9 +19,10 @@ import { reduce } from '@shared/state/reducer'
 import { sanitize } from '@shared/state/sanitize'
 import { flattenTabs } from '@shared/state/tree'
 
-const fixture: unknown = JSON.parse(
-  readFileSync(resolve(import.meta.dirname, 'fixtures/arc/StorableSidebar.json'), 'utf8'),
-)
+const readFixture = (name: string): unknown =>
+  JSON.parse(readFileSync(resolve(import.meta.dirname, 'fixtures/arc', name), 'utf8'))
+
+const fixture = readFixture('StorableSidebar.json')
 
 const counter = (prefix: string) => {
   let next = 0
@@ -196,6 +201,7 @@ describe('parseArcSidebar', () => {
     expect(arc).toEqual({
       spaces: [
         {
+          arcId: 'ok',
           name: '',
           icon: null,
           color: null,
@@ -283,6 +289,7 @@ describe('arcImportToBundle', () => {
     const result = bundleFrom({
       spaces: [
         {
+          arcId: 'S',
           name: 'S',
           icon: null,
           color: null,
@@ -305,6 +312,7 @@ describe('arcImportToBundle', () => {
     const result = bundleFrom({
       spaces: [
         {
+          arcId: 'blank',
           name: '',
           icon: null,
           color: null,
@@ -398,5 +406,104 @@ describe('applyImport', () => {
     const data = structuredClone(existing)
     expect(applyImport(data, empty)).toEqual({ spaceIds: [], tabCount: 0 })
     expect(data).toEqual(existing)
+  })
+})
+
+describe('arc extras', () => {
+  const full = (): ArcImport => ({
+    ...parseArcSidebar(fixture),
+    archive: parseArcArchive(readFixture('StorableArchiveItems.json')),
+    routing: parseArcRouting(readFixture('StorableLinkRouting.json')),
+    profileNames: parseArcProfileNames(readFixture('User Data/Local State')),
+  })
+
+  it('reads archived tabs newest first with real dates and skips non tabs', () => {
+    const archive = parseArcArchive(readFixture('StorableArchiveItems.json'))
+    expect(archive).toEqual([
+      {
+        url: 'https://news.ycombinator.com/',
+        title: 'HN',
+        arcSpaceId: null,
+        archivedAt: 810_000_000_000 + APPLE_EPOCH_OFFSET_MS,
+      },
+      {
+        url: 'https://linear.app/',
+        title: 'Linear',
+        arcSpaceId: 'space-work',
+        archivedAt: 800_000_000_000 + APPLE_EPOCH_OFFSET_MS,
+      },
+    ])
+    expect(new Date(archive[0]?.archivedAt ?? 0).getUTCFullYear()).toBe(2026)
+  })
+
+  it('reads link rules it can express and the fallback destination', () => {
+    const routing = parseArcRouting(readFixture('StorableLinkRouting.json'))
+    expect(routing).toEqual({
+      routes: [
+        {
+          match: { kind: 'contains', value: 'figma.com' },
+          destination: { kind: 'space', arcSpaceId: 'space-work' },
+        },
+        { match: { kind: 'contains', value: 'zoom.us' }, destination: { kind: 'little' } },
+      ],
+      externalLinks: 'space',
+    })
+  })
+
+  it('turns exact and prefix matches into safe patterns', () => {
+    const rule = (kind: string, value: string) => ({
+      sourceComponents: [{ componentType: { urlMatch: { _0: { [kind]: {} }, _1: value } } }],
+      destination: { littleArc: {} },
+    })
+    const routing = parseArcRouting({
+      defaultDestination: { littleArc: {} },
+      rules: [rule('startsWith', 'https://a.b/?'), rule('hostname', 'x.com'), rule('odd', 'y')],
+    })
+    expect(routing.externalLinks).toBe('little')
+    expect(routing.routes.map((route) => route.match)).toEqual([
+      { kind: 'regex', value: '^https://a\\.b/\\?' },
+      { kind: 'domain', value: 'x.com' },
+    ])
+  })
+
+  it('tolerates missing or broken files', () => {
+    expect(parseArcArchive(null)).toEqual([])
+    expect(parseArcArchive({ items: ['x', { archivedAt: 'no' }] })).toEqual([])
+    expect(parseArcRouting(undefined)).toEqual({ routes: [], externalLinks: null })
+    expect(parseArcProfileNames({ profile: {} })).toEqual({})
+  })
+
+  it('names custom profiles the way Arc shows them', () => {
+    expect(parseArcProfileNames(readFixture('User Data/Local State'))).toEqual({
+      'Profile 1': 'Work',
+    })
+    const bundle = bundleFrom(full())
+    expect(bundle.profiles.map((profile) => profile.name).sort()).toEqual(['Default', 'Work'])
+  })
+
+  it('brings archive and rules into the matching spaces', () => {
+    const bundle = bundleFrom(full())
+    const { data } = mergeImport(freshData(), bundle)
+    const spaceNamed = (name: string) =>
+      Object.values(data.spaces).find((candidate) => candidate.name === name)?.id
+    expect(data.archive.map((entry) => [entry.title, entry.spaceId])).toEqual([
+      ['HN', spaceNamed('Home')],
+      ['Linear', spaceNamed('Work')],
+    ])
+    expect(data.routes.map((route) => [route.match.value, route.target])).toEqual([
+      ['figma.com', 'space'],
+      ['zoom.us', 'little'],
+    ])
+    expect(data.routes[0]?.spaceId).toBe(spaceNamed('Work'))
+    expect(data.settings.externalLinks).toBe('space')
+    expect(dataSchema.safeParse(data).success).toBe(true)
+    expect(sanitize(data, 'fallback')).toEqual(data)
+  })
+
+  it('does not duplicate archive entries or rules on reimport', () => {
+    const first = mergeImport(freshData(), bundleFrom(full(), 'a')).data
+    const second = mergeImport(first, bundleFrom(full(), 'b')).data
+    expect(second.archive).toHaveLength(2)
+    expect(second.routes).toHaveLength(2)
   })
 })

@@ -1,16 +1,17 @@
-import type {
-  AppState,
-  Container,
-  Data,
-  Id,
-  Item,
-  Location,
-  SyncStatus,
-  Tab,
-  TabRuntime,
-  UpdateStatus,
-  WindowData,
-  WindowRuntime,
+import {
+  MAX_ARCHIVE,
+  type AppState,
+  type Container,
+  type Data,
+  type Id,
+  type Item,
+  type Location,
+  type SyncStatus,
+  type Tab,
+  type TabRuntime,
+  type UpdateStatus,
+  type WindowData,
+  type WindowRuntime,
 } from '../schema'
 import { applyImport } from '../importers/bundle'
 import { bringToFront, easelUrl } from '../easels'
@@ -56,7 +57,6 @@ function stampVisible(data: Data, window: WindowData, now: number): void {
 }
 
 export const MAX_CLOSED = 50
-export const MAX_ARCHIVE = 1000
 export const MAX_SPLIT = 4
 
 export const defaultTabRuntime: TabRuntime = {

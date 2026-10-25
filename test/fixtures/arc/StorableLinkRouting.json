@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "defaultDestination": { "space": { "_0": { "mostRecent": {} } } },
+  "rules": [
+    {
+      "id": "rule-1",
+      "sourceComponents": [
+        {
+          "id": "c1",
+          "componentType": { "urlMatch": { "_0": { "contains": {} }, "_1": "figma.com" } }
+        }
+      ],
+      "destination": { "space": { "_0": { "specific": { "_0": "space-work" } } } }
+    },
+    {
+      "id": "rule-2",
+      "sourceComponents": [
+        {
+          "id": "c2",
+          "componentType": { "urlMatch": { "_0": { "contains": {} }, "_1": "zoom.us" } }
+        }
+      ],
+      "destination": { "littleArc": { "_0": { "mostRecent": {} } } }
+    },
+    {
+      "id": "rule-3",
+      "sourceComponents": [
+        { "id": "c3", "componentType": { "sourceApp": { "_0": "com.tinyspeck.slackmacgap" } } }
+      ],
+      "destination": { "space": { "_0": { "mostRecent": {} } } }
+    }
+  ]
+}

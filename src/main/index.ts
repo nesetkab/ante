@@ -13,7 +13,7 @@ import { startArchiveSweeper } from './archive'
 import { runAutomation } from './automation'
 import { BoostManager } from './boosts'
 import { CommandRunner } from './commands'
-import { detectArcImport } from './importers/arc'
+import { detectArcImport, importFromArc } from './importers/arc'
 import { showContextMenu } from './contextMenu'
 import { externalLinks, urlArguments } from './external'
 import { Features } from './features'
@@ -140,6 +140,7 @@ async function start(): Promise<void> {
       if (parent) panels.show(parent, 'settings')
     },
     importBrowser: (browser) => importFromBrowser(store, history, browser),
+    importArc: () => importFromArc(store, history),
     chooseDownloadFolder: (window) => {
       const parent = panels.get(window.id, 'settings') ?? window.win
       void dialog

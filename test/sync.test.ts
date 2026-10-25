@@ -578,7 +578,7 @@ describe('syncing two devices', () => {
     expect(b.data.items.nt).toMatchObject({ url: 'ante:note/n1' })
     expect(b.data.boosts.bo).toMatchObject({ name: 'Calm', domain: 'news.test' })
     expect(b.data.routes).toEqual([
-      { id: 'r1', match: { kind: 'domain', value: 'work.test' }, spaceId: 's2' },
+      { id: 'r1', match: { kind: 'domain', value: 'work.test' }, target: 'space', spaceId: 's2' },
     ])
     expect(b.data.settings.theme).toBe('dark')
     expect(b.data.settings.sidebarWidth).toBe(260)

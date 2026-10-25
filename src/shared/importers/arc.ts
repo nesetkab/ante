@@ -1,5 +1,15 @@
 import { z } from 'zod'
-import type { Id, Item, Profile, Space } from '../schema'
+import {
+  MAX_ARCHIVE,
+  type ArchivedTab,
+  type Id,
+  type Item,
+  type Profile,
+  type Route,
+  type RouteMatch,
+  type Settings,
+  type Space,
+} from '../schema'
 import { DEFAULT_PROFILE_ID, spaceColors } from '../state/initial'
 import type { ImportBundle } from './bundle'
 
@@ -30,6 +40,7 @@ export interface ArcSplit {
 export type ArcNode = ArcTab | ArcFolder | ArcSplit
 
 export interface ArcSpace {
+  arcId: string
   name: string
   icon: string | null
   color: string | null
@@ -43,10 +54,35 @@ export interface ArcFavorites {
   tabs: ArcTab[]
 }
 
+export interface ArcArchivedTab {
+  url: string
+  title: string
+  arcSpaceId: string | null
+  archivedAt: number
+}
+
+export type ArcRouteDestination =
+  { kind: 'space'; arcSpaceId: string } | { kind: 'current' } | { kind: 'little' }
+
+export interface ArcRoute {
+  match: RouteMatch
+  destination: ArcRouteDestination
+}
+
+export interface ArcRouting {
+  routes: ArcRoute[]
+  externalLinks: Settings['externalLinks'] | null
+}
+
 export interface ArcImport {
   spaces: ArcSpace[]
   favorites: ArcFavorites[]
+  archive?: ArcArchivedTab[]
+  routing?: ArcRouting
+  profileNames?: Record<string, string>
 }
+
+export const APPLE_EPOCH_OFFSET_MS = 978_307_200_000
 
 const rootSchema = z.object({
   sidebar: z.object({ containers: z.array(z.unknown()) }),
@@ -260,6 +296,7 @@ export function parseArcSidebar(json: unknown): ArcImport {
     const containers = spaceContainers([space.containerIDs, space.newContainerIDs])
     const midTone = space.customInfo?.windowTheme?.primaryColorPalette.midTone
     return {
+      arcId: space.id,
       name: space.title?.trim() ?? '',
       icon: space.customInfo?.iconType ?? null,
       color: midTone ? hexFromColor(midTone) : null,
@@ -290,6 +327,146 @@ export function parseArcSidebar(json: unknown): ArcImport {
   return { spaces, favorites }
 }
 
+const archivedSchema = z.object({
+  archivedAt: z.number(),
+  source: z.unknown(),
+  sidebarItem: z.object({
+    title: z.string().nullish().catch(null),
+    data: z.object({ tab: tabDataSchema }),
+  }),
+})
+
+const archiveRootSchema = z.object({ items: z.array(z.unknown()) })
+
+const appleTime = (seconds: number) => Math.round(seconds * 1000 + APPLE_EPOCH_OFFSET_MS)
+
+function archivedSpaceId(source: unknown): string | null {
+  if (!isObject(source) || !isObject(source.space)) return null
+  const id = source.space._0
+  return typeof id === 'string' ? id : null
+}
+
+export function parseArcArchive(json: unknown): ArcArchivedTab[] {
+  const root = archiveRootSchema.safeParse(json)
+  if (!root.success) return []
+  return parseEntries(root.data.items, archivedSchema)
+    .filter((entry) => isImportableUrl(entry.sidebarItem.data.tab.savedURL))
+    .map((entry) => {
+      const { tab } = entry.sidebarItem.data
+      return {
+        url: tab.savedURL,
+        title: entry.sidebarItem.title?.trim() ? entry.sidebarItem.title.trim() : tab.savedTitle,
+        arcSpaceId: archivedSpaceId(entry.source),
+        archivedAt: appleTime(entry.archivedAt),
+      }
+    })
+    .sort((a, b) => b.archivedAt - a.archivedAt)
+    .slice(0, MAX_ARCHIVE)
+}
+
+const routingSchema = z.object({
+  defaultDestination: z.unknown(),
+  rules: z.array(z.unknown()).catch([]),
+})
+
+const ruleSchema = z.object({
+  sourceComponents: z.array(z.unknown()),
+  destination: z.unknown(),
+})
+
+const urlMatchSchema = z.object({
+  componentType: z.object({
+    urlMatch: z.object({ _0: z.record(z.string(), z.unknown()), _1: z.string().trim().min(1) }),
+  }),
+})
+
+const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+function routeMatchOf(kind: string, value: string): RouteMatch | null {
+  switch (kind) {
+    case 'contains':
+      return { kind: 'contains', value }
+    case 'domain':
+    case 'host':
+    case 'hostname':
+      return { kind: 'domain', value }
+    case 'startsWith':
+      return { kind: 'regex', value: `^${escapeRegex(value)}` }
+    case 'endsWith':
+      return { kind: 'regex', value: `${escapeRegex(value)}$` }
+    case 'is':
+    case 'equals':
+    case 'exactly':
+      return { kind: 'regex', value: `^${escapeRegex(value)}$` }
+    case 'regex':
+    case 'matches':
+      return { kind: 'regex', value }
+    default:
+      return null
+  }
+}
+
+function firstString(value: unknown, depth = 0): string | null {
+  if (typeof value === 'string') return value
+  if (depth > 4 || !isObject(value)) return null
+  for (const entry of Object.values(value)) {
+    const found = firstString(entry, depth + 1)
+    if (found) return found
+  }
+  return null
+}
+
+function destinationOf(value: unknown): ArcRouteDestination | null {
+  if (!isObject(value)) return null
+  if ('littleArc' in value) return { kind: 'little' }
+  if (!isObject(value.space)) return null
+  const target = value.space._0
+  if (isObject(target) && 'mostRecent' in target) return { kind: 'current' }
+  const arcSpaceId = firstString(target)
+  return arcSpaceId ? { kind: 'space', arcSpaceId } : null
+}
+
+function routeOf(rule: z.infer<typeof ruleSchema>): ArcRoute | null {
+  const [component, ...rest] = rule.sourceComponents
+  if (rest.length > 0) return null
+  const parsed = urlMatchSchema.safeParse(component)
+  const destination = destinationOf(rule.destination)
+  if (!parsed.success || !destination) return null
+  const { _0: kind, _1: value } = parsed.data.componentType.urlMatch
+  const name = Object.keys(kind)[0]
+  const match = name ? routeMatchOf(name, value) : null
+  return match ? { match, destination } : null
+}
+
+export function parseArcRouting(json: unknown): ArcRouting {
+  const root = routingSchema.safeParse(json)
+  if (!root.success) return { routes: [], externalLinks: null }
+  const fallback = destinationOf(root.data.defaultDestination)
+  return {
+    routes: parseEntries(root.data.rules, ruleSchema).flatMap((rule) => routeOf(rule) ?? []),
+    externalLinks: fallback ? (fallback.kind === 'little' ? 'little' : 'space') : null,
+  }
+}
+
+const localStateSchema = z.object({
+  profile: z.object({
+    info_cache: z.record(
+      z.string(),
+      z.object({ name: z.string().trim().min(1) }).catch({ name: '' }),
+    ),
+  }),
+})
+
+export function parseArcProfileNames(json: unknown): Record<string, string> {
+  const parsed = localStateSchema.safeParse(json)
+  if (!parsed.success) return {}
+  return Object.fromEntries(
+    Object.entries(parsed.data.profile.info_cache).flatMap(([dir, info]) =>
+      dir !== 'Default' && info.name ? [[dir, info.name]] : [],
+    ),
+  )
+}
+
 export interface ArcConvertOptions {
   newId: () => Id
   now: number
@@ -309,7 +486,7 @@ export function arcImportToBundle(arc: ArcImport, options: ArcConvertOptions): I
     const profile =
       ref.kind === 'default'
         ? { id: DEFAULT_PROFILE_ID, name: 'Default' }
-        : { id: newId(), name: ref.name }
+        : { id: newId(), name: arc.profileNames?.[ref.name] ?? ref.name }
     profiles.set(key, profile)
     return profile.id
   }
@@ -388,5 +565,44 @@ export function arcImportToBundle(arc: ArcImport, options: ArcConvertOptions): I
     }
   })
 
-  return { profiles: [...profiles.values()], spaces, items, favorites }
+  const spaceIdFor = new Map(arc.spaces.map((space, index) => [space.arcId, spaces[index]?.id]))
+  const fallbackSpace = spaces[0]?.id
+  const archive = (arc.archive ?? []).flatMap((entry): ArchivedTab[] => {
+    const spaceId = (entry.arcSpaceId ? spaceIdFor.get(entry.arcSpaceId) : null) ?? fallbackSpace
+    if (!spaceId) return []
+    return [
+      {
+        id: newId(),
+        url: entry.url,
+        title: entry.title,
+        favicon: null,
+        spaceId,
+        archivedAt: entry.archivedAt,
+      },
+    ]
+  })
+  const routes = (arc.routing?.routes ?? []).flatMap((route): Route[] => {
+    const { destination } = route
+    const spaceId =
+      destination.kind === 'space' ? spaceIdFor.get(destination.arcSpaceId) : fallbackSpace
+    if (!spaceId) return []
+    return [
+      {
+        id: newId(),
+        match: { ...route.match },
+        target: destination.kind,
+        spaceId,
+      },
+    ]
+  })
+
+  return {
+    profiles: [...profiles.values()],
+    spaces,
+    items,
+    favorites,
+    archive,
+    routes,
+    externalLinks: arc.routing?.externalLinks ?? null,
+  }
 }

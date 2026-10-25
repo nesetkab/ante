@@ -31,7 +31,10 @@ export function findRoute(
   spaceExists: (spaceId: string) => boolean,
 ): Route | null {
   return (
-    routes.find((route) => spaceExists(route.spaceId) && routeMatches(route.match, url)) ?? null
+    routes.find(
+      (route) =>
+        (route.target !== 'space' || spaceExists(route.spaceId)) && routeMatches(route.match, url),
+    ) ?? null
   )
 }
 

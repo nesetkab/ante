@@ -49,13 +49,19 @@ export function reduceBoosts(data: Data, action: BoostAction): void {
     }
     case 'route/add': {
       if (data.routes.some((route) => route.id === action.id)) return
-      data.routes.push({ id: action.id, match: { ...action.match }, spaceId: action.spaceId })
+      data.routes.push({
+        id: action.id,
+        match: { ...action.match },
+        target: action.target ?? 'space',
+        spaceId: action.spaceId,
+      })
       return
     }
     case 'route/update': {
       const route = data.routes.find((candidate) => candidate.id === action.id)
       if (!route) return
       if (action.patch.match) route.match = { ...action.patch.match }
+      if (action.patch.target) route.target = action.patch.target
       if (action.patch.spaceId) route.spaceId = action.patch.spaceId
       return
     }

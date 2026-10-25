@@ -1,7 +1,7 @@
 import { Plus, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { isValidRegex } from '@shared/routing'
-import type { RouteMatch } from '@shared/schema'
+import type { Route, RouteMatch, RouteTarget } from '@shared/schema'
 import { ante } from '../ante'
 import { Button, Row, Section, Segmented, Select } from '../components/Form'
 import { IconButton } from '../components/IconButton'
@@ -21,6 +21,18 @@ const placeholders: Record<RouteMatch['kind'], string> = {
   regex: '^https://.*\\.notion\\.so',
 }
 
+const CURRENT = 'current'
+const LITTLE = 'little'
+
+function destinationOf(route: Route): string {
+  return route.target === 'space' ? route.spaceId : route.target
+}
+
+function patchFor(value: string): { target: RouteTarget; spaceId?: string } {
+  if (value === CURRENT || value === LITTLE) return { target: value }
+  return { target: 'space', spaceId: value }
+}
+
 export function RoutesPanel() {
   const routes = useAppState((state) => state.data.routes)
   const spaces = useAppState((state) => state.data.spaces)
@@ -31,6 +43,11 @@ export function RoutesPanel() {
     const space = spaces[id]
     return space ? [{ value: id, label: space.name }] : []
   })
+  const destinations = [
+    ...spaceOptions,
+    { value: CURRENT, label: 'Current space' },
+    { value: LITTLE, label: 'Little window' },
+  ]
 
   useEffect(() => {
     const off = onUiEvent((event) => {
@@ -107,11 +124,11 @@ export function RoutesPanel() {
                   }
                 />
                 <Select
-                  label="Space"
-                  value={route.spaceId}
-                  options={spaceOptions}
-                  onChange={(spaceId) =>
-                    ante.dispatch({ type: 'route/update', id: route.id, patch: { spaceId } })
+                  label="Open in"
+                  value={destinationOf(route)}
+                  options={destinations}
+                  onChange={(value) =>
+                    ante.dispatch({ type: 'route/update', id: route.id, patch: patchFor(value) })
                   }
                 />
                 <IconButton

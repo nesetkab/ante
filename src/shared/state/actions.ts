@@ -12,6 +12,7 @@ import {
   idSchema,
   easelElementSchema,
   routeMatchSchema,
+  routeTargetSchema,
   withoutDefaults,
   zapSelectorSchema,
   settingsPatchSchema,
@@ -92,6 +93,7 @@ export const uiActionSchema = z.discriminatedUnion('type', [
     type: z.literal('route/add'),
     id: idSchema,
     match: routeMatchSchema,
+    target: routeTargetSchema.optional(),
     spaceId: idSchema,
   }),
   z.object({
@@ -99,6 +101,7 @@ export const uiActionSchema = z.discriminatedUnion('type', [
     id: idSchema,
     patch: z.object({
       match: withoutDefaults(routeMatchSchema).optional(),
+      target: routeTargetSchema.optional(),
       spaceId: idSchema.optional(),
     }),
   }),

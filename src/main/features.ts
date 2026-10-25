@@ -97,15 +97,17 @@ export class Features {
     const data = this.#data
     const route = findRoute(data.routes, url, (spaceId) => data.spaces[spaceId] !== undefined)
     if (process.platform === 'darwin') app.focus({ steal: true })
-    if (!route && data.settings.externalLinks === 'little') {
+    const little = route ? route.target === 'little' : data.settings.externalLinks === 'little'
+    if (little) {
       runner.run(this.#normalWindow()?.id ?? null, { type: 'window/little', input: url })
       return
     }
-    const spaceId = route?.spaceId ?? data.spaceOrder[0]
+    const routedSpace = route?.target === 'space' ? route.spaceId : null
+    const spaceId = routedSpace ?? data.spaceOrder[0]
     if (!spaceId) return
     const target = this.#normalWindow() ?? windows.createMain(spaceId)
     if (target.win.isMinimized()) target.win.restore()
-    if (route) runner.run(target.id, { type: 'space/select', spaceId: route.spaceId })
+    if (routedSpace) runner.run(target.id, { type: 'space/select', spaceId: routedSpace })
     runner.run(target.id, { type: 'open', input: url, disposition: 'newTab' })
     target.win.focus()
   }

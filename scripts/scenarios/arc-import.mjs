@@ -21,6 +21,13 @@ export default async function arcImport({ store, run, waitFor, windows }) {
   assert(selected.name === 'Home', 'the first imported space should be selected')
   assert(selected.pinned.length > 0, 'pinned tabs should be imported')
 
+  await waitFor((state) => state.data.archive.length === 2 && state.data.routes.length === 2)
+  const work = data.spaceOrder.find((id) => data.spaces[id].name === 'Work')
+  const routes = store.state.data.routes
+  assert(routes[0].spaceId === work && routes[0].target === 'space', 'figma rule goes to Work')
+  assert(routes[1].target === 'little', 'zoom rule opens in a little window')
+  assert(store.state.data.archive[1].spaceId === work, 'archived tab keeps its space')
+
   const tabs = Object.values(data.items).filter((item) => item.kind === 'tab')
   run({ type: 'import/arc' }, window.id)
   await new Promise((resolve) => setTimeout(resolve, 300))

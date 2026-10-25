@@ -1,4 +1,14 @@
-import type { Data, Id, Item, Profile, Space } from '../schema'
+import {
+  MAX_ARCHIVE,
+  type ArchivedTab,
+  type Data,
+  type Id,
+  type Item,
+  type Profile,
+  type Route,
+  type Settings,
+  type Space,
+} from '../schema'
 import { DEFAULT_PROFILE_ID } from '../state/initial'
 import { flattenTabs } from '../state/tree'
 
@@ -7,6 +17,34 @@ export interface ImportBundle {
   spaces: Space[]
   items: Record<Id, Item>
   favorites: Record<Id, Id[]>
+  archive?: ArchivedTab[]
+  routes?: Route[]
+  externalLinks?: Settings['externalLinks'] | null
+}
+
+const MAX_ROUTES = 500
+
+const routeKey = (route: Route) => `${route.match.kind}:${route.match.value.toLowerCase()}`
+
+function importArchive(data: Data, archive: readonly ArchivedTab[]): void {
+  const seen = new Set(data.archive.map((entry) => `${entry.url} ${entry.archivedAt}`))
+  const fresh = archive.filter(
+    (entry) => data.spaces[entry.spaceId] && !seen.has(`${entry.url} ${entry.archivedAt}`),
+  )
+  if (fresh.length === 0) return
+  data.archive = [...data.archive, ...fresh.map((entry) => ({ ...entry }))]
+    .sort((a, b) => b.archivedAt - a.archivedAt)
+    .slice(0, MAX_ARCHIVE)
+}
+
+function importRoutes(data: Data, routes: readonly Route[]): void {
+  const seen = new Set(data.routes.map(routeKey))
+  for (const route of routes) {
+    if (data.routes.length >= MAX_ROUTES) return
+    if (!data.spaces[route.spaceId] || seen.has(routeKey(route))) continue
+    seen.add(routeKey(route))
+    data.routes.push({ ...route, match: { ...route.match } })
+  }
 }
 
 export interface ImportSummary {
@@ -117,6 +155,10 @@ export function applyImport(data: Data, bundle: ImportBundle): ImportSummary {
       if (!data.spaces[window.spaceId]) window.spaceId = first
     }
   }
+
+  importArchive(data, bundle.archive ?? [])
+  importRoutes(data, bundle.routes ?? [])
+  if (bundle.externalLinks) data.settings.externalLinks = bundle.externalLinks
 
   return { spaceIds, tabCount }
 }

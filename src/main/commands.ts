@@ -24,7 +24,7 @@ import { easelUrl, placeImage } from '@shared/easels'
 import { IPC, type UiEvent } from '@shared/ipc'
 import { capturePng, captureRegion } from './capture'
 import { copyText } from './clipboard'
-import { describeArcImport, importFromArc } from './importers/arc'
+import { describeArcImport, type ArcImportResult } from './importers/arc'
 import type { FeatureCommand } from './features'
 import type { DevtoolsDock } from './devtools'
 import type { EaselAssets } from './easelAssets'
@@ -49,6 +49,7 @@ interface Deps {
   recordShortcuts: (window: AppWindow, recording: boolean) => void
   chooseDownloadFolder: (window: AppWindow) => void
   importBrowser: (browser: BrowserId) => Promise<BrowserImportResult>
+  importArc: () => Promise<ArcImportResult>
   runFeature: (window: AppWindow, command: FeatureCommand) => void
   runPrivacy: (window: AppWindow, command: PrivacyCommand) => void
   runSync: (window: AppWindow, command: SyncCommand) => void
@@ -67,6 +68,7 @@ export class CommandRunner {
   readonly #recordShortcuts: (window: AppWindow, recording: boolean) => void
   readonly #chooseDownloadFolder: (window: AppWindow) => void
   readonly #importBrowser: (browser: BrowserId) => Promise<BrowserImportResult>
+  readonly #importArc: () => Promise<ArcImportResult>
   #importing = false
   readonly #runFeature: (window: AppWindow, command: FeatureCommand) => void
   readonly #runPrivacy: (window: AppWindow, command: PrivacyCommand) => void
@@ -85,6 +87,7 @@ export class CommandRunner {
     this.#recordShortcuts = deps.recordShortcuts
     this.#chooseDownloadFolder = deps.chooseDownloadFolder
     this.#importBrowser = deps.importBrowser
+    this.#importArc = deps.importArc
     this.#runFeature = deps.runFeature
     this.#runPrivacy = deps.runPrivacy
     this.#runSync = deps.runSync
@@ -143,6 +146,24 @@ export class CommandRunner {
 
   toast(window: AppWindow, message: string): void {
     this.#sendUi(window, { type: 'toast', message })
+  }
+
+  #runImport(window: AppWindow, task: () => Promise<BrowserImportResult>): void {
+    if (this.#importing) return
+    this.#importing = true
+    this.toast(window, 'Importing…')
+    void task()
+      .then((result) => {
+        if (result.spaceId) this.#selectSpace(window, result.spaceId)
+        this.toast(window, result.message)
+      })
+      .catch((error: unknown) => {
+        console.error('[import] failed', error)
+        this.toast(window, 'Import failed')
+      })
+      .finally(() => {
+        this.#importing = false
+      })
   }
 
   #sendUi(window: AppWindow, event: UiEvent): void {
@@ -711,25 +732,17 @@ export class CommandRunner {
       case 'downloads/useDefaultFolder':
         this.#store.dispatch({ type: 'settings/downloadFolder', folder: null })
         return
-      case 'import/arc': {
-        const result = importFromArc(this.#store)
-        const first = result.ok ? result.spaceIds[0] : undefined
-        if (first) this.#selectSpace(window, first)
-        this.#sendUi(window, { type: 'toast', message: describeArcImport(result) })
+      case 'import/arc':
+        this.#runImport(window, async () => {
+          const result = await this.#importArc()
+          return {
+            message: describeArcImport(result),
+            spaceId: result.ok ? (result.spaceIds[0] ?? null) : null,
+          }
+        })
         return
-      }
       case 'import/browser':
-        if (this.#importing) return
-        this.#importing = true
-        this.toast(window, 'Importing…')
-        void this.#importBrowser(command.browser)
-          .then((result) => {
-            if (result.spaceId) this.#selectSpace(window, result.spaceId)
-            this.toast(window, result.message)
-          })
-          .finally(() => {
-            this.#importing = false
-          })
+        this.#runImport(window, () => this.#importBrowser(command.browser))
         return
       case 'space/delete':
         void deleteSpaceWithConfirm(

@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "items": [
+    "archived-1",
+    {
+      "source": { "space": { "_0": "space-work" } },
+      "archivedAt": 800000000,
+      "reason": "manual",
+      "sidebarItem": {
+        "id": "archived-1",
+        "data": { "tab": { "savedURL": "https://linear.app/", "savedTitle": "Linear" } },
+        "title": null,
+        "childrenIds": [],
+        "parentID": null
+      }
+    },
+    "archived-2",
+    {
+      "source": { "littleArc": {} },
+      "archivedAt": 810000000,
+      "reason": "auto",
+      "sidebarItem": {
+        "id": "archived-2",
+        "data": {
+          "tab": { "savedURL": "https://news.ycombinator.com/", "savedTitle": "Hacker News" }
+        },
+        "title": "HN",
+        "childrenIds": [],
+        "parentID": null
+      }
+    },
+    "archived-3",
+    {
+      "source": { "space": { "_0": "space-home" } },
+      "archivedAt": 805000000,
+      "reason": "manual",
+      "sidebarItem": {
+        "id": "archived-3",
+        "data": { "easel": { "easelID": "x" } },
+        "childrenIds": [],
+        "parentID": null
+      }
+    }
+  ]
+}

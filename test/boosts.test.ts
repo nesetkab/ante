@@ -8,7 +8,7 @@ import {
   scriptsForUrl,
 } from '@shared/boosts'
 import { findRoute, isExternalUrl, routeMatches } from '@shared/routing'
-import { boostSchema, dataSchema, zapSelectorSchema, type Boost } from '@shared/schema'
+import { boostSchema, dataSchema, zapSelectorSchema, type Boost, type Route } from '@shared/schema'
 import { cssEscape, selectorCandidates, type ZapNode } from '@shared/zap'
 
 const boost = (id: string, domain: string, extra: Partial<Boost> = {}): Boost => ({
@@ -115,15 +115,22 @@ describe('zap selectors', () => {
 })
 
 describe('air traffic control', () => {
-  const routes = [
-    { id: 'a', match: { kind: 'domain' as const, value: 'figma.com' }, spaceId: 'work' },
-    { id: 'b', match: { kind: 'contains' as const, value: 'meet.google' }, spaceId: 'work' },
+  const routes: Route[] = [
+    { id: 'a', match: { kind: 'domain', value: 'figma.com' }, target: 'space', spaceId: 'work' },
+    {
+      id: 'b',
+      match: { kind: 'contains', value: 'meet.google' },
+      target: 'space',
+      spaceId: 'work',
+    },
     {
       id: 'c',
-      match: { kind: 'regex' as const, value: '^https://.*\\.youtube\\.com' },
+      match: { kind: 'regex', value: '^https://.*\\.youtube\\.com' },
+      target: 'space',
       spaceId: 'fun',
     },
-    { id: 'd', match: { kind: 'domain' as const, value: 'gone.com' }, spaceId: 'deleted' },
+    { id: 'd', match: { kind: 'domain', value: 'gone.com' }, target: 'space', spaceId: 'deleted' },
+    { id: 'e', match: { kind: 'domain', value: 'zoom.us' }, target: 'little', spaceId: 'deleted' },
   ]
   const exists = (spaceId: string) => spaceId !== 'deleted'
 
@@ -132,6 +139,10 @@ describe('air traffic control', () => {
     expect(findRoute(routes, 'https://meet.google.com/abc', exists)?.spaceId).toBe('work')
     expect(findRoute(routes, 'https://music.youtube.com', exists)?.spaceId).toBe('fun')
     expect(findRoute(routes, 'https://example.com', exists)).toBeNull()
+  })
+
+  it('keeps little window and current space rules whatever their space is', () => {
+    expect(findRoute(routes, 'https://zoom.us/j/1', exists)?.target).toBe('little')
   })
 
   it('skips rules for deleted spaces and invalid patterns', () => {

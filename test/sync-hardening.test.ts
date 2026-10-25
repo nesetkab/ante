@@ -129,6 +129,7 @@ describe('untrusted sync folders', () => {
     const route = (value: string): Route => ({
       id: 'r',
       match: { kind: 'regex', value },
+      target: 'space',
       spaceId: 's',
     })
     expect(isSafeSyncedRoute(route('^https://.*\\.figma\\.com'))).toBe(true)

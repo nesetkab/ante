@@ -96,6 +96,8 @@ export const locationSchema = z.object({
 })
 export type Location = z.infer<typeof locationSchema>
 
+export const MAX_ARCHIVE = 1000
+
 export const archivedTabSchema = z.object({
   id: idSchema,
   url: z.string(),
@@ -252,9 +254,13 @@ export const routeMatchSchema = z.object({
 })
 export type RouteMatch = z.infer<typeof routeMatchSchema>
 
+export const routeTargetSchema = z.enum(['space', 'current', 'little'])
+export type RouteTarget = z.infer<typeof routeTargetSchema>
+
 export const routeSchema = z.object({
   id: idSchema,
   match: routeMatchSchema.prefault({}),
+  target: routeTargetSchema.default('space'),
   spaceId: idSchema,
 })
 export type Route = z.infer<typeof routeSchema>

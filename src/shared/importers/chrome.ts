@@ -68,6 +68,7 @@ export function bookmarksToImport(bookmarks: ChromeBookmarks, browser: BrowserId
   return {
     spaces: [
       {
+        arcId: browser,
         name: browserNames[browser],
         icon: null,
         color: null,
