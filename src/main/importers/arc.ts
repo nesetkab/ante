@@ -63,6 +63,7 @@ export type ArcImportResult =
       tabCount: number
       visitCount: number
       cookies: CookieImport
+      extensionCount: number
     }
   | { ok: false; message: string }
 
@@ -75,6 +76,7 @@ export function describeArcImport(result: ArcImportResult): string {
     result.spaceIds.length > 0 ? plural(result.spaceIds.length, 'space') : null,
     result.tabCount > 0 ? plural(result.tabCount, 'tab') : null,
     result.visitCount > 0 ? plural(result.visitCount, 'history entry', 'history entries') : null,
+    result.extensionCount > 0 ? plural(result.extensionCount, 'extension') : null,
     result.cookies.count > 0 ? 'your sign-ins' : null,
   ].filter((part) => part !== null)
   const skipped = result.cookies.skipped ? '. Sign-ins were skipped' : ''
@@ -136,12 +138,14 @@ export interface ArcImportDeps {
   store: Store
   history: HistoryStore
   jarFor: (profileId: Id) => CookieJar
+  importExtensions: (profileId: Id, profileDir: string) => Promise<number>
 }
 
 export async function importFromArc({
   store,
   history,
   jarFor,
+  importExtensions,
 }: ArcImportDeps): Promise<ArcImportResult> {
   const file = findArcSidebar()
   if (!file) return { ok: false, message: 'Could not find Arc on this computer' }
@@ -169,8 +173,11 @@ export async function importFromArc({
       ARC_SAFE_STORAGE,
       dirs.map(({ dir, profileId }) => ({ dir, jar: () => jarFor(profileId) })),
     )
+    let extensionCount = 0
+    for (const { dir, profileId } of dirs) extensionCount += await importExtensions(profileId, dir)
     return {
       cookies,
+      extensionCount,
       ok: true,
       spaceIds: bundle.spaces.map((space) => space.id).filter((id) => data.spaces[id]),
       tabCount: Object.values(bundle.items).filter(

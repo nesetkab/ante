@@ -142,7 +142,15 @@ async function start(): Promise<void> {
     importBrowser: (browser) =>
       importFromBrowser(store, history, browser, () => sessions.forProfile(DEFAULT_PROFILE_ID)),
     importArc: () =>
-      importFromArc({ store, history, jarFor: (profileId) => sessions.forProfile(profileId) }),
+      importFromArc({
+        store,
+        history,
+        jarFor: (profileId) => sessions.forProfile(profileId),
+        importExtensions: (profileId, dir): Promise<number> => {
+          sessions.forProfile(profileId)
+          return extensions.importFrom(profileId, dir)
+        },
+      }),
     chooseDownloadFolder: (window) => {
       const parent = panels.get(window.id, 'settings') ?? window.win
       void dialog
@@ -187,7 +195,7 @@ async function start(): Promise<void> {
     const before = change.prev.data.settings.globalPrivacyControl
     if (before !== change.state.data.settings.globalPrivacyControl) signals.sync()
   })
-  const extensions = new Extensions({ store, tabs, windows, runner: () => runner })
+  const extensions: Extensions = new Extensions({ store, tabs, windows, runner: () => runner })
   sessions.onCreate((profileSession, profileId) => extensions.attach(profileSession, profileId))
   for (const profileId of Object.keys(store.state.data.profiles)) {
     if (!isPrivateProfile(profileId)) sessions.forProfile(profileId)

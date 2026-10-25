@@ -12,7 +12,7 @@ import {
   type WebContents,
 } from 'electron'
 import { ElectronChromeExtensions } from 'electron-chrome-extensions'
-import { installChromeWebStore } from 'electron-chrome-web-store'
+import { installChromeWebStore, installExtension } from 'electron-chrome-web-store'
 import { describeExtensionAccess, WEB_STORE_ORIGIN } from '@shared/extensions'
 import { originOf } from '@shared/permissions'
 import { isWebUrl } from '@shared/url'
@@ -20,9 +20,12 @@ import type { Id } from '@shared/schema'
 import { isPrivateProfile } from '@shared/state/private'
 import { activeTabId, visibleTabIds } from '@shared/state/tree'
 import type { CommandRunner } from './commands'
+import { copyExtensionData, profileExtensions } from './importers/extensions'
 import type { Store } from './store'
 import type { TabManager } from './tabs'
 import type { AppWindow, WindowManager } from './windows'
+
+const extensionsPathFor = (profileId: Id) => join(app.getPath('userData'), 'Extensions', profileId)
 
 type WebStoreOptions = NonNullable<Parameters<typeof installChromeWebStore>[0]>
 type ExtensionInstallDetails = Parameters<NonNullable<WebStoreOptions['beforeInstall']>>[0]
@@ -37,6 +40,7 @@ interface ExtensionDeps {
 export class Extensions {
   readonly #deps: ExtensionDeps
   readonly #byProfile = new Map<Id, ElectronChromeExtensions>()
+  readonly #sessions = new Map<Id, Session>()
   readonly #tracked = new WeakMap<WebContents, BaseWindow>()
   readonly #selected = new WeakMap<BaseWindow, WebContents>()
 
@@ -59,13 +63,31 @@ export class Extensions {
       },
     })
     this.#byProfile.set(profileId, extensions)
+    this.#sessions.set(profileId, session)
     installChromeWebStore({
       session,
-      extensionsPath: join(app.getPath('userData'), 'Extensions', profileId),
+      extensionsPath: extensionsPathFor(profileId),
       beforeInstall: (details) => this.#confirmInstall(details),
     }).catch((error: unknown) => {
       console.error('[extensions] web store setup failed', error)
     })
+  }
+
+  async importFrom(profileId: Id, profileDir: string): Promise<number> {
+    const session = this.#sessions.get(profileId)
+    if (!session) return 0
+    let count = 0
+    for (const id of await profileExtensions(profileDir)) {
+      if (session.extensions.getExtension(id)) continue
+      try {
+        if (session.storagePath) await copyExtensionData(id, profileDir, session.storagePath)
+        await installExtension(id, { session, extensionsPath: extensionsPathFor(profileId) })
+        count += 1
+      } catch (error) {
+        console.error('[extensions] could not import', id, error)
+      }
+    }
+    return count
   }
 
   async #confirmInstall(details: ExtensionInstallDetails): Promise<{ action: 'allow' | 'deny' }> {
