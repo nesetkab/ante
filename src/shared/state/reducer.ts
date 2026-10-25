@@ -401,6 +401,7 @@ export function reduce(state: AppState, action: Action): void {
         id: action.id,
         name: action.name,
         color: action.color,
+        gradient: [],
         icon: action.icon,
         profileId: action.profileId,
         pinned: [],

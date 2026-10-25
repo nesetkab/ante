@@ -45,6 +45,7 @@ export interface ArcSpace {
   name: string
   icon: string | null
   color: string | null
+  gradient?: string[]
   profile: ArcProfileRef
   pinned: ArcNode[]
   today: ArcNode[]
@@ -140,7 +141,10 @@ const spaceSchema = z.object({
     .object({
       iconType: iconSchema,
       windowTheme: z
-        .object({ primaryColorPalette: z.object({ midTone: colorSchema }) })
+        .object({
+          primaryColorPalette: z.object({ midTone: colorSchema }).optional().catch(undefined),
+          background: z.unknown().optional(),
+        })
         .nullish()
         .catch(null),
     })
@@ -183,6 +187,22 @@ function hexFromColor(color: z.infer<typeof colorSchema>): string {
       .toString(16)
       .padStart(2, '0')
   return `#${channel(color.red)}${channel(color.green)}${channel(color.blue)}`
+}
+
+function baseColorsIn(value: unknown, depth = 0): readonly unknown[] | null {
+  if (depth > 8 || !isObject(value)) return null
+  const colors: unknown = value.baseColors
+  if (Array.isArray(colors)) return colors as unknown[]
+  for (const entry of Object.values(value)) {
+    const found = baseColorsIn(entry, depth + 1)
+    if (found) return found
+  }
+  return null
+}
+
+function gradientOf(background: unknown): string[] {
+  const colors = parseEntries(baseColorsIn(background) ?? [], colorSchema).map(hexFromColor)
+  return colors.slice(1, 3)
 }
 
 function containerLabel(value: unknown): string | null {
@@ -300,12 +320,14 @@ export function parseArcSidebar(json: unknown): ArcImport {
 
   const spaces = parseEntries(container.spaces, spaceSchema).map((space): ArcSpace => {
     const containers = spaceContainers([space.containerIDs, space.newContainerIDs])
-    const midTone = space.customInfo?.windowTheme?.primaryColorPalette.midTone
+    const theme = space.customInfo?.windowTheme
+    const midTone = theme?.primaryColorPalette?.midTone
     return {
       arcId: space.id,
       name: space.title?.trim() ?? '',
       icon: space.customInfo?.iconType ?? null,
       color: midTone ? hexFromColor(midTone) : null,
+      gradient: gradientOf(theme?.background),
       profile: space.profile,
       pinned: nodesIn(containers.get('pinned')),
       today: nodesIn(containers.get('unpinned')),
@@ -567,6 +589,7 @@ export function arcImportToBundle(arc: ArcImport, options: ArcConvertOptions): I
       name: space.name || `Arc Space ${index + 1}`,
       icon: space.icon,
       color: space.color ?? spaceColors[index % spaceColors.length] ?? spaceColors[0],
+      gradient: space.gradient ?? [],
       profileId: profileId(space.profile),
       pinned: addNodes(space.pinned, 'pinned'),
       today: addNodes(space.today, 'today'),

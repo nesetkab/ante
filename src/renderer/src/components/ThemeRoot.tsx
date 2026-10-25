@@ -14,6 +14,9 @@ export function ThemeRoot({ children }: { children: ReactNode }) {
   const color = useAppState((state) =>
     window ? state.data.spaces[window.spaceId]?.color : undefined,
   )
+  const gradient = useAppState((state) =>
+    window ? (state.data.spaces[window.spaceId]?.gradient.join(' ') ?? '') : '',
+  )
   const systemDark = useSyncExternalStore(subscribeDark, () => darkQuery.matches)
   const resolved = theme === 'system' ? (systemDark ? 'dark' : 'light') : theme
 
@@ -27,5 +30,17 @@ export function ThemeRoot({ children }: { children: ReactNode }) {
     document.documentElement.style.setProperty('--on-accent', onAccent(color, resolved === 'dark'))
   }, [color, resolved])
 
+  useEffect(() => {
+    const style = document.documentElement.style
+    if (gradient) style.setProperty('--sidebar-gradient', sidebarGradient(gradient.split(' ')))
+    else style.removeProperty('--sidebar-gradient')
+  }, [gradient])
+
   return children
+}
+
+const tinted = (color: string) => `color-mix(in oklab, ${color} var(--tint), var(--base))`
+
+function sidebarGradient(colors: readonly string[]): string {
+  return `linear-gradient(165deg, ${[tinted('var(--space)'), ...colors.map(tinted)].join(', ')})`
 }

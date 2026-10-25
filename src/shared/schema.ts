@@ -75,6 +75,10 @@ export const spaceSchema = z.object({
   name: z.string(),
   icon: z.string().nullable().default(null),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+  gradient: z
+    .array(z.string().regex(/^#[0-9a-fA-F]{6}$/))
+    .max(2)
+    .default([]),
   profileId: idSchema,
   pinned: z.array(idSchema).default([]),
   today: z.array(idSchema).default([]),

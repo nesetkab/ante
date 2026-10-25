@@ -158,6 +158,7 @@ export function buildData(fixture: Fixture = {}): Data {
       name: spec.name ?? id,
       icon: null,
       color: spaceColors[index % spaceColors.length] ?? '#3d6be0',
+      gradient: [],
       profileId: spec.profileId ?? DEFAULT_PROFILE_ID,
       pinned: (spec.pinned ?? []).map((node) => addNode(node, true)),
       today: (spec.today ?? []).map((node) => addNode(node, false)),

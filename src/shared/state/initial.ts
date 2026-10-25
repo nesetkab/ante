@@ -33,6 +33,7 @@ export function createInitialData(spaceId: Id): Data {
         name: 'Personal',
         icon: null,
         color: spaceColors[0],
+        gradient: [],
         profileId: DEFAULT_PROFILE_ID,
         pinned: [],
         today: [],

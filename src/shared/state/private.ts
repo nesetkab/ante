@@ -38,6 +38,7 @@ export function createPrivateSpace(data: Data, profileId: Id, spaceId: Id): void
     name: 'Private',
     icon: null,
     color: PRIVATE_COLOR,
+    gradient: [],
     profileId,
     pinned: [],
     today: [],

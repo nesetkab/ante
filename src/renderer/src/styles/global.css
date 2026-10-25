@@ -5,7 +5,8 @@
   --fg: #1c1c1f;
   --fg-muted: color-mix(in oklab, var(--fg) 58%, transparent);
   --fg-faint: color-mix(in oklab, var(--fg) 36%, transparent);
-  --sidebar-bg: color-mix(in oklab, var(--space) 18%, var(--base));
+  --tint: 18%;
+  --sidebar-bg: color-mix(in oklab, var(--space) var(--tint), var(--base));
   --item-hover: color-mix(in oklab, var(--fg) 6%, transparent);
   --item-press: color-mix(in oklab, var(--fg) 10%, transparent);
   --item-active: rgb(255 255 255 / 0.84);
@@ -27,7 +28,8 @@
   --danger: #ef6b6b;
   --base: #1a1a1c;
   --fg: #ececee;
-  --sidebar-bg: color-mix(in oklab, var(--space) 22%, var(--base));
+  --tint: 22%;
+  --sidebar-bg: color-mix(in oklab, var(--space) var(--tint), var(--base));
   --item-active: rgb(255 255 255 / 0.12);
   --item-active-shadow: 0 0 0 0.5px rgb(255 255 255 / 0.06);
   --panel: #232326;
@@ -65,6 +67,7 @@ body {
 
 :root[data-surface='chrome'] body {
   background: var(--sidebar-bg);
+  background-image: var(--sidebar-gradient, none);
 }
 
 button {

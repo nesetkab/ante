@@ -119,6 +119,38 @@ describe('parseArcSidebar', () => {
     expect(arc.spaces.map((entry) => entry.icon)).toEqual(['🏠', null, '📚'])
   })
 
+  it('reads the extra colors of an Arc gradient theme', () => {
+    const color = (red: number, green: number, blue: number) => ({ red, green, blue, alpha: 1 })
+    const parsed = parseArcSidebar(
+      sidebar({
+        spaces: space('s', 'p', 'u', {
+          customInfo: {
+            windowTheme: {
+              primaryColorPalette: { midTone: color(1, 0, 0) },
+              background: {
+                single: {
+                  _0: {
+                    style: {
+                      color: {
+                        _0: {
+                          blendedGradient: {
+                            _0: { baseColors: [color(1, 0, 0), color(0, 0, 1), 'junk'] },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        }),
+        items: [],
+      }),
+    )
+    expect(parsed.spaces[0]).toMatchObject({ color: '#ff0000', gradient: ['#0000ff'] })
+  })
+
   it('keeps Arc symbol icons', () => {
     const parsed = parseArcSidebar(
       sidebar({
@@ -215,6 +247,7 @@ describe('parseArcSidebar', () => {
           name: '',
           icon: null,
           color: null,
+          gradient: [],
           profile: { kind: 'default' },
           pinned: [],
           today: [],

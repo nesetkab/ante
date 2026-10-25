@@ -101,6 +101,26 @@ export function showSpaceMenu(spaceId: Id, deps: SpaceMenuDeps): void {
       })),
     },
     {
+      label: 'Gradient',
+      submenu: [
+        {
+          label: 'None',
+          type: 'radio',
+          checked: space.gradient.length === 0,
+          click: () => update({ gradient: [] }),
+        },
+        { type: 'separator' },
+        ...spaceColors
+          .filter((color) => color !== space.color)
+          .map((color) => ({
+            label: `Blend with ${colorNames[color]}`,
+            type: 'radio' as const,
+            checked: space.gradient[0] === color,
+            click: () => update({ gradient: [color] }),
+          })),
+      ],
+    },
+    {
       label: 'Profile',
       submenu: [
         ...Object.values(state.data.profiles).map((profile) => ({
