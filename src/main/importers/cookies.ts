@@ -14,7 +14,7 @@ export interface ChromiumCookie {
   name: string
   value: string
   path: string
-  expires: number | null
+  expires: number
   secure: boolean
   httpOnly: boolean
   sameSite: SameSite
@@ -122,7 +122,7 @@ export async function readChromiumCookies(
         const expires = flag(row.has_expires)
           ? Number(row.expires)
           : Math.floor(nowSeconds + SESSION_COOKIE_DAYS * 86_400)
-        if (expires !== null && expires <= nowSeconds) return []
+        if (expires <= nowSeconds) return []
         const plain = text(row.value)
         const encrypted = row.encrypted_value
         const value =
@@ -164,7 +164,7 @@ export function cookieDetails(cookie: ChromiumCookie): CookiesSetDetails {
     httpOnly: cookie.httpOnly,
     sameSite: cookie.sameSite,
     ...(domainCookie ? { domain: cookie.host } : {}),
-    ...(cookie.expires === null ? {} : { expirationDate: cookie.expires }),
+    expirationDate: cookie.expires,
   }
 }
 
