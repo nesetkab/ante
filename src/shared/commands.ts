@@ -60,6 +60,12 @@ export const commandSchema = z.discriminatedUnion('type', [
     clear: z.enum(['cookies', 'cache']),
   }),
   z.object({ type: z.literal('tab/openIn') }),
+  z.object({
+    type: z.literal('tab/closeMany'),
+    tabId: idSchema,
+    which: z.enum(['below', 'others']),
+  }),
+  z.object({ type: z.literal('folder/copyLinks'), folderId: idSchema }),
   z.object({ type: z.literal('tab/switch'), delta: z.union([z.literal(-1), z.literal(1)]) }),
   z.object({
     type: z.literal('switcher/commit'),

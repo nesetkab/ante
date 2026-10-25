@@ -4,7 +4,7 @@ import type { Command } from '@shared/commands'
 import type { UiEvent } from '@shared/ipc'
 import type { AppState, Id } from '@shared/schema'
 import type { UiAction } from '@shared/state/actions'
-import { rootOf } from '@shared/state/tree'
+import { descendantIds, flattenTabs, rootOf } from '@shared/state/tree'
 
 interface SidebarMenuDeps {
   state: AppState
@@ -115,7 +115,47 @@ function tabMenu(id: Id, deps: SidebarMenuDeps): MenuItemConstructorOptions[] {
     label: persistent ? 'Close and Reset' : 'Close Tab',
     click: () => run({ type: 'tab/close', tabId: id }),
   })
+  if (section === 'today') {
+    const space = state.data.spaces[spaceId]
+    const position = space?.today.findIndex((item) => item === id || containsTab(state, item, id))
+    const count = space?.today.length ?? 0
+    if (position !== undefined && position >= 0 && position < count - 1)
+      items.push({
+        label: 'Close Tabs Below',
+        click: () => run({ type: 'tab/closeMany', tabId: id, which: 'below' }),
+      })
+    if (count > 1)
+      items.push({
+        label: 'Close Other Tabs',
+        click: () => run({ type: 'tab/closeMany', tabId: id, which: 'others' }),
+      })
+  }
   return items
+}
+
+function containsTab(state: AppState, itemId: Id, tabId: Id): boolean {
+  return flattenTabs(state.data, [itemId]).includes(tabId)
+}
+
+function foldersIn(state: AppState, spaceId: Id): Id[] {
+  const space = state.data.spaces[spaceId]
+  if (!space) return []
+  return space.pinned
+    .flatMap((id) => descendantIds(state.data, id))
+    .filter((id) => state.data.items[id]?.kind === 'folder')
+}
+
+function folderToggles(deps: SidebarMenuDeps, spaceId: Id): MenuItemConstructorOptions[] {
+  const folders = foldersIn(deps.state, spaceId)
+  if (folders.length < 2) return []
+  const setAll = (open: boolean) => {
+    for (const folderId of folders) deps.dispatch({ type: 'folder/toggle', id: folderId, open })
+  }
+  return [
+    { type: 'separator' },
+    { label: 'Collapse All Folders', click: () => setAll(false) },
+    { label: 'Expand All Folders', click: () => setAll(true) },
+  ]
 }
 
 function folderMenu(id: Id, deps: SidebarMenuDeps): MenuItemConstructorOptions[] {
@@ -128,9 +168,17 @@ function folderMenu(id: Id, deps: SidebarMenuDeps): MenuItemConstructorOptions[]
       { label: 'Unfollow', click: () => deps.dispatch({ type: 'folder/delete', id }) },
     ]
   }
+  const spaceId = rootOf(deps.state.data, id)?.spaceId ?? deps.windowSpaceId
   return [
     { label: 'Rename…', click: () => deps.ui({ type: 'rename', id }) },
+    {
+      label: 'Copy Links as Markdown',
+      click: () => deps.run({ type: 'folder/copyLinks', folderId: id }),
+    },
     { label: 'Ungroup', click: () => deps.dispatch({ type: 'folder/ungroup', id }) },
+    ...folderToggles(deps, spaceId),
+    { type: 'separator' },
+    { label: 'Delete Folder', click: () => deps.dispatch({ type: 'folder/delete', id }) },
   ]
 }
 

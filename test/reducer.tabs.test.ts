@@ -240,6 +240,28 @@ describe('tab/remove', () => {
     })
   })
 
+  it('puts tabs the user closes in the archive like Arc and takes them out on reopen', () => {
+    const closed = apply(start, { type: 'tab/remove', id: 'b', now: 7, archive: true })
+    expect(itemOf(closed, 'b')).toBeUndefined()
+    expect(closed.data.archive[0]).toMatchObject({ id: 'b', spaceId: 's1', archivedAt: 7 })
+    expect(closed.data.closed[0]?.tab.id).toBe('b')
+    const reopened = apply(closed, { type: 'tab/restoreClosed', fallbackSpaceId: 's1' })
+    expect(itemOf(reopened, 'b')).toBeDefined()
+    expect(reopened.data.archive.some((entry) => entry.id === 'b')).toBe(false)
+  })
+
+  it('forgets the closed entry when the tab comes back from the archive', () => {
+    const closed = apply(start, { type: 'tab/remove', id: 'a', now: 7, archive: true })
+    const restored = apply(closed, {
+      type: 'archive/restore',
+      id: 'a',
+      tabId: 'a2',
+      spaceId: 's1',
+      now: 8,
+    })
+    expect(restored.data.closed.some((entry) => entry.tab.id === 'a')).toBe(false)
+  })
+
   it('selects the next tab after the closed one', () => {
     const next = apply(start, { type: 'tab/remove', id: 'a', now: 1 })
     expect(windowOf(next, 'w1').activeBySpace.s1).toBe('b')

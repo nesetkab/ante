@@ -516,12 +516,15 @@ export function reduce(state: AppState, action: Action): void {
         data.closed.unshift({ tab: { ...tab }, location, closedAt: action.now })
         if (data.closed.length > MAX_CLOSED) data.closed.length = MAX_CLOSED
       }
-      deleteItems(state, action.id)
+      const spaceId = rootOf(data, action.id)?.spaceId
+      if (action.archive && spaceId) archiveItem(state, action.id, spaceId, action.now)
+      else deleteItems(state, action.id)
       return
     }
     case 'tab/restoreClosed': {
       const entry = data.closed.shift()
       if (!entry || data.items[entry.tab.id]) return
+      data.archive = data.archive.filter((archived) => archived.id !== entry.tab.id)
       data.items[entry.tab.id] = entry.tab
       const { container, index } = entry.location
       const placed =
@@ -629,6 +632,7 @@ export function reduce(state: AppState, action: Action): void {
       const spaceId = data.spaces[action.spaceId] ? action.spaceId : data.spaceOrder[0]
       if (!entry || !spaceId || data.items[action.tabId]) return
       data.archive.splice(index, 1)
+      data.closed = data.closed.filter((closed) => closed.tab.id !== entry.id)
       data.items[action.tabId] = {
         kind: 'tab',
         id: action.tabId,

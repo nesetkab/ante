@@ -296,7 +296,7 @@ export class CommandRunner {
       this.#unload(tabId)
       return
     }
-    this.#store.dispatch({ type: 'tab/remove', id: tabId, now: this.#now() })
+    this.#store.dispatch({ type: 'tab/remove', id: tabId, now: this.#now(), archive: true })
     const next = activeTabId(this.#data, this.#windowData(window))
     this.#windows.syncNow()
     window.focusContent(next)
@@ -375,6 +375,21 @@ export class CommandRunner {
 
   #setOverlay(window: AppWindow, overlay: Overlay | null): void {
     this.#store.dispatch({ type: 'runtime/window', id: window.id, patch: { overlay } })
+  }
+
+  #closeMany(window: AppWindow, tabId: Id, which: 'below' | 'others'): void {
+    const root = rootOf(this.#data, tabId)
+    const space = root?.spaceId ? this.#data.spaces[root.spaceId] : undefined
+    if (root?.section !== 'today' || !space) return
+    const index = space.today.findIndex((id) => flattenTabs(this.#data, [id]).includes(tabId))
+    const doomed = space.today.filter((_, position) =>
+      which === 'below' ? position > index : position !== index,
+    )
+    const now = this.#now()
+    for (const id of flattenTabs(this.#data, doomed))
+      this.#store.dispatch({ type: 'tab/remove', id, now, archive: true })
+    this.#windows.syncNow()
+    window.focusContent(activeTabId(this.#data, this.#windowData(window)))
   }
 
   #resetSpace(spaceId: Id): void {
@@ -568,6 +583,18 @@ export class CommandRunner {
           type: 'toast',
           message: command.markdown ? 'Copied Markdown link' : 'Copied URL',
         })
+        return
+      }
+      case 'tab/closeMany':
+        this.#closeMany(window, command.tabId, command.which)
+        return
+      case 'folder/copyLinks': {
+        const tabs = flattenTabs(this.#data, [command.folderId]).flatMap(
+          (id) => getTab(this.#data, id) ?? [],
+        )
+        if (tabs.length === 0) return
+        copyText(tabs.map((tab) => `- ${markdownLink(displayTitle(tab), tab.url)}`).join('\n'))
+        this.toast(window, `Copied ${tabs.length} ${tabs.length === 1 ? 'link' : 'links'}`)
         return
       }
       case 'tab/togglePin': {

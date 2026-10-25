@@ -148,7 +148,7 @@ export type InternalAction =
   | { type: 'tab/create'; tab: Tab; to: Container | null; index: number }
   | { type: 'tab/update'; id: Id; patch: Partial<Pick<Tab, 'url' | 'title' | 'favicon'>> }
   | { type: 'tab/reset'; id: Id }
-  | { type: 'tab/remove'; id: Id; now: number }
+  | { type: 'tab/remove'; id: Id; now: number; archive?: boolean }
   | { type: 'tab/restoreClosed'; fallbackSpaceId: Id }
   | { type: 'split/create'; id: Id; tabIds: Id[]; direction: 'horizontal' | 'vertical' }
   | { type: 'today/clear'; spaceId: Id; now: number }
