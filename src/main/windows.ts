@@ -62,6 +62,7 @@ function defaultBounds(kind: WindowKind): Rect {
 export class AppWindow {
   readonly id: Id
   readonly kind: WindowKind
+  lastActiveAt = Date.now()
   readonly win: BrowserWindow
   readonly overlay: WebContentsView
   readonly #ctx: WindowContext
@@ -116,6 +117,7 @@ export class AppWindow {
       ctx.store.dispatch({ type: 'runtime/window', id: this.id, patch: { focused: true } })
     })
     this.win.on('blur', () => {
+      this.lastActiveAt = Date.now()
       ctx.store.dispatch({ type: 'runtime/window', id: this.id, patch: { focused: false } })
     })
     this.win.on('resize', () => this.#boundsChanged())

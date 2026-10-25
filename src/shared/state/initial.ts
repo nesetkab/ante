@@ -58,6 +58,8 @@ export function createInitialData(spaceId: Id): Data {
       askWhereToSave: false,
       clearHistoryOnQuit: false,
       peekExternalLinks: true,
+      shiftClickPeek: true,
+      littleArchiveAfter: '12h',
       externalLinks: 'little',
       adblockAllowlist: [],
       autoPip: true,
@@ -81,6 +83,8 @@ export function createAppState(data: Data): AppState {
 }
 
 export const archiveThresholds = {
+  '1h': 60 * 60 * 1000,
+  '6h': 6 * 60 * 60 * 1000,
   '12h': 12 * 60 * 60 * 1000,
   '24h': 24 * 60 * 60 * 1000,
   '7d': 7 * 24 * 60 * 60 * 1000,

@@ -268,6 +268,10 @@ export class CommandRunner {
     const data = this.#windowData(window)
     const openerTab = getTab(this.#data, openerId)
     const crossSite = openerTab ? hostOf(openerTab.url) !== hostOf(url) : true
+    if (data.kind === 'main' && disposition === 'peek' && this.#data.settings.shiftClickPeek) {
+      this.#peek(window, url)
+      return
+    }
     if (
       data.kind === 'main' &&
       disposition === 'foreground' &&
@@ -280,7 +284,7 @@ export class CommandRunner {
       return
     }
     const spaceId = rootOf(this.#data, openerId)?.spaceId ?? data.spaceId
-    this.#openInSpace(window, url, spaceId, disposition === 'foreground')
+    this.#openInSpace(window, url, spaceId, disposition !== 'background')
   }
 
   #peek(window: AppWindow, url: string): void {

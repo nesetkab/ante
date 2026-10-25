@@ -25,12 +25,35 @@ export function sleepIdleTabs(store: Store, now = Date.now()): void {
     store.dispatch({ type: 'runtime/unload', id })
 }
 
-export function startArchiveSweeper(store: Store): () => void {
+export function startArchiveSweeper(
+  store: Store,
+  idleWindows: () => IdleWindow[] = () => [],
+): () => void {
   const sweep = () => {
     sweepArchive(store)
     sleepIdleTabs(store)
+    closeIdleLittleWindows(store, idleWindows())
   }
   sweep()
   const timer = setInterval(sweep, SWEEP_INTERVAL_MS)
   return () => clearInterval(timer)
+}
+
+export interface IdleWindow {
+  kind: string
+  lastActiveAt: number
+  focused: boolean
+  close: () => void
+}
+
+export function closeIdleLittleWindows(
+  store: Store,
+  windows: readonly IdleWindow[],
+  now = Date.now(),
+): void {
+  const thresholdMs = archiveThresholds[store.state.data.settings.littleArchiveAfter]
+  if (thresholdMs <= 0) return
+  for (const window of windows)
+    if (window.kind === 'little' && !window.focused && now - window.lastActiveAt > thresholdMs)
+      window.close()
 }

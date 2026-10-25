@@ -175,7 +175,7 @@ export type CustomSearch = z.infer<typeof customSearchSchema>
 export const sleepOptions = ['15m', '1h', '4h', 'never'] as const
 export type SleepAfter = (typeof sleepOptions)[number]
 
-export const archiveAfterSchema = z.enum(['12h', '24h', '7d', '30d', 'never'])
+export const archiveAfterSchema = z.enum(['1h', '6h', '12h', '24h', '7d', '30d', 'never'])
 export type ArchiveAfter = z.infer<typeof archiveAfterSchema>
 
 export const themeModeSchema = z.enum(['system', 'light', 'dark'])
@@ -203,6 +203,8 @@ export const settingsSchema = z.object({
   askWhereToSave: z.boolean().default(false),
   clearHistoryOnQuit: z.boolean().default(false),
   peekExternalLinks: z.boolean().default(true),
+  shiftClickPeek: z.boolean().default(true),
+  littleArchiveAfter: archiveAfterSchema.default('12h'),
   externalLinks: z.enum(['little', 'space']).default('little'),
   adblockAllowlist: z.array(z.string().min(1).max(253)).max(10000).default([]),
   autoPip: z.boolean().default(true),

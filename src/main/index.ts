@@ -307,7 +307,16 @@ async function start(): Promise<void> {
   externalLinks.attach((url) => features.openExternal(url))
   for (const url of urlArguments(process.argv)) externalLinks.push(url)
 
-  startArchiveSweeper(store)
+  startArchiveSweeper(store, () =>
+    windows.all().map((window) => ({
+      kind: window.kind,
+      lastActiveAt: window.lastActiveAt,
+      focused: !window.win.isDestroyed() && window.win.isFocused(),
+      close: () => {
+        if (!window.win.isDestroyed()) window.win.close()
+      },
+    })),
+  )
   feeds.start()
   const sync = new SyncManager(store, (id, url) => tabs.load(id, url))
   sync.start()

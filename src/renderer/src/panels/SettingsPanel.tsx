@@ -35,6 +35,8 @@ const engineLabels: Record<SearchEngine, string> = {
 }
 
 const archiveOptions: readonly { value: ArchiveAfter; label: string }[] = [
+  { value: '1h', label: '1 hour' },
+  { value: '6h', label: '6 hours' },
   { value: '12h', label: '12 hours' },
   { value: '24h', label: '24 hours' },
   { value: '7d', label: '7 days' },
@@ -437,6 +439,21 @@ export function SettingsPanel() {
             label="Peek"
             checked={settings.peekExternalLinks}
             onChange={(peekExternalLinks) => update({ peekExternalLinks })}
+          />
+        </Row>
+        <Row label="Shift-click links to open them in Peek">
+          <Toggle
+            label="Shift-click Peek"
+            checked={settings.shiftClickPeek}
+            onChange={(shiftClickPeek) => update({ shiftClickPeek })}
+          />
+        </Row>
+        <Row label="Close little windows after" hint="Their page moves to the archive">
+          <Select
+            label="Close little windows after"
+            value={settings.littleArchiveAfter}
+            options={archiveOptions}
+            onChange={(littleArchiveAfter) => update({ littleArchiveAfter })}
           />
         </Row>
         <Row

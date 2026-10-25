@@ -8,7 +8,7 @@ import { getTab } from '@shared/state/tree'
 import type { Sessions } from './sessions'
 import type { Store } from './store'
 
-export type OpenDisposition = 'foreground' | 'background'
+export type OpenDisposition = 'foreground' | 'background' | 'peek'
 
 const MAX_SAVED_HISTORIES = 100
 const MAX_HOVER_URL = 2048
@@ -282,10 +282,15 @@ export class TabManager {
       if (disposition === 'new-window' && features) {
         return { action: 'allow', overrideBrowserWindowOptions: { autoHideMenuBar: true } }
       }
-      this.#hooks.onOpen(id, url, disposition === 'background-tab' ? 'background' : 'foreground')
+      this.#hooks.onOpen(id, url, openDisposition(disposition))
       return { action: 'deny' }
     })
   }
+}
+
+function openDisposition(disposition: string): OpenDisposition {
+  if (disposition === 'background-tab') return 'background'
+  return disposition === 'new-window' ? 'peek' : 'foreground'
 }
 
 function isAbort(error: unknown): boolean {
