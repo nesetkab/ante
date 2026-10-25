@@ -18,6 +18,7 @@ import {
   parentSplit,
   rootOf,
   spaceTabOrder,
+  visibleTabIds,
 } from '@shared/state/tree'
 import { hostOf, isWebUrl, markdownLink, resolveInput, searchTemplate } from '@shared/url'
 import { nextZoom } from '@shared/zoom'
@@ -353,9 +354,18 @@ export class CommandRunner {
 
   #watchControl(window: AppWindow): void {
     this.#controlWatch.get(window.id)?.()
-    const focused = webContents.getFocusedWebContents()
-    const targets = [focused, window.win.webContents, window.overlay.webContents].filter(
-      (contents): contents is WebContents => contents !== null && !contents.isDestroyed(),
+    const data = this.#windowData(window)
+    const pages = [...visibleTabIds(this.#data, data), data.peekTabId].map((id) =>
+      this.#tabs.contents(id),
+    )
+    const targets = [
+      webContents.getFocusedWebContents(),
+      window.win.webContents,
+      window.overlay.webContents,
+      ...pages,
+    ].filter(
+      (contents): contents is WebContents =>
+        contents !== null && contents !== undefined && !contents.isDestroyed(),
     )
     const onInput = (event: Electron.Event, input: Electron.Input) => {
       if (input.type === 'keyUp' && (input.key === 'Control' || !input.control)) {
