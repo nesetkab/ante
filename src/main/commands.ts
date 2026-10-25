@@ -25,7 +25,7 @@ import { nextZoom } from '@shared/zoom'
 import { noteTabTitle, noteUrl } from '@shared/notes'
 import { easelUrl, placeImage } from '@shared/easels'
 import { IPC, type UiEvent } from '@shared/ipc'
-import { capturePng, captureRegion } from './capture'
+import { captureFullPage, capturePng, captureRegion } from './capture'
 import { copyText } from './clipboard'
 import { describeArcImport, type ArcImportResult } from './importers/arc'
 import type { FeatureCommand } from './features'
@@ -710,6 +710,17 @@ export class CommandRunner {
       case 'tab/print':
         contentsFor(command.tabId)?.print()
         return
+      case 'capture/fullPage': {
+        const contents = contentsFor(command.tabId)
+        if (!contents) return
+        captureFullPage(contents)
+          .then((file) => this.toast(window, file ? 'Page copied and saved' : 'Nothing to capture'))
+          .catch((error: unknown) => {
+            console.error('[capture] full page failed', error)
+            this.toast(window, 'Capture failed')
+          })
+        return
+      }
       case 'tab/viewSource': {
         const tab = getTab(this.#data, tabFor(command.tabId))
         if (tab && isWebUrl(tab.url)) this.open(window, `view-source:${tab.url}`, 'newTab')

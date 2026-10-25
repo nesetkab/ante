@@ -126,6 +126,12 @@ export function shortcuts(platform: Platform): Shortcut[] {
       command: { type: 'capture/start' },
     },
     {
+      id: 'capture-full-page',
+      label: 'Capture Full Page',
+      section: 'file',
+      command: { type: 'capture/fullPage' },
+    },
+    {
       id: 'open-in',
       label: 'Open Peek or Little Window in Space',
       section: 'file',

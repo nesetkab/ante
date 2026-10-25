@@ -20,6 +20,7 @@ export const arcActionIds: Record<string, string> = {
   archiveTab: 'close-tab',
   closeWindow: 'close-window',
   capturePage: 'capture',
+  captureFullPage: 'capture-full-page',
   savePageAs: 'save-page',
   printPage: 'print',
   share: 'share',

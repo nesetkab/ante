@@ -53,6 +53,7 @@ export const commandSchema = z.discriminatedUnion('type', [
     panel: z.enum(['console', 'inspect']).optional(),
   }),
   z.object({ type: z.literal('tab/print'), ...optionalTab.shape }),
+  z.object({ type: z.literal('capture/fullPage'), ...optionalTab.shape }),
   z.object({ type: z.literal('tab/viewSource'), ...optionalTab.shape }),
   z.object({
     type: z.literal('tab/clearAndReload'),
