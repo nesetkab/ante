@@ -252,6 +252,13 @@ async function start(): Promise<void> {
   }
   windows.onSync(() => extensions.sync())
   void adblock.load()
+  let cookieBanners = store.state.data.settings.blockCookieBanners
+  store.subscribe(() => {
+    const next = store.state.data.settings.blockCookieBanners
+    if (next === cookieBanners) return
+    cookieBanners = next
+    void adblock.load()
+  })
   const applyTheme = () => {
     nativeTheme.themeSource = store.state.data.settings.theme
   }

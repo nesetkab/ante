@@ -54,6 +54,7 @@ export function createInitialData(spaceId: Id): Data {
       theme: 'system',
       adblock: true,
       globalPrivacyControl: true,
+      blockCookieBanners: false,
       downloadFolder: null,
       askWhereToSave: false,
       clearHistoryOnQuit: false,

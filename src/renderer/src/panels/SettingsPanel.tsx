@@ -519,6 +519,15 @@ export function SettingsPanel() {
             onChange={(adblock) => update({ adblock })}
           />
         </Row>
+        {settings.adblock && (
+          <Row label="Block cookie banners" hint="Hides cookie consent pop-ups">
+            <Toggle
+              label="Block cookie banners"
+              checked={settings.blockCookieBanners}
+              onChange={(blockCookieBanners) => update({ blockCookieBanners })}
+            />
+          </Row>
+        )}
         <Row
           label="Ask sites not to sell or share my data"
           hint="Sends the Global Privacy Control signal"

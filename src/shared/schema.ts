@@ -199,6 +199,7 @@ export const settingsSchema = z.object({
   theme: themeModeSchema.default('system'),
   adblock: z.boolean().default(true),
   globalPrivacyControl: z.boolean().default(true),
+  blockCookieBanners: z.boolean().default(false),
   downloadFolder: z.string().min(1).max(4096).nullable().default(null),
   askWhereToSave: z.boolean().default(false),
   clearHistoryOnQuit: z.boolean().default(false),

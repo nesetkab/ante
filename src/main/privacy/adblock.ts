@@ -1,6 +1,12 @@
 import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { ElectronBlocker, fromElectronDetails, Request } from '@ghostery/adblocker-electron'
+import {
+  adsAndTrackingLists,
+  ElectronBlocker,
+  fromElectronDetails,
+  fullLists,
+  Request,
+} from '@ghostery/adblocker-electron'
 import {
   net,
   webContents as allContents,
@@ -16,6 +22,8 @@ import type { TabManager } from '../tabs'
 import { patchLoadedTab } from './runtime'
 
 const CACHE_FILE = 'adblock-engine.bin'
+const COOKIE_CACHE_FILE = 'adblock-engine-cookies.bin'
+const cookieLists = fullLists.filter((url) => url.includes('cookie'))
 const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
 const FLUSH_DELAY_MS = 250
 
@@ -67,16 +75,28 @@ export class AdBlocker {
   }
 
   async load(): Promise<void> {
-    const path = join(this.#cacheDir, CACHE_FILE)
+    const cookies = this.#store.state.data.settings.blockCookieBanners
+    const path = join(this.#cacheDir, cookies ? COOKIE_CACHE_FILE : CACHE_FILE)
     try {
       await mkdir(this.#cacheDir, { recursive: true })
       const info = await stat(path).catch(() => null)
       if (info && Date.now() - info.mtimeMs > CACHE_MAX_AGE_MS) await rm(path, { force: true })
-      this.#engine = await ElectronBlocker.fromPrebuiltAdsAndTracking((url) => net.fetch(url), {
+      const fetch = (url: string) => net.fetch(url)
+      const caching = {
         path,
-        read: (file) => readFile(file),
-        write: (file, buffer) => writeFile(file, buffer),
-      })
+        read: (file: string) => readFile(file),
+        write: (file: string, buffer: Uint8Array) => writeFile(file, buffer),
+      }
+      const engine = cookies
+        ? await ElectronBlocker.fromLists(
+            fetch,
+            [...adsAndTrackingLists, ...cookieLists],
+            { loadCosmeticFilters: true, loadNetworkFilters: true },
+            caching,
+          )
+        : await ElectronBlocker.fromPrebuiltAdsAndTracking(fetch, caching)
+      if (cookies !== this.#store.state.data.settings.blockCookieBanners) return
+      this.#engine = engine
       this.#ready = true
     } catch (error) {
       console.warn('[adblock] using fallback filters', error)
