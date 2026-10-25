@@ -1,6 +1,7 @@
 import { dialog, WebContentsView, type ContextMenuParams, type WebContents } from 'electron'
 import type { Id, TabRuntime } from '@shared/schema'
 import { IGNORED_LOAD_ERRORS } from '@shared/loadErrors'
+import { zoomHost } from '@shared/zoom'
 import { restorableHistory, trimHistory, type SavedTabHistory } from '@shared/navigation'
 import { isInternalPage } from '@shared/pages'
 import { getTab } from '@shared/state/tree'
@@ -210,6 +211,14 @@ export class TabManager {
     })
   }
 
+  #applySiteZoom(id: Id, contents: WebContents, url: string): void {
+    const host = zoomHost(url)
+    const profileId = this.#profiles.get(id)
+    if (!host || !profileId) return
+    const zoom = this.#store.state.data.siteZoom[profileId]?.[host] ?? 1
+    if (Math.abs(contents.getZoomFactor() - zoom) > 0.001) contents.setZoomFactor(zoom)
+  }
+
   #wire(id: Id, contents: WebContents): void {
     const update = (patch: { url?: string; title?: string; favicon?: string | null }) => {
       this.#store.dispatch({ type: 'tab/update', id, patch })
@@ -232,6 +241,7 @@ export class TabManager {
     })
     contents.on('did-navigate', (_event, url) => {
       update({ url, favicon: null })
+      this.#applySiteZoom(id, contents, url)
       if (this.#store.state.runtime.tabs[id]?.capturing) this.#runtime(id, { capturing: false })
       this.#navigationState(id, contents)
     })

@@ -5,6 +5,7 @@ import {
   originSchema,
   sitePermissionSchema,
   type PermissionDecision,
+  type SiteDecisions,
   type SitePermission,
 } from '../permissions'
 import {
@@ -184,6 +185,13 @@ export type InternalAction =
   | { type: 'runtime/arcImport'; available: boolean }
   | { type: 'runtime/browsers'; browsers: BrowserId[] }
   | { type: 'runtime/passwords'; available: boolean; logins: LoginSummary[] }
+  | { type: 'siteZoom/set'; profileId: Id; host: string; zoom: number }
+  | {
+      type: 'profile/importSiteSettings'
+      profileId: Id
+      permissions: Record<string, SiteDecisions>
+      zoom: Record<string, number>
+    }
   | { type: 'download/add'; download: DownloadRuntime }
   | { type: 'download/update'; id: Id; patch: Partial<Omit<DownloadRuntime, 'id'>> }
   | { type: 'download/remove'; ids: Id[] }

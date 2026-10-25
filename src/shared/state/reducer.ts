@@ -58,6 +58,7 @@ function stampVisible(data: Data, window: WindowData, now: number): void {
 }
 
 export const MAX_CLOSED = 50
+export const MAX_SITE_ZOOMS = 5000
 export const MAX_SPLIT = 4
 
 export const defaultTabRuntime: TabRuntime = {
@@ -756,6 +757,27 @@ export function reduce(state: AppState, action: Action): void {
     case 'runtime/arcImport':
       runtime.arcImportAvailable = action.available
       return
+    case 'siteZoom/set': {
+      if (!data.profiles[action.profileId] || isPrivateProfile(action.profileId)) return
+      const zooms = (data.siteZoom[action.profileId] ??= {})
+      if (Math.abs(action.zoom - 1) < 0.001) Reflect.deleteProperty(zooms, action.host)
+      else if (Object.keys(zooms).length < MAX_SITE_ZOOMS || zooms[action.host] !== undefined)
+        zooms[action.host] = Math.min(5, Math.max(0.25, action.zoom))
+      if (Object.keys(zooms).length === 0) Reflect.deleteProperty(data.siteZoom, action.profileId)
+      return
+    }
+    case 'profile/importSiteSettings': {
+      if (!data.profiles[action.profileId] || isPrivateProfile(action.profileId)) return
+      const byOrigin = (data.sitePermissions[action.profileId] ??= {})
+      for (const [origin, decisions] of Object.entries(action.permissions))
+        byOrigin[origin] = { ...decisions, ...byOrigin[origin] }
+      if (Object.keys(byOrigin).length === 0)
+        Reflect.deleteProperty(data.sitePermissions, action.profileId)
+      const zooms = { ...action.zoom, ...data.siteZoom[action.profileId] }
+      const limited = Object.fromEntries(Object.entries(zooms).slice(0, MAX_SITE_ZOOMS))
+      if (Object.keys(limited).length > 0) data.siteZoom[action.profileId] = limited
+      return
+    }
     case 'runtime/passwords':
       runtime.passwords = { available: action.available, logins: [...action.logins] }
       return

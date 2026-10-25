@@ -17,6 +17,7 @@ import type { Id } from '@shared/schema'
 import { DEFAULT_PROFILE_ID } from '@shared/state/initial'
 import type { HistoryStore, ImportedVisit } from '../history'
 import type { Store } from '../store'
+import { importSiteSettings } from './siteSettings'
 import type { CookieJar } from './cookies'
 import { describeSecrets, importBrowserSecrets } from './secrets'
 import type { ImportedLogin } from '../passwords'
@@ -145,6 +146,7 @@ export async function importFromBrowser(
       historyBusy = true
     }
   }
+  await importSiteSettings(store, DEFAULT_PROFILE_ID, dir)
   const secrets = await importBrowserSecrets(safeStorage[browser], [{ dir, jar, saveLogins }])
   const described = describeSecrets(secrets)
   const parts = [

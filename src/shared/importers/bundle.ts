@@ -20,10 +20,15 @@ export interface ImportBundle {
   favorites: Record<Id, Id[]>
   archive?: ArchivedTab[]
   routes?: Route[]
-  externalLinks?: Settings['externalLinks'] | null
+  settings?: ImportedSettings
+  sidebarHidden?: boolean
   shortcuts?: Settings['shortcuts'] | null
   profileAliases?: Record<Id, string[]>
 }
+
+export type ImportedSettings = Partial<
+  Pick<Settings, 'externalLinks' | 'theme' | 'adblock' | 'sidebarWidth'>
+>
 
 const MAX_ROUTES = 500
 
@@ -166,7 +171,10 @@ export function applyImport(data: Data, bundle: ImportBundle): ImportSummary {
 
   importArchive(data, bundle.archive ?? [])
   importRoutes(data, bundle.routes ?? [])
-  if (pristine && bundle.externalLinks) data.settings.externalLinks = bundle.externalLinks
+  if (pristine && bundle.settings) Object.assign(data.settings, bundle.settings)
+  if (pristine && bundle.sidebarHidden !== undefined)
+    for (const window of Object.values(data.windows))
+      if (window.kind === 'main') window.sidebarHidden = bundle.sidebarHidden
   if (bundle.shortcuts) data.settings.shortcuts = { ...bundle.shortcuts }
 
   return { spaceIds, tabCount }

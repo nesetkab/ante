@@ -70,6 +70,7 @@ export function createInitialData(spaceId: Id): Data {
     boosts: {},
     routes: [],
     sitePermissions: {},
+    siteZoom: {},
     notes: {},
     easels: {},
   }

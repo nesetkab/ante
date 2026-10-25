@@ -11,3 +11,14 @@ export function nextZoom(current: number, delta: -1 | 0 | 1): number {
   if (delta > 0) return ZOOM_STEPS.find((step) => step > current + EPSILON) ?? MAX_ZOOM
   return ZOOM_STEPS.findLast((step) => step < current - EPSILON) ?? MIN_ZOOM
 }
+
+export function zoomHost(url: string): string | null {
+  try {
+    const parsed = new URL(url)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+      ? parsed.hostname.toLowerCase()
+      : null
+  } catch {
+    return null
+  }
+}

@@ -12,7 +12,7 @@ import {
 } from '../schema'
 import { DEFAULT_PROFILE_ID, spaceColors } from '../state/initial'
 import { isArcSymbol, symbolIcon } from '../spaceIcons'
-import type { ImportBundle } from './bundle'
+import type { ImportBundle, ImportedSettings } from './bundle'
 
 export const ARC_MAX_SPLIT = 4
 const MAX_DEPTH = 32
@@ -76,12 +76,19 @@ export interface ArcRouting {
   externalLinks: Settings['externalLinks'] | null
 }
 
+export interface ArcWindowPrefs {
+  sidebarWidth?: number
+  sidebarHidden?: boolean
+}
+
 export interface ArcImport {
   spaces: ArcSpace[]
   favorites: ArcFavorites[]
   archive?: ArcArchivedTab[]
   routing?: ArcRouting
   profileNames?: Record<string, string>
+  windowPrefs?: ArcWindowPrefs
+  appSettings?: ImportedSettings
 }
 
 export const APPLE_EPOCH_OFFSET_MS = 978_307_200_000
@@ -495,6 +502,40 @@ export function parseArcProfileNames(json: unknown): Record<string, string> {
   )
 }
 
+const windowsSchema = z.object({
+  sidebarViewPreferences: z
+    .object({
+      sidebarWidth: z.number().optional().catch(undefined),
+      sidebarMode: z.string().optional().catch(undefined),
+    })
+    .catch({}),
+})
+
+const MIN_SIDEBAR = 180
+const MAX_SIDEBAR = 480
+
+export function parseArcWindows(json: unknown): ArcWindowPrefs {
+  const parsed = windowsSchema.safeParse(json)
+  if (!parsed.success) return {}
+  const { sidebarWidth, sidebarMode } = parsed.data.sidebarViewPreferences
+  return {
+    ...(sidebarWidth === undefined
+      ? {}
+      : { sidebarWidth: Math.round(Math.min(MAX_SIDEBAR, Math.max(MIN_SIDEBAR, sidebarWidth))) }),
+    ...(sidebarMode === undefined ? {} : { sidebarHidden: sidebarMode === 'noChrome' }),
+  }
+}
+
+function importedSettings(arc: ArcImport): ImportedSettings {
+  const externalLinks = arc.routing?.externalLinks
+  const sidebarWidth = arc.windowPrefs?.sidebarWidth
+  return {
+    ...arc.appSettings,
+    ...(externalLinks ? { externalLinks } : {}),
+    ...(sidebarWidth === undefined ? {} : { sidebarWidth }),
+  }
+}
+
 export interface ArcConvertOptions {
   newId: () => Id
   now: number
@@ -634,7 +675,10 @@ export function arcImportToBundle(arc: ArcImport, options: ArcConvertOptions): I
     favorites,
     archive,
     routes,
-    externalLinks: arc.routing?.externalLinks ?? null,
+    settings: importedSettings(arc),
+    ...(arc.windowPrefs?.sidebarHidden === undefined
+      ? {}
+      : { sidebarHidden: arc.windowPrefs.sidebarHidden }),
     profileAliases,
   }
 }

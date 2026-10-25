@@ -21,7 +21,7 @@ import {
   visibleTabIds,
 } from '@shared/state/tree'
 import { hostOf, isWebUrl, markdownLink, resolveInput, searchTemplate } from '@shared/url'
-import { nextZoom } from '@shared/zoom'
+import { nextZoom, zoomHost } from '@shared/zoom'
 import { noteTabTitle, noteUrl } from '@shared/notes'
 import { easelUrl, placeImage } from '@shared/easels'
 import { IPC, type UiEvent } from '@shared/ipc'
@@ -693,6 +693,9 @@ export class CommandRunner {
         const zoom = nextZoom(contents.getZoomFactor(), command.delta)
         contents.setZoomFactor(zoom)
         this.#store.dispatch({ type: 'runtime/tab', id: tabId, patch: { zoom } })
+        const host = zoomHost(contents.getURL())
+        const profileId = rootOf(this.#data, tabId)?.profileId
+        if (host && profileId) this.#store.dispatch({ type: 'siteZoom/set', profileId, host, zoom })
         return
       }
       case 'tab/savePage': {

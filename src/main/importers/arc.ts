@@ -9,6 +9,7 @@ import {
   parseArcProfileNames,
   parseArcRouting,
   parseArcSidebar,
+  parseArcWindows,
 } from '@shared/importers/arc'
 import { mergeArcShortcuts, parseArcKeyBindings } from '@shared/importers/arcKeys'
 import type { ShortcutOverrides } from '@shared/keys'
@@ -17,7 +18,9 @@ import { DEFAULT_PROFILE_ID } from '@shared/state/initial'
 import { isPrivateProfile } from '@shared/state/private'
 import type { HistoryStore } from '../history'
 import type { Store } from '../store'
+import { readArcAppOrigins, readArcAppSettings } from './arcDefaults'
 import { readVisits } from './chrome'
+import { importSiteSettings } from './siteSettings'
 import type { CookieJar } from './cookies'
 import { describeSecrets, importBrowserSecrets, type SecretImport } from './secrets'
 import type { ImportedLogin } from '../passwords'
@@ -26,6 +29,7 @@ const SIDEBAR_FILE = 'StorableSidebar.json'
 const ARCHIVE_FILE = 'StorableArchiveItems.json'
 const ROUTING_FILE = 'StorableLinkRouting.json'
 const KEYS_FILE = 'StorableKeyBindings.json'
+const WINDOWS_FILE = 'StorableWindows.json'
 const ARC_SAFE_STORAGE = 'Arc Safe Storage'
 
 function windowsCandidates(): string[] {
@@ -166,6 +170,8 @@ export async function importFromArc({
       ...parseArcSidebar(sidebar),
       archive: parseArcArchive(await readJson(join(root, ARCHIVE_FILE))),
       routing: parseArcRouting(await readJson(join(root, ROUTING_FILE))),
+      windowPrefs: parseArcWindows(await readJson(join(root, WINDOWS_FILE))),
+      appSettings: await readArcAppSettings(),
       profileNames,
     }
     const bundle = {
@@ -175,6 +181,9 @@ export async function importFromArc({
     store.dispatch({ type: 'data/import', bundle })
     const data = store.state.data
     const dirs = profileDirs(userData, profileNames, store)
+    const appOrigins = await readArcAppOrigins()
+    for (const { dir, profileId } of dirs)
+      await importSiteSettings(store, profileId, dir, appOrigins)
     const visitCount = await importHistory(history, dirs)
     const secrets = await importBrowserSecrets(
       ARC_SAFE_STORAGE,

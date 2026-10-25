@@ -341,6 +341,12 @@ export const dataSchema = z.object({
   boosts: z.record(idSchema, boostSchema).default({}),
   routes: z.array(routeSchema).max(500).default([]),
   sitePermissions: sitePermissionsSchema.default({}),
+  siteZoom: z
+    .record(
+      z.string().min(1).max(200),
+      z.record(z.string().min(1).max(253), z.number().min(0.25).max(5)),
+    )
+    .default({}),
   notes: z.record(idSchema, noteSchema).default({}),
   easels: z.record(idSchema, easelSchema).default({}),
 })
