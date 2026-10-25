@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { dialog } from 'electron'
 import { isAbsolute } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { Command, Disposition, SyncCommand } from '@shared/commands'
@@ -11,6 +12,7 @@ import { recentTab } from '@shared/state/recent'
 import {
   activeTabId,
   displayTitle,
+  flattenTabs,
   getTab,
   isPersistent,
   parentSplit,
@@ -35,7 +37,7 @@ import { showSidebarMenu } from './sidebarMenu'
 import { deleteSpaceWithConfirm } from './spaceDelete'
 import { showSpaceMenu } from './spaceMenu'
 import type { OpenDisposition, TabManager } from './tabs'
-import { pickFiles, savePage, sharePage } from './pageActions'
+import { clearAndReload, pickFiles, savePage, sharePage } from './pageActions'
 import type { BrowserImportResult } from './importers/chrome'
 import type { Store } from './store'
 import type { UpdateChecker } from './updates'
@@ -54,7 +56,7 @@ interface Deps {
   runPrivacy: (window: AppWindow, command: PrivacyCommand) => void
   runSync: (window: AppWindow, command: SyncCommand) => void
   media: Pick<MediaController, 'toggle' | 'togglePip'>
-  devtools: Pick<DevtoolsDock, 'toggle' | 'setMode' | 'inspect'>
+  devtools: Pick<DevtoolsDock, 'toggle' | 'setMode' | 'inspect' | 'show'>
   feeds: Pick<FeedManager, 'follow' | 'refresh'>
   assets: Pick<EaselAssets, 'save'>
   updates: Pick<UpdateChecker, 'check' | 'release'>
@@ -319,6 +321,30 @@ export class CommandRunner {
     else this.#store.dispatch({ type: 'window/deactivate', id: window.id })
   }
 
+  #resetSpace(spaceId: Id): void {
+    const space = this.#data.spaces[spaceId]
+    if (!space) return
+    for (const id of flattenTabs(this.#data, space.pinned)) {
+      const tab = getTab(this.#data, id)
+      if (!tab?.savedUrl || tab.url === tab.savedUrl) continue
+      this.#tabs.load(tab.id, tab.savedUrl)
+      this.#store.dispatch({ type: 'tab/reset', id: tab.id })
+    }
+  }
+
+  async #clearArchive(window: AppWindow): Promise<void> {
+    if (this.#data.archive.length === 0) return
+    const { response } = await dialog.showMessageBox(window.win, {
+      type: 'warning',
+      buttons: ['Clear Archive', 'Cancel'],
+      defaultId: 1,
+      cancelId: 1,
+      message: 'Clear all archived tabs?',
+      detail: 'This cannot be undone.',
+    })
+    if (response === 0) this.#store.dispatch({ type: 'archive/clear' })
+  }
+
   #closePeek(window: AppWindow): void {
     const peekId = this.#windowData(window).peekTabId
     if (!peekId) return
@@ -551,7 +577,51 @@ export class CommandRunner {
         return
       case 'tab/devtools': {
         const tabId = tabFor(command.tabId)
-        if (tabId) this.#devtools.toggle(tabId)
+        if (!tabId) return
+        if (command.panel) this.#devtools.show(tabId, command.panel)
+        else this.#devtools.toggle(tabId)
+        return
+      }
+      case 'tab/print':
+        contentsFor(command.tabId)?.print()
+        return
+      case 'tab/viewSource': {
+        const tab = getTab(this.#data, tabFor(command.tabId))
+        if (tab && isWebUrl(tab.url)) this.open(window, `view-source:${tab.url}`, 'newTab')
+        return
+      }
+      case 'tab/clearAndReload': {
+        const contents = contentsFor(command.tabId)
+        if (contents) void clearAndReload(contents, command.clear)
+        return
+      }
+      case 'tab/openIn': {
+        const data = this.#windowData(window)
+        if (data.kind === 'little') this.#moveLittleToSpace(window, undefined)
+        else if (data.peekTabId) this.run(window.id, { type: 'peek/expand' })
+        else this.run(window.id, { type: 'file/open' })
+        return
+      }
+      case 'space/resetTabs':
+        this.#resetSpace(this.#windowData(window).spaceId)
+        return
+      case 'archive/clear':
+        void this.#clearArchive(window)
+        return
+      case 'split/close': {
+        const tabId = tabFor()
+        if (tabId && parentSplit(this.#data, tabId)) this.#closeTab(window, tabId)
+        return
+      }
+      case 'split/focus': {
+        const tabId = tabFor()
+        const split = tabId ? parentSplit(this.#data, tabId) : null
+        if (!tabId || !split) return
+        const count = split.children.length
+        const current = split.children.indexOf(tabId)
+        const index = command.index ?? (current + (command.delta ?? 1) + count) % count
+        const next = split.children[index]
+        if (next) this.activate(window, next)
         return
       }
       case 'tab/devtoolsMode': {

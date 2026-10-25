@@ -111,3 +111,34 @@ describe('keyboard layouts and reserved keys', () => {
         expect(isAccelerator(item.accelerator ?? '')).toBe(true)
   })
 })
+
+describe('arc defaults', () => {
+  const platforms = ['darwin', 'win32', 'linux'] as const
+  const keyOf = (list: ReturnType<typeof shortcuts>, id: string) =>
+    list.find((shortcut) => shortcut.id === id)?.accelerator
+
+  it('never gives two actions the same keys', () => {
+    for (const platform of platforms) {
+      const seen = new Map<string, string>()
+      for (const item of [...shortcuts(platform), ...reservedShortcuts(platform)]) {
+        if (!item.accelerator) continue
+        expect(isAccelerator(item.accelerator), `${platform} ${item.id}`).toBe(true)
+        const key = canonicalAccelerator(item.accelerator, platform)
+        expect(seen.get(key), `${platform} ${item.id} vs ${seen.get(key) ?? ''}`).toBeUndefined()
+        seen.set(key, item.id)
+      }
+    }
+  })
+
+  it('uses the keys Arc uses on macOS', () => {
+    const mac = shortcuts('darwin')
+    expect(keyOf(mac, 'split')).toBe('Ctrl+Shift+=')
+    expect(keyOf(mac, 'new-note')).toBe('Ctrl+Shift+N')
+    expect(keyOf(mac, 'new-easel')).toBe('Ctrl+Shift+E')
+    expect(keyOf(mac, 'history')).toBe('CmdOrCtrl+Y')
+    expect(keyOf(mac, 'library')).toBe('CmdOrCtrl+Shift+L')
+    expect(keyOf(mac, 'downloads')).toBe('CmdOrCtrl+Shift+J')
+    expect(keyOf(mac, 'open-in')).toBe('CmdOrCtrl+O')
+    expect(keyOf(mac, 'duplicate-tab')).toBeUndefined()
+  })
+})

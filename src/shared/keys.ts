@@ -120,13 +120,12 @@ export function reservedShortcuts(platform: Platform): ReservedShortcut[] {
     ['Cut', 'CmdOrCtrl+X'],
     ['Copy', 'CmdOrCtrl+C'],
     ['Paste', 'CmdOrCtrl+V'],
-    ['Paste and Match Style', mac ? 'CmdOrCtrl+Alt+Shift+V' : 'CmdOrCtrl+Shift+V'],
+    ['Paste and Match Style', 'CmdOrCtrl+Shift+V'],
     ['Select All', 'CmdOrCtrl+A'],
     ['Minimize', 'CmdOrCtrl+M'],
     ['Full Screen', mac ? 'Ctrl+CmdOrCtrl+F' : 'F11'],
     ...(mac
       ? ([
-          ['Settings', 'CmdOrCtrl+,'],
           ['Quit', 'CmdOrCtrl+Q'],
           ['Hide Ante', 'CmdOrCtrl+H'],
           ['Hide Others', 'CmdOrCtrl+Alt+H'],

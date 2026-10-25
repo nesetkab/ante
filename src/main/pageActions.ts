@@ -30,3 +30,25 @@ export function sharePage(window: BaseWindow, url: string): void {
   if (process.platform !== 'darwin') return
   new ShareMenu({ urls: [url] }).popup({ window })
 }
+
+export async function clearAndReload(
+  contents: WebContents,
+  clear: 'cookies' | 'cache',
+): Promise<void> {
+  let origin: string
+  try {
+    origin = new URL(contents.getURL()).origin
+  } catch {
+    return
+  }
+  if (origin === 'null') return
+  const storages =
+    clear === 'cookies'
+      ? (['cookies'] as const)
+      : (['cachestorage', 'serviceworkers', 'shadercache'] as const)
+  await contents.session.clearStorageData({ origin, storages: [...storages] })
+  if (clear === 'cache') await contents.session.clearCache()
+  if (contents.isDestroyed()) return
+  if (clear === 'cache') contents.reloadIgnoringCache()
+  else contents.reload()
+}

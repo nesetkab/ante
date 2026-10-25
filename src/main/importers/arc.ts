@@ -10,6 +10,8 @@ import {
   parseArcRouting,
   parseArcSidebar,
 } from '@shared/importers/arc'
+import { mergeArcShortcuts, parseArcKeyBindings } from '@shared/importers/arcKeys'
+import type { ShortcutOverrides } from '@shared/keys'
 import type { Id } from '@shared/schema'
 import { DEFAULT_PROFILE_ID } from '@shared/state/initial'
 import type { HistoryStore } from '../history'
@@ -19,6 +21,7 @@ import { readVisits } from './chrome'
 const SIDEBAR_FILE = 'StorableSidebar.json'
 const ARCHIVE_FILE = 'StorableArchiveItems.json'
 const ROUTING_FILE = 'StorableLinkRouting.json'
+const KEYS_FILE = 'StorableKeyBindings.json'
 
 function windowsCandidates(): string[] {
   const localAppData = process.env.LOCALAPPDATA ?? join(homedir(), 'AppData', 'Local')
@@ -110,6 +113,13 @@ async function importHistory(
   return count
 }
 
+async function importedShortcuts(root: string, store: Store): Promise<ShortcutOverrides | null> {
+  if (process.platform !== 'darwin') return null
+  const imported = parseArcKeyBindings(await readJson(join(root, KEYS_FILE)))
+  if (Object.keys(imported).length === 0) return null
+  return mergeArcShortcuts(store.state.data.settings.shortcuts, imported, 'darwin')
+}
+
 export async function importFromArc(store: Store, history: HistoryStore): Promise<ArcImportResult> {
   const file = findArcSidebar()
   if (!file) return { ok: false, message: 'Could not find Arc on this computer' }
@@ -125,7 +135,10 @@ export async function importFromArc(store: Store, history: HistoryStore): Promis
       routing: parseArcRouting(await readJson(join(root, ROUTING_FILE))),
       profileNames,
     }
-    const bundle = arcImportToBundle(arc, { newId: randomUUID, now: Date.now() })
+    const bundle = {
+      ...arcImportToBundle(arc, { newId: randomUUID, now: Date.now() }),
+      shortcuts: await importedShortcuts(root, store),
+    }
     store.dispatch({ type: 'data/import', bundle })
     const data = store.state.data
     const visitCount = await importHistory(history, userData, profileNames, store)

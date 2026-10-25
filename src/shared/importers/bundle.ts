@@ -20,6 +20,7 @@ export interface ImportBundle {
   archive?: ArchivedTab[]
   routes?: Route[]
   externalLinks?: Settings['externalLinks'] | null
+  shortcuts?: Settings['shortcuts'] | null
 }
 
 const MAX_ROUTES = 500
@@ -159,6 +160,7 @@ export function applyImport(data: Data, bundle: ImportBundle): ImportSummary {
   importArchive(data, bundle.archive ?? [])
   importRoutes(data, bundle.routes ?? [])
   if (bundle.externalLinks) data.settings.externalLinks = bundle.externalLinks
+  if (bundle.shortcuts) data.settings.shortcuts = { ...bundle.shortcuts }
 
   return { spaceIds, tabCount }
 }

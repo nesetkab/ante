@@ -3,12 +3,17 @@ import type { Command } from '@shared/commands'
 import { withOverrides, type ShortcutOverrides } from '@shared/keys'
 import { shortcuts, type MenuSection, type Platform } from '@shared/shortcuts'
 
-const sectionLabels: Record<Exclude<MenuSection, 'edit'>, string> = {
+const sectionLabels: Record<MenuSection, string> = {
+  app: 'Ante',
   file: 'File',
+  edit: 'Edit',
   view: 'View',
-  go: 'Go',
-  tab: 'Tab',
   space: 'Spaces',
+  tab: 'Tabs',
+  archive: 'Archive',
+  extensions: 'Extensions',
+  window: 'Window',
+  help: 'Help',
 }
 
 export function buildAppMenu(
@@ -38,7 +43,7 @@ export function buildAppMenu(
         { role: 'about' },
         { label: 'Check for Updates…', click: () => run({ type: 'update/check' }) },
         { type: 'separator' },
-        { label: 'Settings…', accelerator: 'Cmd+,', click: () => run({ type: 'settings/open' }) },
+        ...itemsFor('app'),
         { type: 'separator' },
         { role: 'services' },
         { type: 'separator' },
@@ -50,16 +55,14 @@ export function buildAppMenu(
       ],
     })
   }
+  const menu = (section: MenuSection, extra: MenuItemConstructorOptions[] = []) => ({
+    label: sectionLabels[section],
+    submenu: [...itemsFor(section), ...extra],
+  })
   template.push(
+    menu('file', isMac ? [] : [{ type: 'separator' }, ...itemsFor('app'), { role: 'quit' }]),
     {
-      label: sectionLabels.file,
-      submenu: [
-        ...itemsFor('file'),
-        ...(isMac ? [] : [{ type: 'separator' as const }, { role: 'quit' as const }]),
-      ],
-    },
-    {
-      label: 'Edit',
+      label: sectionLabels.edit,
       submenu: [
         { role: 'undo' },
         { role: 'redo' },
@@ -67,25 +70,42 @@ export function buildAppMenu(
         { role: 'cut' },
         { role: 'copy' },
         { role: 'paste' },
-        { role: 'pasteAndMatchStyle' },
+        { role: 'pasteAndMatchStyle', ...(isMac ? { accelerator: 'Cmd+Shift+V' } : {}) },
+        { role: 'delete' },
         { role: 'selectAll' },
         { type: 'separator' },
         ...itemsFor('edit'),
       ],
     },
+    menu('view', [{ type: 'separator' }, { role: 'togglefullscreen' }]),
+    menu('space'),
+    menu('tab'),
+    menu('archive'),
+    menu('extensions'),
     {
-      label: sectionLabels.view,
-      submenu: [...itemsFor('view'), { type: 'separator' }, { role: 'togglefullscreen' }],
+      label: sectionLabels.window,
+      role: 'windowMenu',
+      submenu: [
+        { role: 'minimize' },
+        { role: 'zoom' },
+        { type: 'separator' },
+        ...itemsFor('window'),
+        ...(isMac ? [{ type: 'separator' as const }, { role: 'front' as const }] : []),
+      ],
     },
-    { label: sectionLabels.go, submenu: itemsFor('go') },
-    { label: sectionLabels.tab, submenu: itemsFor('tab') },
-    { label: sectionLabels.space, submenu: itemsFor('space') },
-    { role: 'windowMenu' },
-  )
-  if (!isMac)
-    template.push({
+    {
+      label: sectionLabels.help,
       role: 'help',
-      submenu: [{ label: 'Check for Updates…', click: () => run({ type: 'update/check' }) }],
-    })
+      submenu: [
+        ...itemsFor('help'),
+        ...(isMac
+          ? []
+          : [
+              { type: 'separator' as const },
+              { label: 'Check for Updates…', click: () => run({ type: 'update/check' }) },
+            ]),
+      ],
+    },
+  )
   return Menu.buildFromTemplate(template)
 }

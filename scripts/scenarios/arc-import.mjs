@@ -27,6 +27,11 @@ export default async function arcImport({ store, run, waitFor, windows }) {
   assert(routes[0].spaceId === work && routes[0].target === 'space', 'figma rule goes to Work')
   assert(routes[1].target === 'little', 'zoom rule opens in a little window')
   assert(store.state.data.archive[1].spaceId === work, 'archived tab keeps its space')
+  if (process.platform === 'darwin') {
+    const keys = store.state.data.settings.shortcuts
+    assert(keys['next-tab-bracket'] === 'CmdOrCtrl+]', `arc shortcuts: ${JSON.stringify(keys)}`)
+    assert(keys.forward === null, 'unset arc shortcut stays unset')
+  }
 
   const tabs = Object.values(data.items).filter((item) => item.kind === 'tab')
   run({ type: 'import/arc' }, window.id)

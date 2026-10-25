@@ -34,6 +34,21 @@ export class DevtoolsDock {
     else this.open(tabId, 'docked')
   }
 
+  show(tabId: Id, panel: 'console' | 'inspect'): void {
+    if (!this.#entries.has(tabId)) this.open(tabId, 'docked')
+    const frontend = this.#entries.get(tabId)?.view.webContents
+    if (!frontend || frontend.isDestroyed()) return
+    const script =
+      panel === 'console'
+        ? 'DevToolsAPI.showPanel("console")'
+        : 'DevToolsAPI.enterInspectElementMode()'
+    const run = () => {
+      if (!frontend.isDestroyed()) frontend.executeJavaScript(script).catch(() => undefined)
+    }
+    if (frontend.isLoading() || frontend.getURL() === '') frontend.once('did-finish-load', run)
+    else run()
+  }
+
   inspect(tabId: Id, x: number, y: number): void {
     if (!this.#entries.has(tabId)) this.open(tabId, 'docked')
     const entry = this.#entries.get(tabId)

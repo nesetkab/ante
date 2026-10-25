@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "userOverrides": [
+    {
+      "action": { "identifier": "goForward", "name": "Go Forward" },
+      "source": "userDefined",
+      "priority": "overrideWebView",
+      "state": { "unset": {} }
+    },
+    {
+      "action": { "identifier": "nextTab", "name": "Next Tab" },
+      "source": "userDefined",
+      "priority": "low",
+      "state": {
+        "valid": { "_0": { "keyEquivalent": "]", "deviceIndependentModifierFlags": 1048576 } }
+      }
+    }
+  ]
+}
