@@ -41,7 +41,7 @@ export const uiActionSchema = z.discriminatedUnion('type', [
     id: idSchema,
     name: z.string().max(100),
     color: spaceSchema.shape.color,
-    icon: z.string().max(16).nullable(),
+    icon: z.string().max(40).nullable(),
     profileId: idSchema,
   }),
   z.object({

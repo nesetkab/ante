@@ -6,6 +6,7 @@ import { Favicon } from '../components/Favicon'
 import { useAppState } from '../store'
 import { useDragSession, type DragSession } from './drag'
 import styles from './DragLayer.module.css'
+import { SpaceIcon } from '../components/SpaceIcon'
 
 function ItemGhost({ session, data }: { session: DragSession; data: Data }) {
   const { source } = session
@@ -46,7 +47,7 @@ function SpaceGhost({ session, data }: { session: DragSession; data: Data }) {
   return (
     <div className={styles.dot}>
       {space.icon ? (
-        <span className={styles.emoji}>{space.icon}</span>
+        <SpaceIcon icon={space.icon} className={styles.emoji} />
       ) : (
         <span className={styles.swatch} style={{ background: space.color }} />
       )}

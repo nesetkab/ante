@@ -115,8 +115,18 @@ describe('parseArcSidebar', () => {
     ])
   })
 
-  it('keeps emoji icons and drops symbol icons', () => {
+  it('keeps emoji icons and drops symbols Arc does not have', () => {
     expect(arc.spaces.map((entry) => entry.icon)).toEqual(['🏠', null, '📚'])
+  })
+
+  it('keeps Arc symbol icons', () => {
+    const parsed = parseArcSidebar(
+      sidebar({
+        spaces: space('s', 'p', 'u', { customInfo: { iconType: { icon: 'chatBubbleEllipses' } } }),
+        items: [],
+      }),
+    )
+    expect(parsed.spaces[0]?.icon).toBe('symbol:chatBubbleEllipses')
   })
 
   it('derives a hex color from the mid tone and clamps out of range channels', () => {

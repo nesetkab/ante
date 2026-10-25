@@ -5,6 +5,7 @@ import { IconButton } from '../components/IconButton'
 import { RenameInput, useRenameEvent } from '../components/RenameInput'
 import { dropZone } from './dropTargets'
 import styles from './Sidebar.module.css'
+import { SpaceIcon } from '../components/SpaceIcon'
 
 export function SpaceHeader({ space }: { space: Space }) {
   const [editing, setEditing] = useRenameEvent(space.id)
@@ -22,7 +23,7 @@ export function SpaceHeader({ space }: { space: Space }) {
         openMenu()
       }}
     >
-      {space.icon && <span className={styles.spaceIcon}>{space.icon}</span>}
+      {space.icon && <SpaceIcon icon={space.icon} className={styles.spaceIcon} />}
       {editing ? (
         <RenameInput
           className={styles.renameInput}

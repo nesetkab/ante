@@ -3,6 +3,7 @@ import { Menu, type MenuItemConstructorOptions } from 'electron'
 import type { UiEvent } from '@shared/ipc'
 import type { AppState, Id } from '@shared/schema'
 import type { UiAction } from '@shared/state/actions'
+import { arcSymbols, symbolIcon, symbolLabel } from '@shared/spaceIcons'
 import { spaceColors } from '@shared/state/initial'
 
 const colorNames: Record<(typeof spaceColors)[number], string> = {
@@ -70,12 +71,24 @@ export function showSpaceMenu(spaceId: Id, deps: SpaceMenuDeps): void {
           click: () => update({ icon: null }),
         },
         { type: 'separator' },
-        ...spaceIcons.map((icon) => ({
-          label: icon,
-          type: 'radio' as const,
-          checked: space.icon === icon,
-          click: () => update({ icon }),
-        })),
+        {
+          label: 'Symbols',
+          submenu: arcSymbols.map((name) => ({
+            label: symbolLabel(name),
+            type: 'radio' as const,
+            checked: space.icon === symbolIcon(name),
+            click: () => update({ icon: symbolIcon(name) }),
+          })),
+        },
+        {
+          label: 'Emoji',
+          submenu: spaceIcons.map((icon) => ({
+            label: icon,
+            type: 'radio' as const,
+            checked: space.icon === icon,
+            click: () => update({ icon }),
+          })),
+        },
       ],
     },
     {

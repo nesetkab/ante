@@ -8,6 +8,7 @@ import { useDragSource } from './drag'
 import { LibraryButton } from './LibraryButton'
 import { dropSpace } from './dropTargets'
 import styles from './Sidebar.module.css'
+import { SpaceIcon } from '../components/SpaceIcon'
 
 function SpaceDot({ space, active }: { space: Space; active: boolean }) {
   const { dragging, onPointerDown } = useDragSource({ type: 'space', id: space.id })
@@ -28,7 +29,7 @@ function SpaceDot({ space, active }: { space: Space; active: boolean }) {
       }}
     >
       {space.icon ? (
-        <span className={styles.spaceDotEmoji}>{space.icon}</span>
+        <SpaceIcon icon={space.icon} className={styles.spaceDotEmoji} />
       ) : (
         <span className={styles.spaceDotSwatch} style={{ background: space.color }} />
       )}

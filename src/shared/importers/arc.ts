@@ -11,6 +11,7 @@ import {
   type Space,
 } from '../schema'
 import { DEFAULT_PROFILE_ID, spaceColors } from '../state/initial'
+import { isArcSymbol, symbolIcon } from '../spaceIcons'
 import type { ImportBundle } from './bundle'
 
 export const ARC_MAX_SPLIT = 4
@@ -112,7 +113,7 @@ const profileRefSchema = z
 
 const codePointSchema = z.number().int().min(0).max(0x10ffff)
 
-const iconSchema = z
+const emojiSchema = z
   .union([
     z.object({ emoji_v2: z.string() }).transform((value) => value.emoji_v2),
     z.object({ emoji: z.string() }).transform((value) => value.emoji),
@@ -122,7 +123,12 @@ const iconSchema = z
     const icon = value.trim()
     return icon.length > 0 && icon.length <= MAX_ICON_LENGTH ? icon : null
   })
-  .catch(null)
+
+const symbolSchema = z
+  .object({ icon: z.string() })
+  .transform((value) => (isArcSymbol(value.icon) ? symbolIcon(value.icon) : null))
+
+const iconSchema = z.union([emojiSchema, symbolSchema]).catch(null)
 
 const spaceSchema = z.object({
   id: z.string(),
