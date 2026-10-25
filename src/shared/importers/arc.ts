@@ -484,6 +484,7 @@ export function arcImportToBundle(arc: ArcImport, options: ArcConvertOptions): I
   const { newId, now } = options
   const items: Record<Id, Item> = {}
   const profiles = new Map<string, Profile>()
+  const profileAliases: Record<Id, string[]> = {}
 
   const profileId = (ref: ArcProfileRef): Id => {
     const key = ref.kind === 'default' ? DEFAULT_PROFILE_ID : `custom:${ref.name}`
@@ -493,6 +494,7 @@ export function arcImportToBundle(arc: ArcImport, options: ArcConvertOptions): I
       ref.kind === 'default'
         ? { id: DEFAULT_PROFILE_ID, name: 'Default' }
         : { id: newId(), name: arc.profileNames?.[ref.name] ?? ref.name }
+    if (ref.kind === 'custom' && profile.name !== ref.name) profileAliases[profile.id] = [ref.name]
     profiles.set(key, profile)
     return profile.id
   }
@@ -610,5 +612,6 @@ export function arcImportToBundle(arc: ArcImport, options: ArcConvertOptions): I
     archive,
     routes,
     externalLinks: arc.routing?.externalLinks ?? null,
+    profileAliases,
   }
 }

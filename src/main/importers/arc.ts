@@ -14,6 +14,7 @@ import { mergeArcShortcuts, parseArcKeyBindings } from '@shared/importers/arcKey
 import type { ShortcutOverrides } from '@shared/keys'
 import type { Id } from '@shared/schema'
 import { DEFAULT_PROFILE_ID } from '@shared/state/initial'
+import { isPrivateProfile } from '@shared/state/private'
 import type { HistoryStore } from '../history'
 import type { Store } from '../store'
 import { readVisits } from './chrome'
@@ -102,7 +103,9 @@ function profileDirs(
   profileNames: Record<string, string>,
   store: Store,
 ): ProfileDir[] {
-  const profiles = Object.values(store.state.data.profiles)
+  const profiles = Object.values(store.state.data.profiles).filter(
+    (profile) => !isPrivateProfile(profile.id),
+  )
   const byName = (name: string) =>
     profiles.find((profile) => profile.name.trim().toLowerCase() === name.trim().toLowerCase())
   const dirs: ProfileDir[] = [{ dir: join(userData, 'Default'), profileId: DEFAULT_PROFILE_ID }]

@@ -71,7 +71,8 @@ describe('chromium cookie import', () => {
       ['example.com', 'plain', 'hello'],
     ])
     expect(cookies[0]).toMatchObject({ secure: true, httpOnly: true, sameSite: 'lax' })
-    expect(cookies[1]).toMatchObject({ expires: null, path: '/app', sameSite: 'unspecified' })
+    expect(cookies[1]).toMatchObject({ path: '/app', sameSite: 'unspecified' })
+    expect(cookies[1]?.expires).toBeGreaterThan(Date.now() / 1000 + 29 * 86_400)
   })
 
   it('reads older databases without the host hash', async () => {

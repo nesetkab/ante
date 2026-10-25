@@ -343,9 +343,9 @@ export class CommandRunner {
   }
 
   #commitSwitcher(window: AppWindow, index: number | undefined): void {
-    const overlay = this.#store.state.runtime.windows[window.id]?.overlay ?? null
-    if (overlay?.kind !== 'switcher') return
     this.#controlWatch.get(window.id)?.()
+    const overlay = this.#switcherOf(window)
+    if (!overlay) return
     this.#setOverlay(window, null)
     const tabId = overlay.tabIds[index ?? overlay.index]
     if (tabId && getTab(this.#data, tabId)) this.activate(window, tabId)
@@ -367,7 +367,18 @@ export class CommandRunner {
       (contents): contents is WebContents =>
         contents !== null && contents !== undefined && !contents.isDestroyed(),
     )
+    const stop = () => {
+      this.#controlWatch.delete(window.id)
+      for (const contents of new Set(targets))
+        if (!contents.isDestroyed()) contents.off('before-input-event', onInput)
+      window.win.off('blur', onBlur)
+      window.win.off('closed', stop)
+    }
     const onInput = (event: Electron.Event, input: Electron.Input) => {
+      if (!this.#switcherOf(window)) {
+        stop()
+        return
+      }
       if (input.type === 'keyUp' && (input.key === 'Control' || !input.control)) {
         this.run(window.id, { type: 'switcher/commit' })
       } else if (input.type === 'keyDown' && input.key === 'Escape') {
@@ -375,12 +386,19 @@ export class CommandRunner {
         this.run(window.id, { type: 'overlay/close' })
       }
     }
+    const onBlur = () => {
+      if (this.#switcherOf(window)) this.run(window.id, { type: 'overlay/close' })
+      else stop()
+    }
     for (const contents of new Set(targets)) contents.on('before-input-event', onInput)
-    this.#controlWatch.set(window.id, () => {
-      this.#controlWatch.delete(window.id)
-      for (const contents of new Set(targets))
-        if (!contents.isDestroyed()) contents.off('before-input-event', onInput)
-    })
+    window.win.on('blur', onBlur)
+    window.win.once('closed', stop)
+    this.#controlWatch.set(window.id, stop)
+  }
+
+  #switcherOf(window: AppWindow): Extract<Overlay, { kind: 'switcher' }> | null {
+    const overlay = this.#store.state.runtime.windows[window.id]?.overlay
+    return overlay?.kind === 'switcher' ? overlay : null
   }
 
   #setOverlay(window: AppWindow, overlay: Overlay | null): void {

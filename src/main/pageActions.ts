@@ -42,12 +42,10 @@ export async function clearAndReload(
     return
   }
   if (origin === 'null') return
-  const storages =
-    clear === 'cookies'
-      ? (['cookies'] as const)
-      : (['cachestorage', 'serviceworkers', 'shadercache'] as const)
-  await contents.session.clearStorageData({ origin, storages: [...storages] })
-  if (clear === 'cache') await contents.session.clearCache()
+  await contents.session.clearStorageData({
+    origin,
+    storages: [clear === 'cookies' ? 'cookies' : 'cachestorage'],
+  })
   if (contents.isDestroyed()) return
   if (clear === 'cache') contents.reloadIgnoringCache()
   else contents.reload()

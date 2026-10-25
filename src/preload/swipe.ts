@@ -19,12 +19,15 @@ function scrollsSideways(event: WheelEvent): boolean {
 window.addEventListener(
   'wheel',
   (event) => {
-    if (event.defaultPrevented || event.ctrlKey || scrollsSideways(event)) {
-      tracker.reset()
-      return
-    }
-    const direction = tracker.push(event.deltaX, event.deltaY, event.timeStamp)
-    if (direction) ipcRenderer.send(SWIPE_CHANNEL, direction === 'left' ? 'back' : 'forward')
+    if (!event.isTrusted) return
+    setTimeout(() => {
+      if (event.defaultPrevented || event.ctrlKey || scrollsSideways(event)) {
+        tracker.reset()
+        return
+      }
+      const direction = tracker.push(event.deltaX, event.deltaY, event.timeStamp)
+      if (direction) ipcRenderer.send(SWIPE_CHANNEL, direction === 'left' ? 'back' : 'forward')
+    }, 0)
   },
   { passive: true },
 )

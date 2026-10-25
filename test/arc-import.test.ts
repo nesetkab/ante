@@ -516,4 +516,35 @@ describe('arc extras', () => {
     expect(second.archive).toHaveLength(2)
     expect(second.routes).toHaveLength(2)
   })
+
+  it('never puts Arc data into a private profile with the same name', () => {
+    const data = freshData()
+    data.profiles['private-1'] = { id: 'private-1', name: 'Work' }
+    const { data: merged } = mergeImport(data, bundleFrom(full()))
+    const work = Object.values(merged.profiles).find(
+      (profile) => profile.name === 'Work' && profile.id !== 'private-1',
+    )
+    expect(work).toBeDefined()
+    expect(Object.values(merged.spaces).every((entry) => entry.profileId !== 'private-1')).toBe(
+      true,
+    )
+  })
+
+  it('reuses a profile imported earlier under its Arc folder name', () => {
+    const data = freshData()
+    data.profiles.old = { id: 'old', name: 'Profile 1' }
+    data.favorites.old = []
+    const { data: merged } = mergeImport(data, bundleFrom(full()))
+    expect(Object.values(merged.profiles).map((profile) => profile.name)).not.toContain('Work')
+    const work = Object.values(merged.spaces).find((entry) => entry.name === 'Work')
+    expect(work?.profileId).toBe('old')
+  })
+
+  it('only takes the external links setting on a first import', () => {
+    const existing = freshData()
+    existing.items.kept = savedTab('kept', 'https://kept.example.com/')
+    existing.spaces.personal?.pinned.push('kept')
+    const { data } = mergeImport(existing, bundleFrom(full()))
+    expect(data.settings.externalLinks).toBe('little')
+  })
 })

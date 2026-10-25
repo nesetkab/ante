@@ -10,6 +10,7 @@ import {
   type Space,
 } from '../schema'
 import { DEFAULT_PROFILE_ID } from '../state/initial'
+import { isPrivateProfile } from '../state/private'
 import { flattenTabs } from '../state/tree'
 
 export interface ImportBundle {
@@ -21,6 +22,7 @@ export interface ImportBundle {
   routes?: Route[]
   externalLinks?: Settings['externalLinks'] | null
   shortcuts?: Settings['shortcuts'] | null
+  profileAliases?: Record<Id, string[]>
 }
 
 const MAX_ROUTES = 500
@@ -62,16 +64,21 @@ function isPristine(data: Data): boolean {
   )
 }
 
-function resolveProfiles(data: Data, profiles: readonly Profile[]): Map<Id, Id> {
+function resolveProfiles(
+  data: Data,
+  profiles: readonly Profile[],
+  aliases: Record<Id, string[]>,
+): Map<Id, Id> {
   const mapping = new Map<Id, Id>()
+  const normal = (name: string) => name.trim().toLowerCase()
   for (const profile of profiles) {
     if (data.profiles[profile.id]) {
       mapping.set(profile.id, profile.id)
       continue
     }
-    const name = profile.name.trim().toLowerCase()
+    const names = new Set([profile.name, ...(aliases[profile.id] ?? [])].map(normal))
     const existing = Object.values(data.profiles).find(
-      (candidate) => candidate.name.trim().toLowerCase() === name,
+      (candidate) => !isPrivateProfile(candidate.id) && names.has(normal(candidate.name)),
     )
     if (existing) {
       mapping.set(profile.id, existing.id)
@@ -115,7 +122,7 @@ function droppedFavorites(data: Data, bundle: ImportBundle, profileFor: (id: Id)
 
 export function applyImport(data: Data, bundle: ImportBundle): ImportSummary {
   const pristine = isPristine(data)
-  const mapping = resolveProfiles(data, bundle.profiles)
+  const mapping = resolveProfiles(data, bundle.profiles, bundle.profileAliases ?? {})
   const profileFor = (id: Id): Id =>
     mapping.get(id) ?? (data.profiles[id] ? id : DEFAULT_PROFILE_ID)
   const dropped = droppedFavorites(data, bundle, profileFor)
@@ -159,7 +166,7 @@ export function applyImport(data: Data, bundle: ImportBundle): ImportSummary {
 
   importArchive(data, bundle.archive ?? [])
   importRoutes(data, bundle.routes ?? [])
-  if (bundle.externalLinks) data.settings.externalLinks = bundle.externalLinks
+  if (pristine && bundle.externalLinks) data.settings.externalLinks = bundle.externalLinks
   if (bundle.shortcuts) data.settings.shortcuts = { ...bundle.shortcuts }
 
   return { spaceIds, tabCount }

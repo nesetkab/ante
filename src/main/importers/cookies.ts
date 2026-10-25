@@ -30,6 +30,7 @@ export interface CookieJar {
 const CHROME_EPOCH_OFFSET_S = 11_644_473_600
 const HASH_PREFIX_VERSION = 24
 const MAX_COOKIES = 20_000
+const SESSION_COOKIE_DAYS = 30
 
 const sameSites: Record<number, SameSite> = {
   0: 'no_restriction',
@@ -102,18 +103,25 @@ export async function readChromiumCookies(
     const db = new DatabaseSync(copy, { readOnly: true })
     try {
       const hashPrefix = versionOf(db) >= HASH_PREFIX_VERSION
-      const partitioned = columnsOf(db).has('top_frame_site_key')
+      const columns = columnsOf(db)
+      const nowSeconds = now / 1000
+      const filters = [
+        `(has_expires = 0 or expires_utc / 1000000 - ${CHROME_EPOCH_OFFSET_S} > ?)`,
+        ...(columns.has('top_frame_site_key') ? ["top_frame_site_key = ''"] : []),
+      ]
+      const order = columns.has('last_access_utc') ? 'order by last_access_utc desc' : ''
       const rows = db
         .prepare(
-          `select host_key, name, value, encrypted_value, path, is_secure, is_httponly, samesite, has_expires, expires_utc / 1000000 - ${CHROME_EPOCH_OFFSET_S} as expires from cookies ${partitioned ? "where top_frame_site_key = ''" : ''} limit ?`,
+          `select host_key, name, value, encrypted_value, path, is_secure, is_httponly, samesite, has_expires, expires_utc / 1000000 - ${CHROME_EPOCH_OFFSET_S} as expires from cookies where ${filters.join(' and ')} ${order} limit ?`,
         )
-        .all(MAX_COOKIES)
-      const nowSeconds = now / 1000
+        .all(Math.floor(nowSeconds), MAX_COOKIES)
       return rows.flatMap((row): ChromiumCookie[] => {
         const host = text(row.host_key)
         const name = text(row.name)
         if (!host) return []
-        const expires = flag(row.has_expires) ? Number(row.expires) : null
+        const expires = flag(row.has_expires)
+          ? Number(row.expires)
+          : Math.floor(nowSeconds + SESSION_COOKIE_DAYS * 86_400)
         if (expires !== null && expires <= nowSeconds) return []
         const plain = text(row.value)
         const encrypted = row.encrypted_value
