@@ -80,6 +80,7 @@ export const spaceSchema = z.object({
     .array(z.string().regex(/^#[0-9a-fA-F]{6}$/))
     .max(2)
     .default([]),
+  collapsed: z.boolean().default(false),
   profileId: idSchema,
   pinned: z.array(idSchema).default([]),
   today: z.array(idSchema).default([]),

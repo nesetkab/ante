@@ -631,6 +631,7 @@ export function arcImportToBundle(arc: ArcImport, options: ArcConvertOptions): I
       icon: space.icon,
       color: space.color ?? spaceColors[index % spaceColors.length] ?? spaceColors[0],
       gradient: space.gradient ?? [],
+      collapsed: false,
       profileId: profileId(space.profile),
       pinned: addNodes(space.pinned, 'pinned'),
       today: addNodes(space.today, 'today'),

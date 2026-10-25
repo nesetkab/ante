@@ -570,3 +570,24 @@
     animation: none;
   }
 }
+
+.collapseToggle {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  margin-left: -4px;
+  border-radius: 4px;
+  color: var(--fg-faint);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.spaceHeader:hover .collapseToggle,
+.collapseToggle[aria-expanded='false'] {
+  opacity: 1;
+}
+
+.collapseToggle:hover {
+  background: var(--item-hover);
+}

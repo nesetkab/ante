@@ -50,7 +50,14 @@ export const uiActionSchema = z.discriminatedUnion('type', [
     type: z.literal('space/update'),
     id: idSchema,
     patch: spaceSchema
-      .pick({ name: true, icon: true, color: true, gradient: true, profileId: true })
+      .pick({
+        name: true,
+        icon: true,
+        color: true,
+        gradient: true,
+        collapsed: true,
+        profileId: true,
+      })
       .partial(),
   }),
   z.object({ type: z.literal('space/delete'), id: idSchema }),

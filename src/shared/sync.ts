@@ -177,6 +177,7 @@ export function syncSnapshot(data: Data, options: SnapshotOptions = {}): Record<
       icon: space.icon,
       color: space.color,
       gradient: [...space.gradient],
+      collapsed: space.collapsed,
       profileId: space.profileId,
       pinned: [...space.pinned],
     }

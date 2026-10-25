@@ -1,4 +1,4 @@
-import { Ellipsis, FolderPlus } from 'lucide-react'
+import { ChevronDown, ChevronRight, Ellipsis, FolderPlus } from 'lucide-react'
 import type { Space } from '@shared/schema'
 import { ante } from '../ante'
 import { IconButton } from '../components/IconButton'
@@ -10,6 +10,8 @@ import { SpaceIcon } from '../components/SpaceIcon'
 export function SpaceHeader({ space }: { space: Space }) {
   const [editing, setEditing] = useRenameEvent(space.id)
   const openMenu = () => ante.command({ type: 'space/contextMenu', spaceId: space.id })
+  const toggle = () =>
+    ante.dispatch({ type: 'space/update', id: space.id, patch: { collapsed: !space.collapsed } })
 
   return (
     <div
@@ -23,6 +25,15 @@ export function SpaceHeader({ space }: { space: Space }) {
         openMenu()
       }}
     >
+      <button
+        type="button"
+        className={styles.collapseToggle}
+        aria-label={space.collapsed ? 'Show pinned tabs' : 'Hide pinned tabs'}
+        aria-expanded={!space.collapsed}
+        onClick={toggle}
+      >
+        {space.collapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
+      </button>
       {space.icon && <SpaceIcon icon={space.icon} className={styles.spaceIcon} />}
       {editing ? (
         <RenameInput
@@ -35,7 +46,16 @@ export function SpaceHeader({ space }: { space: Space }) {
           }}
         />
       ) : (
-        <span className={styles.spaceName} onDoubleClick={() => setEditing(true)}>
+        <span
+          className={styles.spaceName}
+          onClick={(event) => {
+            if (event.detail === 1) toggle()
+          }}
+          onDoubleClick={() => {
+            toggle()
+            setEditing(true)
+          }}
+        >
           {space.name}
         </span>
       )}

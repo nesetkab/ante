@@ -7,6 +7,7 @@ import {
 import { parseArcWindows } from '@shared/importers/arc'
 import { zoomHost } from '@shared/zoom'
 import { appOrigins, themeFromAppearance } from '../src/main/importers/arcDefaults'
+import { uiActionSchema } from '@shared/state/actions'
 import { apply, buildState } from './helpers'
 
 const prefs = {
@@ -146,5 +147,17 @@ describe('site zoom', () => {
       'https://meet.google.com': { camera: 'allow' },
     })
     expect(imported.data.siteZoom.default).toEqual({ 'news.ycombinator.com': 1.2 })
+  })
+})
+
+describe('collapsed pinned section', () => {
+  it('can be folded from the renderer and syncs as part of the space', () => {
+    const start = buildState({ spaces: { s1: { pinned: ['p'] } } })
+    const folded = apply(start, { type: 'space/update', id: 's1', patch: { collapsed: true } })
+    expect(folded.data.spaces.s1?.collapsed).toBe(true)
+    expect(
+      uiActionSchema.safeParse({ type: 'space/update', id: 's1', patch: { collapsed: true } })
+        .success,
+    ).toBe(true)
   })
 })

@@ -1,6 +1,6 @@
 import { ArrowLeft, ArrowRight, PanelLeft, Plus, RotateCw, X, Shield } from 'lucide-react'
 import { useRef, useState, type DragEvent, type WheelEvent } from 'react'
-import { getTab } from '@shared/state/tree'
+import { getTab, rootOf } from '@shared/state/tree'
 import { displayUrl } from '@shared/url'
 import { droppedUrls } from '@shared/drops'
 import { swipeTracker } from '@shared/swipe'
@@ -90,6 +90,11 @@ export function Sidebar({ floating = false }: { floating?: boolean }) {
   const underControls = useAppState(
     (state) => !isMac && state.data.settings.sidebarSide === 'right',
   )
+  const activePinned = useAppState((state) => {
+    const id = selectActiveId(state)
+    const root = id ? rootOf(state.data, id) : null
+    return root?.section === 'pinned' && root.spaceId === space?.id ? id : null
+  })
   const onWheel = useSpaceSwipe()
   const externalDrop = useExternalDrop()
   const zoom = activeRuntime?.zoom ?? 1
@@ -207,7 +212,11 @@ export function Sidebar({ floating = false }: { floating?: boolean }) {
         {space && (
           <div key={space.id} className={styles.spaceContent}>
             <SpaceHeader space={space} />
-            <ItemList ids={space.pinned} persistent />
+            {space.collapsed ? (
+              activePinned && <ItemList ids={[activePinned]} persistent />
+            ) : (
+              <ItemList ids={space.pinned} persistent />
+            )}
             <div
               className={styles.todayDivider}
               {...dropZone({
