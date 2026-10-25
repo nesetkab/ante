@@ -3,6 +3,7 @@ import { useRef, useState, type DragEvent, type WheelEvent } from 'react'
 import { getTab } from '@shared/state/tree'
 import { displayUrl } from '@shared/url'
 import { droppedUrls } from '@shared/drops'
+import { swipeTracker } from '@shared/swipe'
 import { profilePartition } from '@shared/extensions'
 import { internalPage } from '@shared/pages'
 import { isPrivateProfile } from '@shared/state/private'
@@ -20,8 +21,6 @@ import styles from './Sidebar.module.css'
 import { SpaceBar } from './SpaceBar'
 import { SpaceHeader } from './SpaceHeader'
 
-const SWIPE_THRESHOLD = 90
-
 function pageLabel(url: string): string | null {
   const page = internalPage(url)
   if (!page) return null
@@ -29,19 +28,10 @@ function pageLabel(url: string): string | null {
 }
 
 function useSpaceSwipe() {
-  const accumulated = useRef(0)
-  const locked = useRef(false)
+  const tracker = useRef(swipeTracker())
   return (event: WheelEvent) => {
-    if (Math.abs(event.deltaX) <= Math.abs(event.deltaY)) return
-    if (locked.current) return
-    accumulated.current += event.deltaX
-    if (Math.abs(accumulated.current) < SWIPE_THRESHOLD) return
-    ante.command({ type: accumulated.current > 0 ? 'space/next' : 'space/previous' })
-    accumulated.current = 0
-    locked.current = true
-    window.setTimeout(() => {
-      locked.current = false
-    }, 450)
+    const direction = tracker.current.push(event.deltaX, event.deltaY, event.timeStamp)
+    if (direction) ante.command({ type: direction === 'right' ? 'space/next' : 'space/previous' })
   }
 }
 

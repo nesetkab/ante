@@ -32,6 +32,7 @@ import { Privacy } from './privacy'
 import { AdBlocker } from './privacy/adblock'
 import { Persistence } from './persistence'
 import { Sessions } from './sessions'
+import { enableSwipes, listenForSwipes } from './swipe'
 import { Store } from './store'
 import { PrivacySignals } from './privacy/signals'
 import { detectBrowsers, importFromBrowser } from './importers/chrome'
@@ -197,6 +198,8 @@ async function start(): Promise<void> {
   })
   const extensions: Extensions = new Extensions({ store, tabs, windows, runner: () => runner })
   sessions.onCreate((profileSession, profileId) => extensions.attach(profileSession, profileId))
+  sessions.onCreate((profileSession) => enableSwipes(profileSession))
+  listenForSwipes(tabs)
   for (const profileId of Object.keys(store.state.data.profiles)) {
     if (!isPrivateProfile(profileId)) sessions.forProfile(profileId)
   }

@@ -24,6 +24,7 @@ export default defineConfig({
         input: {
           index: resolve(import.meta.dirname, 'src/preload/index.ts'),
           page: resolve(import.meta.dirname, 'src/preload/page.ts'),
+          swipe: resolve(import.meta.dirname, 'src/preload/swipe.ts'),
         },
         output: { format: 'cjs', entryFileNames: '[name].cjs' },
       },

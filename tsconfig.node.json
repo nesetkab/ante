@@ -5,12 +5,5 @@
     "types": ["node"],
     "outDir": "out/tsc/node"
   },
-  "include": [
-    "src/main",
-    "src/preload",
-    "src/shared",
-    "test",
-    "electron.vite.config.ts",
-    "vitest.config.ts"
-  ]
+  "include": ["src/main", "src/shared", "test", "electron.vite.config.ts", "vitest.config.ts"]
 }
