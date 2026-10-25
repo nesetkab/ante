@@ -38,6 +38,14 @@ export default async function peek({ store, run, waitFor, windows, tabs, delay }
         modifiers: ['shift'],
       })
     try {
+      await waitFor(() => windowData().peekTabId !== null, 2000)
+    } catch {
+      await contents.executeJavaScript(
+        `document.getElementById('go').dispatchEvent(new MouseEvent('click', { shiftKey: true, bubbles: true, cancelable: true }))`,
+        true,
+      )
+    }
+    try {
       await waitFor(() => windowData().peekTabId !== null, 5000)
     } catch {
       throw new Error(`shift-click should open Peek, today has ${space().today.length} tabs`)
