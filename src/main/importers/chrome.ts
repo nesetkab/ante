@@ -17,8 +17,16 @@ import type { Id } from '@shared/schema'
 import { DEFAULT_PROFILE_ID } from '@shared/state/initial'
 import type { HistoryStore, ImportedVisit } from '../history'
 import type { Store } from '../store'
+import { importBrowserCookies, type CookieJar } from './cookies'
 
 const MAX_VISITS = 20_000
+
+const safeStorage: Record<BrowserId, string> = {
+  chrome: 'Chrome Safe Storage',
+  brave: 'Brave Safe Storage',
+  edge: 'Microsoft Edge Safe Storage',
+  chromium: 'Chromium Safe Storage',
+}
 
 const folders: Record<BrowserId, { mac: string; windows: string; linux: string }> = {
   chrome: { mac: 'Google/Chrome', windows: 'Google/Chrome/User Data', linux: 'google-chrome' },
@@ -101,6 +109,7 @@ export async function importFromBrowser(
   store: Store,
   history: HistoryStore,
   browser: BrowserId,
+  jar: () => CookieJar,
 ): Promise<BrowserImportResult> {
   const name = browserNames[browser]
   const dir = profileDir(browser)
@@ -133,13 +142,16 @@ export async function importFromBrowser(
       historyBusy = true
     }
   }
-  if (historyBusy && tabCount === 0)
+  const cookies = await importBrowserCookies(safeStorage[browser], [{ dir, jar }])
+  if (historyBusy && tabCount === 0 && cookies.count === 0)
     return { message: `Quit ${name} and try again to import its history`, spaceId }
-  if (tabCount === 0 && visitCount === 0)
-    return { message: `Nothing to import from ${name}`, spaceId: null }
+  const skipped = cookies.skipped ? '. Sign-ins were skipped' : ''
+  if (tabCount === 0 && visitCount === 0 && cookies.count === 0)
+    return { message: `Nothing to import from ${name}${skipped}`, spaceId: null }
   const parts = [
     tabCount > 0 ? `${tabCount} bookmark${tabCount === 1 ? '' : 's'}` : null,
     visitCount > 0 ? `${visitCount} history entr${visitCount === 1 ? 'y' : 'ies'}` : null,
+    cookies.count > 0 ? 'your sign-ins' : null,
   ].filter((part) => part !== null)
-  return { message: `Imported ${parts.join(' and ')} from ${name}`, spaceId }
+  return { message: `Imported ${parts.join(', ')} from ${name}${skipped}`, spaceId }
 }

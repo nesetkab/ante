@@ -139,8 +139,10 @@ async function start(): Promise<void> {
       const parent = windows.lastFocused('main') ?? windows.focused()
       if (parent) panels.show(parent, 'settings')
     },
-    importBrowser: (browser) => importFromBrowser(store, history, browser),
-    importArc: () => importFromArc(store, history),
+    importBrowser: (browser) =>
+      importFromBrowser(store, history, browser, () => sessions.forProfile(DEFAULT_PROFILE_ID)),
+    importArc: () =>
+      importFromArc({ store, history, jarFor: (profileId) => sessions.forProfile(profileId) }),
     chooseDownloadFolder: (window) => {
       const parent = panels.get(window.id, 'settings') ?? window.win
       void dialog

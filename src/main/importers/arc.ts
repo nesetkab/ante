@@ -17,11 +17,13 @@ import { DEFAULT_PROFILE_ID } from '@shared/state/initial'
 import type { HistoryStore } from '../history'
 import type { Store } from '../store'
 import { readVisits } from './chrome'
+import { importBrowserCookies, type CookieImport, type CookieJar } from './cookies'
 
 const SIDEBAR_FILE = 'StorableSidebar.json'
 const ARCHIVE_FILE = 'StorableArchiveItems.json'
 const ROUTING_FILE = 'StorableLinkRouting.json'
 const KEYS_FILE = 'StorableKeyBindings.json'
+const ARC_SAFE_STORAGE = 'Arc Safe Storage'
 
 function windowsCandidates(): string[] {
   const localAppData = process.env.LOCALAPPDATA ?? join(homedir(), 'AppData', 'Local')
@@ -55,7 +57,13 @@ export function findArcSidebar(): string | null {
 }
 
 export type ArcImportResult =
-  | { ok: true; spaceIds: Id[]; tabCount: number; visitCount: number }
+  | {
+      ok: true
+      spaceIds: Id[]
+      tabCount: number
+      visitCount: number
+      cookies: CookieImport
+    }
   | { ok: false; message: string }
 
 const plural = (count: number, word: string, many = `${word}s`) =>
@@ -67,9 +75,11 @@ export function describeArcImport(result: ArcImportResult): string {
     result.spaceIds.length > 0 ? plural(result.spaceIds.length, 'space') : null,
     result.tabCount > 0 ? plural(result.tabCount, 'tab') : null,
     result.visitCount > 0 ? plural(result.visitCount, 'history entry', 'history entries') : null,
+    result.cookies.count > 0 ? 'your sign-ins' : null,
   ].filter((part) => part !== null)
-  if (parts.length === 0) return 'Nothing new to import from Arc'
-  return `Imported ${parts.join(', ')} from Arc`
+  const skipped = result.cookies.skipped ? '. Sign-ins were skipped' : ''
+  if (parts.length === 0) return `Nothing new to import from Arc${skipped}`
+  return `Imported ${parts.join(', ')} from Arc${skipped}`
 }
 
 async function readJson(file: string): Promise<unknown> {
@@ -80,13 +90,20 @@ async function readJson(file: string): Promise<unknown> {
   }
 }
 
-function profileDirs(userData: string, profileNames: Record<string, string>, store: Store) {
+interface ProfileDir {
+  dir: string
+  profileId: Id
+}
+
+function profileDirs(
+  userData: string,
+  profileNames: Record<string, string>,
+  store: Store,
+): ProfileDir[] {
   const profiles = Object.values(store.state.data.profiles)
   const byName = (name: string) =>
     profiles.find((profile) => profile.name.trim().toLowerCase() === name.trim().toLowerCase())
-  const dirs: { dir: string; profileId: Id }[] = [
-    { dir: join(userData, 'Default'), profileId: DEFAULT_PROFILE_ID },
-  ]
+  const dirs: ProfileDir[] = [{ dir: join(userData, 'Default'), profileId: DEFAULT_PROFILE_ID }]
   for (const [dir, name] of Object.entries(profileNames)) {
     const profile = byName(name) ?? byName(dir)
     if (profile) dirs.push({ dir: join(userData, dir), profileId: profile.id })
@@ -94,14 +111,9 @@ function profileDirs(userData: string, profileNames: Record<string, string>, sto
   return dirs
 }
 
-async function importHistory(
-  history: HistoryStore,
-  userData: string,
-  profileNames: Record<string, string>,
-  store: Store,
-): Promise<number> {
+async function importHistory(history: HistoryStore, dirs: readonly ProfileDir[]): Promise<number> {
   let count = 0
-  for (const { dir, profileId } of profileDirs(userData, profileNames, store)) {
+  for (const { dir, profileId } of dirs) {
     const file = join(dir, 'History')
     if (!existsSync(file)) continue
     try {
@@ -120,7 +132,17 @@ async function importedShortcuts(root: string, store: Store): Promise<ShortcutOv
   return mergeArcShortcuts(store.state.data.settings.shortcuts, imported, 'darwin')
 }
 
-export async function importFromArc(store: Store, history: HistoryStore): Promise<ArcImportResult> {
+export interface ArcImportDeps {
+  store: Store
+  history: HistoryStore
+  jarFor: (profileId: Id) => CookieJar
+}
+
+export async function importFromArc({
+  store,
+  history,
+  jarFor,
+}: ArcImportDeps): Promise<ArcImportResult> {
   const file = findArcSidebar()
   if (!file) return { ok: false, message: 'Could not find Arc on this computer' }
   const root = dirname(file)
@@ -141,8 +163,14 @@ export async function importFromArc(store: Store, history: HistoryStore): Promis
     }
     store.dispatch({ type: 'data/import', bundle })
     const data = store.state.data
-    const visitCount = await importHistory(history, userData, profileNames, store)
+    const dirs = profileDirs(userData, profileNames, store)
+    const visitCount = await importHistory(history, dirs)
+    const cookies = await importBrowserCookies(
+      ARC_SAFE_STORAGE,
+      dirs.map(({ dir, profileId }) => ({ dir, jar: () => jarFor(profileId) })),
+    )
     return {
+      cookies,
       ok: true,
       spaceIds: bundle.spaces.map((space) => space.id).filter((id) => data.spaces[id]),
       tabCount: Object.values(bundle.items).filter(
