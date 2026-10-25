@@ -59,6 +59,7 @@ export function createInitialData(spaceId: Id): Data {
       clearHistoryOnQuit: false,
       peekExternalLinks: true,
       shiftClickPeek: true,
+      globalLittle: true,
       littleArchiveAfter: '12h',
       externalLinks: 'little',
       adblockAllowlist: [],

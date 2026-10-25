@@ -34,6 +34,7 @@ import { Persistence } from './persistence'
 import { Autofill } from './autofill'
 import { PasswordVault } from './passwords'
 import { Sessions } from './sessions'
+import { startGlobalLittle } from './globalLittle'
 import { listenForNotificationClicks } from './notifications'
 import { listenForSwipes, registerPagePreloads } from './swipe'
 import { Store } from './store'
@@ -287,6 +288,7 @@ async function start(): Promise<void> {
     downloads,
     onHistoryCleared: (profileId) => tabs.clearHistories(profileId),
   })
+  startGlobalLittle(store, (command) => runner.run(null, command))
   let menuShortcuts = store.state.data.settings.shortcuts
   Menu.setApplicationMenu(buildAppMenu(runInFocused, menuShortcuts))
   store.subscribe(() => {

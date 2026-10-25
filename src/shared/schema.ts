@@ -204,6 +204,7 @@ export const settingsSchema = z.object({
   clearHistoryOnQuit: z.boolean().default(false),
   peekExternalLinks: z.boolean().default(true),
   shiftClickPeek: z.boolean().default(true),
+  globalLittle: z.boolean().default(true),
   littleArchiveAfter: archiveAfterSchema.default('12h'),
   externalLinks: z.enum(['little', 'space']).default('little'),
   adblockAllowlist: z.array(z.string().min(1).max(253)).max(10000).default([]),

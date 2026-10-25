@@ -441,6 +441,15 @@ export function SettingsPanel() {
             onChange={(peekExternalLinks) => update({ peekExternalLinks })}
           />
         </Row>
+        {platform === 'darwin' && (
+          <Row label="Open a little window from any app" hint="Press ⌥⌘N anywhere on your Mac">
+            <Toggle
+              label="Little window shortcut"
+              checked={settings.globalLittle}
+              onChange={(globalLittle) => update({ globalLittle })}
+            />
+          </Row>
+        )}
         <Row label="Shift-click links to open them in Peek">
           <Toggle
             label="Shift-click Peek"
