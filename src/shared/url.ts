@@ -54,6 +54,12 @@ export function highlightLink(pageUrl: string, selection: string): string | null
   return `${base}#:~:text=${directive}`
 }
 
+export function quoteText(title: string, pageUrl: string, selection: string): string {
+  const text = selection.replace(/\s+/g, ' ').trim()
+  const link = markdownLink(title, highlightLink(pageUrl, text) ?? pageUrl)
+  return text ? `> ${text}\n\n${link}` : link
+}
+
 export function markdownLink(title: string, url: string): string {
   const text =
     title

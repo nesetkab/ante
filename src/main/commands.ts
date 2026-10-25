@@ -20,7 +20,14 @@ import {
   spaceTabOrder,
   visibleTabIds,
 } from '@shared/state/tree'
-import { hostOf, isWebUrl, markdownLink, resolveInput, searchTemplate } from '@shared/url'
+import {
+  hostOf,
+  isWebUrl,
+  markdownLink,
+  quoteText,
+  resolveInput,
+  searchTemplate,
+} from '@shared/url'
 import { nextZoom, zoomHost } from '@shared/zoom'
 import { noteTabTitle, noteUrl } from '@shared/notes'
 import { easelUrl, placeImage } from '@shared/easels'
@@ -730,6 +737,20 @@ export class CommandRunner {
         if (!tabId) return
         if (command.panel) this.#devtools.show(tabId, command.panel)
         else this.#devtools.toggle(tabId)
+        return
+      }
+      case 'tab/copyQuote': {
+        const tab = getTab(this.#data, tabFor(command.tabId))
+        const contents = contentsFor(command.tabId)
+        if (!tab || !contents) return
+        contents
+          .executeJavaScript('String(getSelection() ?? "").slice(0, 2000)')
+          .then((selection: unknown) => {
+            const text = typeof selection === 'string' ? selection : ''
+            copyText(quoteText(displayTitle(tab), tab.url, text))
+            this.toast(window, text.trim() ? 'Copied quote' : 'Copied URL')
+          })
+          .catch(() => undefined)
         return
       }
       case 'tab/print':

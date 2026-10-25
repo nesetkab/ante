@@ -26,6 +26,7 @@ export const arcActionIds: Record<string, string> = {
   share: 'share',
   copyCurrentURL: 'copy-url',
   copyCurrentURLMarkdown: 'copy-markdown',
+  copyCurrentURLAsQuote: 'copy-quote',
   find: 'find',
   findNext: 'find-next',
   findPrevious: 'find-previous',

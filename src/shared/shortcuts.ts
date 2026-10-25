@@ -174,6 +174,13 @@ export function shortcuts(platform: Platform): Shortcut[] {
       command: { type: 'tab/copyUrl', markdown: true },
     },
     {
+      id: 'copy-quote',
+      label: 'Copy URL as Quote',
+      section: 'edit',
+      accelerator: pick('Ctrl+CmdOrCtrl+Shift+C'),
+      command: { type: 'tab/copyQuote' },
+    },
+    {
       id: 'find',
       label: 'Find…',
       section: 'edit',

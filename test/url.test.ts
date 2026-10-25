@@ -4,6 +4,7 @@ import {
   displayUrl,
   highlightLink,
   markdownLink,
+  quoteText,
   resolveInput,
   searchName,
   searchTemplate,
@@ -135,5 +136,17 @@ describe('highlightLink', () => {
   it('skips pages that are not on the web', () => {
     expect(highlightLink('ante:note/1', 'hello')).toBeNull()
     expect(highlightLink('https://a.test/', '   ')).toBeNull()
+  })
+})
+
+describe('quoteText', () => {
+  it('quotes the selection with a link back to it', () => {
+    expect(quoteText('A Page', 'https://a.test/post#top', '  Hello   world ')).toBe(
+      '> Hello world\n\n[A Page](https://a.test/post#:~:text=Hello%20world)',
+    )
+  })
+
+  it('falls back to a plain link without a selection', () => {
+    expect(quoteText('A Page', 'https://a.test/', '')).toBe('[A Page](https://a.test/)')
   })
 })
