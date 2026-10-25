@@ -8,18 +8,18 @@ Arc is being discontinued. Ante keeps the parts that made it good: a vertical si
 
 ## Features
 
-- **Switch from Arc without losing anything.** One click brings over your spaces with their icons and gradients, pinned tabs, folders, favorites, archive, Air Traffic Control rules, history, profiles, custom shortcuts, extensions and their settings, saved passwords and your sign-ins, so you stay logged in everywhere.
+- **Switch from Arc without losing anything.** One click brings over your spaces with their icons and gradients, pinned tabs, folders, favorites, archive, Air Traffic Control rules, history, profiles, custom shortcuts, extensions and their settings, saved passwords, site permissions, per-site zoom, theme and sidebar setup, and your sign-ins, so you stay logged in everywhere.
 - **Coming from Chrome, Brave or Edge?** Import your bookmarks as a space and bring your history and sign-ins along.
 - **Sidebar with spaces.** Each space has its own pinned tabs, today tabs, color, icon and profile. Swipe sideways or press `Ctrl+1…9` to switch.
 - **Favorites, pinned and today tabs.** Pinned tabs remember their home URL. Today tabs archive themselves after 12 hours (configurable). Drag anything anywhere.
 - **Folders and split view.** Group pinned tabs into folders. Put up to four tabs side by side.
 - **Command bar.** `⌘T` searches open tabs, history, spaces and actions, with inline autocomplete and search suggestions. Type a site like `youtube` and press Tab to search it directly. Pick any search engine, or add your own.
-- **Peek and little windows.** Links from pinned tabs open in a floating preview. `⌘⌥N` opens a quick window for one-off links.
+- **Peek and little windows.** Links from pinned tabs, or any link you Shift-click, open in a floating preview. `⌘⌥N` opens a quick window for one-off links, even from other apps, and idle ones tidy themselves into the archive.
 - **Boosts.** Restyle any site with CSS, JavaScript, fonts and colors, or zap away parts of a page.
 - **Air Traffic Control.** Route links from other apps into the right space.
 - **Chrome extensions.** Install from the Chrome Web Store. Extensions get their own button in the sidebar.
 - **Passwords.** Ante offers to save a password when you sign in and fills it from a dropdown next time. Passwords are encrypted with your system keychain and never leave your computer. Saved Arc and Chrome passwords come along when you import.
-- **Built-in ad and tracker blocking**, Global Privacy Control, per-site permission prompts, private windows and per-profile data clearing.
+- **Built-in ad and tracker blocking** with optional cookie-banner blocking, Global Privacy Control, per-site permission prompts, private windows and per-profile data clearing.
 - **Media mini player** for tabs playing in the background, with automatic picture in picture.
 - **Sync without an account.** Point Ante at iCloud Drive, Dropbox or any synced folder and your spaces, pinned tabs, favorites, notes and boosts follow you to your other computers. No server, nothing leaves your own storage.
 - **Notes and Easels.** Write notes or build freeform boards with text, drawings, links, images and page captures. Both live in the sidebar like tabs, and the Library keeps every one you've made until you delete it.
