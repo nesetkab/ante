@@ -79,13 +79,21 @@ document.addEventListener(
   true,
 )
 
-document.addEventListener('focusout', () => ipcRenderer.send(AUTOFILL_BLUR), true)
+const isCurrent = (target: EventTarget | null) =>
+  current !== null && (target === current.username || target === current.password)
+
+document.addEventListener(
+  'focusout',
+  (event) => {
+    if (isCurrent(event.target)) ipcRenderer.send(AUTOFILL_BLUR)
+  },
+  true,
+)
 
 document.addEventListener(
   'input',
   (event) => {
-    if (event.isTrusted && current && event.target === document.activeElement)
-      ipcRenderer.send(AUTOFILL_BLUR)
+    if (event.isTrusted && isCurrent(event.target)) ipcRenderer.send(AUTOFILL_BLUR)
   },
   true,
 )
