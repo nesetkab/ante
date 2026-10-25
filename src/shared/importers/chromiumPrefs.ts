@@ -39,11 +39,6 @@ const prefsSchema = z.object({
       per_host_zoom_levels: z.record(z.string(), z.unknown()).catch({}),
     })
     .catch({ per_host_zoom_levels: {} }),
-  protocol_handler: z
-    .object({
-      allowed_origin_protocol_pairs: z.record(z.string(), z.unknown()).catch({}),
-    })
-    .catch({ allowed_origin_protocol_pairs: {} }),
 })
 
 export function patternOrigin(pattern: string): string | null {
@@ -84,13 +79,6 @@ export function parseChromiumSiteSettings(json: unknown): ChromiumSiteSettings {
       if (exception.data.setting === 1) decide(origin, permission, true)
       if (exception.data.setting === 2) decide(origin, permission, false)
     }
-  }
-  for (const [origin, schemes] of Object.entries(
-    parsed.data.protocol_handler.allowed_origin_protocol_pairs,
-  )) {
-    const allowed = isRecord(schemes) && Object.values(schemes).includes(true)
-    const normalized = patternOrigin(origin)
-    if (allowed && normalized) decide(normalized, 'externalApp', true)
   }
   for (const hosts of Object.values(parsed.data.partition.per_host_zoom_levels)) {
     if (!isRecord(hosts)) continue

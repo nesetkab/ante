@@ -1,5 +1,4 @@
 import { app, globalShortcut } from 'electron'
-import type { Command } from '@shared/commands'
 import { withOverrides } from '@shared/keys'
 import { shortcuts } from '@shared/shortcuts'
 import type { Store } from './store'
@@ -11,19 +10,26 @@ export function littleAccelerator(store: Store): string | null {
   return list.find((shortcut) => shortcut.id === 'new-little')?.accelerator ?? null
 }
 
-export function startGlobalLittle(store: Store, run: (command: Command) => void): void {
+export interface GlobalLittle {
+  pause: (paused: boolean) => void
+}
+
+export function startGlobalLittle(store: Store, openLittle: () => void): GlobalLittle {
+  let attempted: string | null = null
   let registered: string | null = null
+  let paused = false
+  const open = () => {
+    app.focus({ steal: true })
+    openLittle()
+  }
   const sync = () => {
-    const wanted = littleAccelerator(store)
-    if (wanted === registered) return
+    const wanted = paused ? null : littleAccelerator(store)
+    if (wanted === attempted) return
+    attempted = wanted
     if (registered) globalShortcut.unregister(registered)
     registered = null
     if (!wanted) return
     try {
-      const open = () => {
-        app.focus({ steal: true })
-        run({ type: 'window/little' })
-      }
       if (globalShortcut.register(wanted, open)) registered = wanted
     } catch (error) {
       console.error('[shortcuts] could not register', wanted, error)
@@ -32,4 +38,10 @@ export function startGlobalLittle(store: Store, run: (command: Command) => void)
   sync()
   store.subscribe(sync)
   app.on('will-quit', () => globalShortcut.unregisterAll())
+  return {
+    pause: (next) => {
+      paused = next
+      sync()
+    },
+  }
 }

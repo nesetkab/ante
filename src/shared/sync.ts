@@ -61,7 +61,7 @@ const syncedSettingsSchema = settingsSchema.pick({
 type SyncedSettings = z.infer<typeof syncedSettingsSchema>
 const syncedSettingKeys = Object.keys(syncedSettingsSchema.shape) as (keyof SyncedSettings)[]
 
-const syncedSpaceSchema = spaceSchema.omit({ today: true })
+const syncedSpaceSchema = spaceSchema.omit({ today: true, collapsed: true })
 type SyncedSpace = z.infer<typeof syncedSpaceSchema>
 
 const safeSavedUrl = z
@@ -177,7 +177,6 @@ export function syncSnapshot(data: Data, options: SnapshotOptions = {}): Record<
       icon: space.icon,
       color: space.color,
       gradient: [...space.gradient],
-      collapsed: space.collapsed,
       profileId: space.profileId,
       pinned: [...space.pinned],
     }
@@ -489,9 +488,10 @@ function applyItem(data: Data, id: Id, value: SyncedItem): void {
 function applySpace(data: Data, id: Id, value: SyncedSpace): void {
   const local = data.spaces[id]
   if (!local) {
-    data.spaces[id] = { ...value, today: [] }
+    data.spaces[id] = { ...value, collapsed: false, today: [] }
     return
   }
+  if (!sameIds(local.gradient, value.gradient)) local.gradient = [...value.gradient]
   if (local.name !== value.name) local.name = value.name
   if (local.icon !== value.icon) local.icon = value.icon
   if (local.color !== value.color) local.color = value.color

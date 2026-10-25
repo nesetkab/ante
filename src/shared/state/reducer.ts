@@ -760,6 +760,7 @@ export function reduce(state: AppState, action: Action): void {
       return
     case 'siteZoom/set': {
       if (!data.profiles[action.profileId] || isPrivateProfile(action.profileId)) return
+      if (!action.host || action.host.length > 253) return
       const zooms = (data.siteZoom[action.profileId] ??= {})
       if (Math.abs(action.zoom - 1) < 0.001) Reflect.deleteProperty(zooms, action.host)
       else if (Object.keys(zooms).length < MAX_SITE_ZOOMS || zooms[action.host] !== undefined)

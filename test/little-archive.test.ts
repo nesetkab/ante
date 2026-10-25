@@ -19,6 +19,7 @@ describe('little window archiving', () => {
         kind,
         lastActiveAt: 10 * hour - idle,
         focused,
+        busy: false,
         close: () => {
           closed.value = true
         },

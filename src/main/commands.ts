@@ -53,6 +53,8 @@ import type { AppWindow, WindowManager } from './windows'
 import type { Autofill } from './autofill'
 import type { PasswordVault } from './passwords'
 
+const QUOTE_WORLD = 1001
+
 interface Deps {
   store: Store
   tabs: TabManager
@@ -304,6 +306,18 @@ export class CommandRunner {
     this.#store.dispatch({ type: 'window/update', id: window.id, patch: { peekTabId: id } })
     this.#windows.syncNow()
     window.focusContent(id)
+  }
+
+  openLittle(input?: string): void {
+    this.#little(input ? resolveInput(input, searchTemplate(this.#data.settings)) : 'about:blank')
+    const little = this.#windows.lastFocused('little')
+    if (little && !input) {
+      this.#store.dispatch({
+        type: 'runtime/window',
+        id: little.id,
+        patch: { overlay: { kind: 'commandBar', mode: 'edit' } },
+      })
+    }
   }
 
   #little(url: string): void {
@@ -705,7 +719,7 @@ export class CommandRunner {
         contents.setZoomFactor(zoom)
         this.#store.dispatch({ type: 'runtime/tab', id: tabId, patch: { zoom } })
         const host = zoomHost(contents.getURL())
-        const profileId = rootOf(this.#data, tabId)?.profileId
+        const profileId = this.#tabs.profileOf(tabId)
         if (host && profileId) this.#store.dispatch({ type: 'siteZoom/set', profileId, host, zoom })
         return
       }
@@ -741,16 +755,22 @@ export class CommandRunner {
       }
       case 'tab/copyQuote': {
         const tab = getTab(this.#data, tabFor(command.tabId))
+        if (!tab) return
+        const copy = (selection: unknown) => {
+          const text = typeof selection === 'string' ? selection : ''
+          copyText(quoteText(displayTitle(tab), tab.url, text))
+          this.toast(window, text.trim() ? 'Copied quote' : 'Copied URL')
+        }
         const contents = contentsFor(command.tabId)
-        if (!tab || !contents) return
+        if (!contents) {
+          copy('')
+          return
+        }
         contents
-          .executeJavaScript('String(getSelection() ?? "").slice(0, 2000)')
-          .then((selection: unknown) => {
-            const text = typeof selection === 'string' ? selection : ''
-            copyText(quoteText(displayTitle(tab), tab.url, text))
-            this.toast(window, text.trim() ? 'Copied quote' : 'Copied URL')
-          })
-          .catch(() => undefined)
+          .executeJavaScriptInIsolatedWorld(QUOTE_WORLD, [
+            { code: 'String(getSelection() ?? "").slice(0, 2000)' },
+          ])
+          .then(copy, () => copy(''))
         return
       }
       case 'tab/print':
@@ -890,19 +910,7 @@ export class CommandRunner {
         this.#windows.createMain(this.#windowData(window).spaceId)
         return
       case 'window/little': {
-        this.#little(
-          command.input
-            ? resolveInput(command.input, searchTemplate(this.#data.settings))
-            : 'about:blank',
-        )
-        const little = this.#windows.lastFocused('little')
-        if (little && !command.input) {
-          this.#store.dispatch({
-            type: 'runtime/window',
-            id: little.id,
-            patch: { overlay: { kind: 'commandBar', mode: 'edit' } },
-          })
-        }
+        this.openLittle(command.input)
         return
       }
       case 'window/close':

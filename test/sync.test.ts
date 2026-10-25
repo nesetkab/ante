@@ -649,3 +649,18 @@ describe('syncing two devices', () => {
     expect(result.data.items.p1).toBeUndefined()
   })
 })
+
+describe('space looks', () => {
+  it('syncs gradients but keeps the collapsed pinned section on each device', () => {
+    const a = device('a', seeded())
+    const b = device('b', seeded())
+    sync(a, [], 1000)
+    sync(b, [a], 2000)
+    edit(a, { type: 'space/update', id: 's1', patch: { gradient: ['#ff0000'], collapsed: true } })
+    sync(a, [b], 3000)
+    sync(b, [a], 4000)
+    expect(b.data.spaces.s1?.gradient).toEqual(['#ff0000'])
+    expect(b.data.spaces.s1?.collapsed).toBe(false)
+    expect(a.data.spaces.s1?.collapsed).toBe(true)
+  })
+})

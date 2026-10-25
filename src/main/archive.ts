@@ -43,6 +43,7 @@ export interface IdleWindow {
   kind: string
   lastActiveAt: number
   focused: boolean
+  busy: boolean
   close: () => void
 }
 
@@ -54,6 +55,11 @@ export function closeIdleLittleWindows(
   const thresholdMs = archiveThresholds[store.state.data.settings.littleArchiveAfter]
   if (thresholdMs <= 0) return
   for (const window of windows)
-    if (window.kind === 'little' && !window.focused && now - window.lastActiveAt > thresholdMs)
+    if (
+      window.kind === 'little' &&
+      !window.focused &&
+      !window.busy &&
+      now - window.lastActiveAt > thresholdMs
+    )
       window.close()
 }

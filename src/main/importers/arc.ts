@@ -18,7 +18,7 @@ import { DEFAULT_PROFILE_ID } from '@shared/state/initial'
 import { isPrivateProfile } from '@shared/state/private'
 import type { HistoryStore } from '../history'
 import type { Store } from '../store'
-import { readArcAppOrigins, readArcAppSettings } from './arcDefaults'
+import { readArcAppSettings } from './arcDefaults'
 import { readVisits } from './chrome'
 import { importSiteSettings } from './siteSettings'
 import type { CookieJar } from './cookies'
@@ -181,9 +181,7 @@ export async function importFromArc({
     store.dispatch({ type: 'data/import', bundle })
     const data = store.state.data
     const dirs = profileDirs(userData, profileNames, store)
-    const appOrigins = await readArcAppOrigins()
-    for (const { dir, profileId } of dirs)
-      await importSiteSettings(store, profileId, dir, appOrigins)
+    for (const { dir, profileId } of dirs) await importSiteSettings(store, profileId, dir)
     const visitCount = await importHistory(history, dirs)
     const secrets = await importBrowserSecrets(
       ARC_SAFE_STORAGE,

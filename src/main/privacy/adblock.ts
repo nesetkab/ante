@@ -76,6 +76,11 @@ export class AdBlocker {
 
   async load(): Promise<void> {
     const cookies = this.#store.state.data.settings.blockCookieBanners
+    if (await this.#build(cookies)) return
+    if (cookies) await this.#build(false)
+  }
+
+  async #build(cookies: boolean): Promise<boolean> {
     const path = join(this.#cacheDir, cookies ? COOKIE_CACHE_FILE : CACHE_FILE)
     try {
       await mkdir(this.#cacheDir, { recursive: true })
@@ -95,11 +100,13 @@ export class AdBlocker {
             caching,
           )
         : await ElectronBlocker.fromPrebuiltAdsAndTracking(fetch, caching)
-      if (cookies !== this.#store.state.data.settings.blockCookieBanners) return
+      if (cookies && !this.#store.state.data.settings.blockCookieBanners) return true
       this.#engine = engine
       this.#ready = true
+      return true
     } catch (error) {
-      console.warn('[adblock] using fallback filters', error)
+      console.warn('[adblock] could not load filters', cookies ? 'with cookie lists' : '', error)
+      return false
     }
   }
 

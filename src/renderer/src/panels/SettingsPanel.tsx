@@ -442,7 +442,10 @@ export function SettingsPanel() {
           />
         </Row>
         {platform === 'darwin' && (
-          <Row label="Open a little window from any app" hint="Press ⌥⌘N anywhere on your Mac">
+          <Row
+            label="Open a little window from any app"
+            hint="Your New Little Window shortcut works in every app"
+          >
             <Toggle
               label="Little window shortcut"
               checked={settings.globalLittle}

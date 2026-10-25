@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { app, dialog, Menu, nativeTheme, safeStorage, session } from 'electron'
 import type { Command } from '@shared/commands'
 import type { Id } from '@shared/schema'
+import { isBusy } from '@shared/sleep'
 import { createAppState, createInitialData, DEFAULT_PROFILE_ID } from '@shared/state/initial'
 import { isPrivateProfile } from '@shared/state/private'
 import { sanitize } from '@shared/state/sanitize'
@@ -206,6 +207,7 @@ async function start(): Promise<void> {
         })
     },
     recordShortcuts: (window, recording) => {
+      globalLittle.pause(recording)
       panels.get(window.id, 'settings')?.webContents.setIgnoreMenuShortcuts(recording)
     },
     runFeature: (window, command) => features.run(window, command),
@@ -295,7 +297,7 @@ async function start(): Promise<void> {
     downloads,
     onHistoryCleared: (profileId) => tabs.clearHistories(profileId),
   })
-  startGlobalLittle(store, (command) => runner.run(null, command))
+  const globalLittle = startGlobalLittle(store, () => runner.openLittle())
   let menuShortcuts = store.state.data.settings.shortcuts
   Menu.setApplicationMenu(buildAppMenu(runInFocused, menuShortcuts))
   store.subscribe(() => {
@@ -316,11 +318,16 @@ async function start(): Promise<void> {
   externalLinks.attach((url) => features.openExternal(url))
   for (const url of urlArguments(process.argv)) externalLinks.push(url)
 
+  const littleBusy = (tabId: Id | null) => {
+    const runtime = tabId ? store.state.runtime.tabs[tabId] : undefined
+    return runtime ? isBusy(runtime) : false
+  }
   startArchiveSweeper(store, () =>
     windows.all().map((window) => ({
       kind: window.kind,
       lastActiveAt: window.lastActiveAt,
       focused: !window.win.isDestroyed() && window.win.isFocused(),
+      busy: littleBusy(window.data?.littleTabId ?? null),
       close: () => {
         if (!window.win.isDestroyed()) window.win.close()
       },

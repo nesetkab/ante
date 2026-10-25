@@ -6,7 +6,7 @@ import {
 } from '@shared/importers/chromiumPrefs'
 import { parseArcWindows } from '@shared/importers/arc'
 import { zoomHost } from '@shared/zoom'
-import { appOrigins, themeFromAppearance } from '../src/main/importers/arcDefaults'
+import { themeFromAppearance } from '../src/main/importers/arcDefaults'
 import { uiActionSchema } from '@shared/state/actions'
 import { apply, buildState } from './helpers'
 
@@ -47,7 +47,6 @@ describe('chromium site settings', () => {
       'https://mail.google.com': { notifications: 'allow' },
       'https://spam.example': { notifications: 'block' },
       'https://meet.google.com': { microphone: 'allow' },
-      'https://app.slack.com': { externalApp: 'allow' },
     })
   })
 
@@ -84,14 +83,6 @@ describe('arc window and app settings', () => {
     expect(parseArcWindows('nope')).toEqual({})
   })
 
-  it('reads the sites Arc may always open apps from', () => {
-    expect(
-      appOrigins({ 'zoom.us': ['zoomus'], 'Figma.com': ['figma'], 'bad host': ['x'] }),
-    ).toEqual(['https://zoom.us', 'https://figma.com'])
-    expect(appOrigins({ 'empty.com': [] })).toEqual([])
-    expect(appOrigins(null)).toEqual([])
-  })
-
   it('maps the Arc appearance setting to a theme', () => {
     expect(themeFromAppearance('NSAppearanceNameDarkAqua')).toBe('dark')
     expect(themeFromAppearance('NSAppearanceNameAqua')).toBe('light')
@@ -123,6 +114,7 @@ describe('site zoom', () => {
     ).toEqual({})
     expect(zoomHost('https://Example.com/path')).toBe('example.com')
     expect(zoomHost('file:///tmp/x')).toBeNull()
+    expect(zoomHost(`https://${'a'.repeat(250)}.example/`)).toBeNull()
   })
 
   it('imports site settings without overriding choices made in Ante', () => {

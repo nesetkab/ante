@@ -3,6 +3,7 @@ export const ZOOM_STEPS = [
 ] as const
 
 const EPSILON = 0.001
+const MAX_HOST = 253
 const MIN_ZOOM = ZOOM_STEPS[0]
 const MAX_ZOOM = ZOOM_STEPS[ZOOM_STEPS.length - 1] ?? 1
 
@@ -15,9 +16,9 @@ export function nextZoom(current: number, delta: -1 | 0 | 1): number {
 export function zoomHost(url: string): string | null {
   try {
     const parsed = new URL(url)
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
-      ? parsed.hostname.toLowerCase()
-      : null
+    const host = parsed.hostname.toLowerCase()
+    const web = parsed.protocol === 'http:' || parsed.protocol === 'https:'
+    return web && host.length > 0 && host.length <= MAX_HOST ? host : null
   } catch {
     return null
   }

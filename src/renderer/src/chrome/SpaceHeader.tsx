@@ -1,4 +1,5 @@
 import { ChevronDown, ChevronRight, Ellipsis, FolderPlus } from 'lucide-react'
+import { useRef } from 'react'
 import type { Space } from '@shared/schema'
 import { ante } from '../ante'
 import { IconButton } from '../components/IconButton'
@@ -10,6 +11,7 @@ import { SpaceIcon } from '../components/SpaceIcon'
 export function SpaceHeader({ space }: { space: Space }) {
   const [editing, setEditing] = useRenameEvent(space.id)
   const openMenu = () => ante.command({ type: 'space/contextMenu', spaceId: space.id })
+  const pendingToggle = useRef(0)
   const toggle = () =>
     ante.dispatch({ type: 'space/update', id: space.id, patch: { collapsed: !space.collapsed } })
 
@@ -49,10 +51,11 @@ export function SpaceHeader({ space }: { space: Space }) {
         <span
           className={styles.spaceName}
           onClick={(event) => {
-            if (event.detail === 1) toggle()
+            window.clearTimeout(pendingToggle.current)
+            if (event.detail === 1) pendingToggle.current = window.setTimeout(toggle, 220)
           }}
           onDoubleClick={() => {
-            toggle()
+            window.clearTimeout(pendingToggle.current)
             setEditing(true)
           }}
         >

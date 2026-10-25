@@ -1,4 +1,4 @@
-import type { AppState, Id, SleepAfter } from './schema'
+import type { AppState, Id, SleepAfter, TabRuntime } from './schema'
 import { getTab, sectionOf, visibleTabIds } from './state/tree'
 
 export const sleepThresholds: Record<SleepAfter, number> = {
@@ -19,6 +19,18 @@ export function tabsInUse(state: AppState): Set<Id> {
   return keep
 }
 
+export function isBusy(runtime: TabRuntime): boolean {
+  return [
+    runtime.audible,
+    runtime.loading,
+    runtime.media?.playing === true,
+    runtime.media?.pip === true,
+    runtime.devtools !== null,
+    runtime.prompt !== null,
+    runtime.capturing,
+  ].includes(true)
+}
+
 export function sleepyTabs(state: AppState, now: number, thresholdMs: number): Id[] {
   if (thresholdMs <= 0) return []
   const keep = tabsInUse(state)
@@ -28,16 +40,7 @@ export function sleepyTabs(state: AppState, now: number, thresholdMs: number): I
       const tab = getTab(state.data, id)
       if (!tab || keep.has(id) || tab.lastActiveAt >= cutoff) return false
       if (sectionOf(state.data, id) !== 'today') return false
-      const busy = [
-        runtime.audible,
-        runtime.loading,
-        runtime.media?.playing === true,
-        runtime.media?.pip === true,
-        runtime.devtools !== null,
-        runtime.prompt !== null,
-        runtime.capturing,
-      ]
-      return !busy.includes(true)
+      return !isBusy(runtime)
     })
     .map(([id]) => id)
 }

@@ -1,6 +1,7 @@
 import { dialog, WebContentsView, type ContextMenuParams, type WebContents } from 'electron'
 import type { Id, TabRuntime } from '@shared/schema'
 import { IGNORED_LOAD_ERRORS } from '@shared/loadErrors'
+import { isPrivateProfile } from '@shared/state/private'
 import { zoomHost } from '@shared/zoom'
 import { restorableHistory, trimHistory, type SavedTabHistory } from '@shared/navigation'
 import { isInternalPage } from '@shared/pages'
@@ -214,9 +215,16 @@ export class TabManager {
   #applySiteZoom(id: Id, contents: WebContents, url: string): void {
     const host = zoomHost(url)
     const profileId = this.#profiles.get(id)
-    if (!host || !profileId) return
-    const zoom = this.#store.state.data.siteZoom[profileId]?.[host] ?? 1
-    if (Math.abs(contents.getZoomFactor() - zoom) > 0.001) contents.setZoomFactor(zoom)
+    if (host && profileId && !isPrivateProfile(profileId)) {
+      const zoom = this.#store.state.data.siteZoom[profileId]?.[host] ?? 1
+      if (Math.abs(contents.getZoomFactor() - zoom) > 0.001) contents.setZoomFactor(zoom)
+    }
+    const zoom = contents.getZoomFactor()
+    if (this.#store.state.runtime.tabs[id]?.zoom !== zoom) this.#runtime(id, { zoom })
+  }
+
+  profileOf(id: Id): Id | null {
+    return this.#profiles.get(id) ?? null
   }
 
   #wire(id: Id, contents: WebContents): void {
